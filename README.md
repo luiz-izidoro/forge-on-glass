@@ -119,6 +119,12 @@ sh scripts/acceptance-suite.sh
 
 ## From zero (fresh device)
 
+See [`REPRODUCE-FROM-ZERO.md`](REPRODUCE-FROM-ZERO.md) for the complete public
+recipe, including `bootstrap.sh`, explicit artifact SHA-256 checks, the Linux
+module-cache step, incremental builds, AI diagnostics, and the S0–S4 evidence
+contract.
+
+
 Follow [`references/BOOTSTRAP.md`](references/BOOTSTRAP.md) top to bottom:
 
 0. `apk add clang19 lld zip xz zstd binutils patchelf git python3 wget` + build `ldid`.

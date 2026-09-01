@@ -559,7 +559,9 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/make-patchset.sh` / `scripts/apply-patchset.sh` — patch-set do SDK.
 - `scripts/test_import_ish.py` — testa `import UIKit`/`SwiftUI` no iSH.
 - `scripts/sync-sdk-mtimes.py` — alinha mtimes do SDK (necessário p/ os .pcm).
-- `scripts/cleanup-toolchain.sh` — limpeza conservadora; dry-run padrão e `--apply` explícito.
+- `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
+- `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
+- `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
 - `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
