@@ -19,6 +19,7 @@ OUT=${ISB_VM_OUT:-/opt/ios-toolchain/foundation-build633-neutral}
 TARGET=${ISB_TARGET:-arm64-apple-ios26.0}
 SCAN_CACHE=${ISB_SCAN_CACHE:-$VM_ROOT/module-cache-arm64}
 FSCAN_GIVEN=0
+SCAN_OK=0
 [ -n "${FSCAN:-}" ] && FSCAN_GIVEN=1
 FSCAN=${FSCAN:-$SCAN_CACHE/fscan.json}
 SCAN_LOG=${ISB_SCAN_LOG:-$SCAN_CACHE/scan-dependencies.log}
@@ -50,16 +51,22 @@ if [ "$FSCAN_GIVEN" -eq 1 ]; then
   SCAN_OK=1
 else
   rm -f "$FSCAN" "$SCAN_LOG"
-  for attempt in 1 2 3; do
+  for attempt in 1 2 3 4 5 6; do
     rm -f "$FSCAN"
-    if "$SF" -scan-dependencies -target "$TARGET" -sdk "$SDK" \
+    scan_rc=0
+    "$SF" -scan-dependencies -target "$TARGET" -sdk "$SDK" \
         -resource-dir "$SW/usr/lib/swift" -module-cache-path "$SCAN_CACHE" \
         -Xcc -ivfsoverlay -Xcc "$VFS" "$SEED" -o "$FSCAN" \
-        >>"$SCAN_LOG" 2>&1 && [ -s "$FSCAN" ]; then
+        >>"$SCAN_LOG" 2>&1 || scan_rc=$?
+    if [ "$scan_rc" -eq 0 ] && [ -s "$FSCAN" ]; then
       SCAN_OK=1
       break
     fi
-    echo "scan-dependencies retry $attempt (see $SCAN_LOG)" >&2
+    if [ "$scan_rc" -eq 0 ] && [ ! -s "$FSCAN" ] && [ ! -s "$SCAN_LOG" ]; then
+      echo "scan-dependencies silent-exit race on attempt $attempt; retrying" >&2
+    else
+      echo "scan-dependencies retry $attempt (rc=$scan_rc; see $SCAN_LOG)" >&2
+    fi
   done
 fi
 [ "$SCAN_OK" -eq 1 ] || { echo "scan-dependencies falhou; log: $SCAN_LOG" >&2; exit 1; }
