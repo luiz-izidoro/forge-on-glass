@@ -18,7 +18,7 @@ Uso:
                             [--parse-as-library] [--emit-module PATH]
                             [--timeout 1800] [--extra-src FILE]...
 """
-import argparse, hashlib, os, shutil, subprocess, sys, time, glob
+import argparse, hashlib, os, subprocess, sys, time, glob
 
 ROOT = os.environ.get("ISB_SYSROOT", "/opt/isb/sysroot")
 if not os.path.exists(ROOT):
@@ -132,6 +132,16 @@ def main():
         cache_key.update(open(s, "rb").read())
     for m in mods:
         cache_key.update(m.encode() + b"\0")
+        # Module paths are part of the ABI input; hash their bytes too when
+        # they refer to a local artifact, so replacing a PCM invalidates it.
+        candidate = m.split("=", 2)[-1]
+        if os.path.isfile(candidate):
+            with open(candidate, "rb") as f:
+                while True:
+                    chunk = f.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    cache_key.update(chunk)
     key = cache_key.hexdigest()
     cached = set()
     if a.incremental and os.path.exists(manifest):

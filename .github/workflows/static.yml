@@ -11,5 +11,5 @@ jobs:
         run: find scripts -name '*.sh' -print0 | xargs -0 -n1 sh -n
       - name: Python syntax
         run: python3 -m py_compile scripts/*.py
-      - name: Repository guard
-        run: sh scripts/check-repo-clean.sh
+      - name: Documentation and repository guards
+        run: sh scripts/verify-docs.sh
