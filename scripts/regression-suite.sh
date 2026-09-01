@@ -8,7 +8,7 @@
 # Uso: sh scripts/regression-suite.sh [--quick]
 set -e
 
-SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." SKILL=/var/minis/skills/ios-swift-builderSKILL=/var/minis/skills/ios-swift-builder pwd)
+SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 A=$SKILL/assets
 W=/tmp/regression-suite
 rm -rf "$W" && mkdir -p "$W"

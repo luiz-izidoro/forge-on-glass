@@ -13,8 +13,9 @@
 #                 [--resources DIR] [--main-obj NAME] [--plist-extra XML]
 #
 # Saida: /var/minis/workspace/<AppName>.ipa
+set -e
 ISB_WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
-"${1:?uso: $0 <AppName> <BundleID> <objdir> [--debug] [--resources DIR]}"
+APP="${1:?uso: $0 <AppName> <BundleID> <objdir> [--debug] [--resources DIR]}"
 BUNDLE="${2:?falta o bundle id}"
 OBJDIR="${3:?falta o diretorio com os .o}"
 shift 3
