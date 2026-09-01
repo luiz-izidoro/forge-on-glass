@@ -33,7 +33,24 @@ Both fresh IPAs passed `validate-ipa.sh`, entry/delegate checks, and
 LiveContainer structural checks. They still require manual installation and
 tapping on the device for S4 runtime numbers.
 
-## Static and reproducibility validation
+### Device gate (retomada 2026-09-01)
+
+`apple-device info --compact` confirmou o host físico `iPhone17,1`, iOS 26.6,
+com 7.46 GiB de memória e estado térmico `fair`. As ferramentas expostas nesta
+sessão permitem consultar o device, mas não instalar/abrir uma IPA dentro do
+LiveContainer nem tocar a UI. Por isso não foi possível obter nova evidência
+S3/S4 nesta sessão; os resultados abaixo permanecem honestamente estruturais.
+
+The final device-ready benchmark IPAs are in:
+
+```text
+/var/minis/workspace/bench-device-final2/BenchDevice-none.ipa
+/var/minis/workspace/bench-device-final2/BenchDevice-O.ipa
+```
+
+Both have distinct bundle IDs and compile-time labels, so the manual test can
+install them side by side without a LiveContainer bundle collision.
+
 
 | Check | Result | Evidence |
 |---|---|---|

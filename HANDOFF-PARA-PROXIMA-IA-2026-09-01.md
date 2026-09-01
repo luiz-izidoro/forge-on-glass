@@ -1,8 +1,8 @@
 # HANDOFF — retomada dos itens externos e pendências finais
 
 **Projeto:** `forge-on-glass` / `ios-swift-builder`  
-**Data do estado:** 2026-09-01  
-**Último commit público:** `125e2f1` — `Record external VM reproducibility validation`  
+**Data do estado:** 2026-09-01 — retomada local final
+**Último commit público local:** `6d3f12e` — `Harden device benchmark variants`
 **Árvore esperada:** limpa  
 **Objetivo deste handoff:** permitir que uma nova conversa continue sem repetir auditorias, sem perder evidência e sem publicar artefatos licenciados.
 
@@ -301,7 +301,8 @@ python3 scripts/check-repo-clean.py
 
 IPA estrutural já pronta. Nova conversa deve:
 
-1. localizar/abrir a IPA `FoundationModelsRuntime` gerada;
+1. localizar/abrir a IPA `LocalAcceptanceFMRuntime.ipa` em
+   `/var/minis/workspace/arm64e-final/` ou gerar uma nova;
 2. instalar pelo caminho que preserve o comportamento de debug/LiveContainer;
 3. tocar **Gerar resposta**;
 4. registrar `availability`, prompt exato, resposta, latência, device, iOS,
@@ -312,20 +313,18 @@ Só declarar S4 se `respond(to:)` realmente retornar texto no device.
 
 ### P3 — benchmark S4
 
-```sh
-ISB_WORKSPACE=/tmp/bench-device \
-  sh scripts/benchmark-device-build.sh
-```
-
-Instalar ambas:
+As IPAs device-ready mais recentes estão em
+`/var/minis/workspace/bench-device-final2/` e já têm IDs distintos:
 
 ```text
-BenchDevice-none.ipa
-BenchDevice-O.ipa
+BenchDevice-none.ipa  → com.forge.benchdevice.none
+BenchDevice-O.ipa     → com.forge.benchdevice.O
 ```
 
-Executar o mesmo fluxo no device, coletar os milissegundos exibidos e publicar
-uma tabela com o host/device. Não confundir tempo de compilação com runtime.
+Instalar ambas no LiveContainer, tocar o botão uma vez em cada e registrar os
+milissegundos exibidos. Executar o mesmo fluxo no device, coletar os valores e
+publicar uma tabela com o host/device. Não confundir tempo de compilação com
+runtime. O script que as recria é `scripts/benchmark-device-build.sh`.
 
 ### P4 — arm64e S3
 
