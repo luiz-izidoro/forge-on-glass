@@ -17,6 +17,7 @@ SF = f"{SW}/usr/bin/swift-frontend"
 SDK = os.environ.get("ISB_VM_SDK", os.path.join(VM_ROOT, "iPhoneOS26.5.sdk"))
 OUT = os.environ.get("ISB_VM_OUT", os.path.join(VM_ROOT, "foundation-build633"))
 TARGET = os.environ.get("ISB_TARGET", "arm64-apple-ios26.0")
+PCM_ONLY = os.environ.get("ISB_PCM_ONLY", "0") == "1"
 VFS = os.environ.get("ISB_VM_VFS", os.path.join(VM_ROOT, "vfs/overlay.yaml"))
 IMPC = os.environ.get("ISB_VM_MODULE_CACHE", os.path.join(VM_ROOT, "module-cache"))
 os.makedirs(OUT, exist_ok=True)
@@ -212,6 +213,10 @@ def sdk_mmaps():
 
 def build(typ, name, wd=3600):
     if have(typ, name):
+        return True
+    if PCM_ONLY and typ == 'swift':
+        # PCM-only is an honest recovery mode: Swift interfaces are not
+        # regenerated, while the Clang graph is still rebuilt hermetically.
         return True
     cmd = index[(typ, name)]['details'][typ].get('commandLine')
     if not cmd:
