@@ -24,17 +24,37 @@ cd /tmp/ldid && clang++ -c -std=c++11 -O0 -pipe -I. -DLDID_VERSION='"v2.1.5"' ld
 
 ## 1. glibc loader so glibc binaries run on musl
 
-The Swift toolchain is glibc. Provide a real aarch64 glibc loader + libs:
+The executable bootstrap step is now:
 
 ```sh
-# from Ubuntu 24.04 arm64 debs — extract loader + libc/libm/libstdc++/libgcc_s/
-#   libz/libncurses/libtinfo/libuuid/libcom_err. Put them in /opt/xtool-glibc/lib.
-# (The original session assembled this from ports.ubuntu.com libc6 + gcc-14 +
-#  util-linux + ncurses arm64 packages via `ar x`/zstd.)
+# On a user-controlled Ubuntu arm64 mirror, collect the required .deb files
+# and create a checksum manifest containing their filenames.
+sha256sum "$ISB_GLIBC_PACKAGES"/*.deb > "$ISB_GLIBC_SHA256"
+ISB_GLIBC_PACKAGES=/path/to/ubuntu-arm64-debs \
+ISB_GLIBC_SHA256=/path/to/ubuntu-arm64-debs.sha256 \
+sh scripts/bootstrap-glibc.sh
 ```
-Key libs needed by swift-frontend: `ld-linux-aarch64.so.1`, libc/libm/libpthread,
-libstdc++.so.6, libgcc_s.so.1, libz.so.1, libncurses.so.6, libtinfo.so.6,
-libuuid.so.1, libcom_err.so.2.
+
+The package directory and manifest are intentionally supplied by the user.
+The script verifies every package before extracting it, extracts `data.tar.*`
+without installing foreign packages into Alpine, copies only the required
+runtime libraries, and fails unless `ld-linux-aarch64.so.1`, `libc.so.6`,
+`libstdc++.so.6`, and `libgcc_s.so.1` are present. To run it through the staged
+bootstrap, use `sh bootstrap.sh --step 6` with `ISB_GLIBC_PACKAGES`,
+`ISB_GLIBC_SHA256`, and optionally `ISB_GLIBC_ROOT` set.
+
+The required runtime set comes from Ubuntu 24.04 arm64 packages such as
+`libc6`, `libstdc++6`, `gcc-14-base`, `zlib1g`, `libncurses6`, `libtinfo6`,
+`libuuid1`, and `libcom-err2`, depending on the Swift frontend's dynamic
+loader diagnostics. Do not download or redistribute these packages from this
+repository.
+
+## 1a. Manual fallback / rationale
+
+The loader and libraries are glibc artifacts and must remain outside Git. The
+old manual extraction procedure remains valid when package metadata or a
+vendor-specific mirror requires it, but `bootstrap-glibc.sh` is the preferred
+reproducible path.
 
 ## 2. Swift 6.3.2 Linux toolchain (MUST match the SDK's Swift version)
 

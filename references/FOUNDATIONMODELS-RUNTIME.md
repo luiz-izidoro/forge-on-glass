@@ -11,6 +11,9 @@ acceptance. On-device validation must record:
 - availability result and whether Apple Intelligence/model preparation was
   complete.
 
-Until that manual flow is exercised, the evidence level is S0/S1 for generation
-and S2 for the arm64e IPA. `available` is a device capability, not proof that
-this builder or a particular binary can generate text.
+Until the manual device flow was exercised, generation was S0/S1. The user
+confirmed that the generated runtime IPA executed successfully and completed
+the real `LanguageModelSession.respond(to:)` path on the iPhone17,1 / iOS 26.6
+host used for this project. This upgrades the flow to **S4**. The exact prompt,
+response, and latency values were not included in the confirmation, so they are
+not reproduced here.
