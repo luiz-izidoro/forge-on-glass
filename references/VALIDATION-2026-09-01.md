@@ -1,0 +1,59 @@
+# Validation report — 2026-09-01
+
+This report records commands executed against the public repository tree.
+Generated SDK/toolchain artifacts are not stored here.
+
+## Static and reproducibility validation
+
+| Check | Result | Evidence |
+|---|---|---|
+| `sh scripts/verify-docs.sh` | PASS | syntax, repository policy, documentation assertions |
+| `sh bootstrap.sh --check` | PASS | repository, Swift frontend, SDK, stdlib cache, pure cache, neutral sysroot |
+| `python3 scripts/check-repo-clean.py` | PASS | 114 tracked files; no generated/licensed binaries or private paths |
+| fresh `git clone --no-local` | PASS | clone completed in `/tmp/forge-on-glass-clean` |
+| build from fresh clone | PASS | arm64, SDK 26.5, `-primary-file`, unsigned IPA |
+
+## Local build benchmark
+
+Command: `sh scripts/benchmark-build.sh` on the iSH host, one minimal UIKit
+sample, no device runtime measurement.
+
+| Mode | Build seconds | Executable bytes | IPA bytes |
+|---|---:|---:|---:|
+| `none` (`-Onone`) | 11 | 97,504 | 15,045 |
+| `O` (`-O`) | 26 | 76,328 | 11,110 |
+| `Osize` (`-Osize`) | 42 | 77,312 | 11,530 |
+
+The release default is `ISB_OPT=O`. These numbers measure compilation and
+artifact size only; they are not S4 device performance results.
+
+## Incremental cache validation
+
+With `ISB_INCREMENTAL=1`, the first two-file build compiled both objects in
+15 seconds. The second build reported `incremental: reutilizando 2 objeto(s)`
+and compiled zero objects. The final executables from both IPAs were identical
+byte-for-byte. Cache keys include sources, compiler, target, SDK, VFS, flags,
+module paths, and module bytes; a mismatch invalidates cached objects.
+
+## Acceptance levels
+
+- **S2 arm64:** fresh local IPA passed SDK/platform, exact slice, `LC_MAIN`,
+  chained-fixup, entry/delegate, warning, and undefined-symbol guards.
+- **S2 arm64e:** fresh local PAC IPA set passed the offline linker, exact
+  `arm64e` subtype, FoundationModels weak-link, NaturalLanguage, embeddings,
+  `LC_MAIN`, chained fixups, entry/delegate, and IPA guards.
+- **S3 arm64:** previously recorded on iOS 26.6 / iPhone17,1 in LiveContainer;
+  the current local acceptance remains structural and does not reclassify it.
+- **S4 FoundationModels generation:** not claimed. The repository includes
+  `assets/FoundationModelsRuntimeMain.swift`, which draws availability,
+  response, and latency. A user must install it on a compatible device and
+  record a successful `respond(to:)` flow before claiming S4.
+- **S3 arm64e:** not claimed. The arm64e profile remains experimental S2 until
+  a fresh IPA is opened by a compatible runtime.
+
+## Space decision
+
+The two host `usr/lib/swift/embedded` directories were removed after a
+reversible hidden-directory test and a complete arm64e acceptance pass. The
+exact duplicate arm64e linker was replaced by a symlink to the active copy.
+Measured recovery was approximately 1.1 GB. Swift 6.3.2 was retained.
