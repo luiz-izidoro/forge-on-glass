@@ -1,11 +1,9 @@
 # HANDOFF — retomada dos itens externos e pendências finais
 
 **Projeto:** `forge-on-glass` / `ios-swift-builder`  
-**Data do estado:** 2026-09-01 — P0 concluído localmente; runtime do cache novo pendente
-**Último commit público local:** `2b1233a` — `Make the arm64 production profile sysroot-independent`
-**Commit de limpeza:** pendente nesta atualização
-**Árvore esperada:** limpa após os commits finais
-**Árvore esperada:** limpa  
+**Data do estado:** 2026-09-01 — P0 concluído localmente; runtime do cache novo confirmado
+**Último commit público local:** `7bab13f` — `Finalize P0 execution documentation`
+**Estado da árvore:** mudanças de evidência S3 aguardam commit
 **Objetivo deste handoff:** permitir que uma nova conversa continue sem repetir auditorias, sem perder evidência e sem publicar artefatos licenciados.
 
 > Leia primeiro `SKILL.md`, `references/BEST-PRACTICES.md`, este arquivo e os
@@ -167,8 +165,10 @@ executáveis descompactados: idênticos byte a byte
   de independência do sysroot, que passou sem o espelho legado.
 - O cache anterior foi preservado temporariamente durante a promoção e removido
   somente após todas as verificações finais passarem.
-- O novo cache não deve ser declarado S3: requer nova abertura pelo usuário no
-  LiveContainer.
+- O novo cache tem evidência local **S2** e foi confirmado como **S3** pelo
+  usuário: a IPA nova `P0NeutralRuntime.ipa` abriu e rodou no LiveContainer.
+  O host/device específico não foi repetido nesta mensagem; manter a evidência
+  vinculada ao device/host confirmado pelo usuário.
 
 ### Perfil arm64 (estado anterior ao P0)
 
@@ -288,23 +288,20 @@ python3 references/linux-vm/orchestrator_vm633.py
 Pendente somente porque não existe URL/remoto configurado. Antes do push,
 rode as guards públicas e confirme a URL fornecida pelo usuário.
 
-### P2 — runtime S3 do cache promovido
+### P0 — runtime S3 do cache promovido
 
-O cache arm64 neutro tem evidência local S2. Para declarar S3, o usuário deve
-abrir uma IPA arm64 nova no LiveContainer. A confirmação anterior do cache
-legado não é herdada automaticamente.
+✅ Concluído: o usuário confirmou que a IPA nova `P0NeutralRuntime.ipa`,
+gerada depois da promoção usando o cache neutro arm64, abriu e rodou no
+LiveContainer. Isso eleva o cache arm64 promovido a **S3** no host/device
+testado. Não generalizar para outras versões de LiveContainer.
 
-### P3 — métricas opcionais
-
-Latências numéricas de benchmark e FoundationModels podem ser registradas se
-forem necessárias; não foram inventadas.
-
-### P2 — runtime FoundationModels S4
+### P1 — runtime FoundationModels S4
 
 ✅ Concluído no cenário deste projeto: o usuário confirmou que a IPA de runtime
 abriu e executou com sucesso no iPhone17,1 / iOS 26.6 via LiveContainer,
 incluindo o caminho real `LanguageModelSession.respond(to:)`. O relatório
 registra S4 sem inventar prompt, resposta ou latência, que não foram fornecidos.
+
 
 ### P3 — benchmark S4
 
@@ -332,12 +329,13 @@ para todos os hosts LiveContainer.
 
 ✅ Concluído localmente: cache arm64 neutro gerado sem referências pessoais,
 validado, comparado ao baseline, promovido atomicamente e aprovado pela
-aceitação arm64 com teste de independência do sysroot.
+aceitação arm64 com teste de independência do sysroot. O usuário confirmou
+posteriormente a abertura e execução de `P0NeutralRuntime.ipa` no LiveContainer,
+elevando a evidência para **S3**.
 
 Permanecem somente:
 
 - configurar remote e executar push público quando o usuário fornecer a URL;
-- solicitar nova confirmação S3 no device para o cache promovido;
 - opcionalmente registrar os valores numéricos de latência do benchmark e da
   geração FoundationModels, caso sejam necessários para comparação quantitativa.
 
@@ -415,16 +413,15 @@ Relatórios versionados:
 ---
 
 O plano técnico está encerrado no ambiente testado. Permanecem somente itens
-externos de distribuição e runtime:
+externos de distribuição e métricas opcionais:
 
 - configurar remote e executar push público quando o usuário fornecer a URL;
-- confirmar S3 do cache arm64 promovido abrindo uma IPA nova no LiveContainer;
 - opcionalmente registrar valores numéricos de latência.
 
 Estado consolidado:
 
 ```text
-arm64 + LiveContainer: S2 local com cache neutro promovido; S3 pendente de nova abertura
+arm64 + LiveContainer: S3 confirmado pelo usuário com P0NeutralRuntime.ipa
 arm64e + cache neutro/PAC: S3 confirmado no iPhone17,1/iOS 26.6
 FoundationModels respond(to:): S4 no cenário confirmado pelo usuário
 benchmark none vs O: S4 de execução; números exatos não registrados

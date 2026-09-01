@@ -8,8 +8,8 @@
 > neutro. O candidato passou `files=97 nonempty=97 neutral_refs=59
 > personal_refs=0`, a regressão e todas as aceitações. Foi promovido
 > atomicamente; o estado pós-promoção é S2 local. O rollback e o espelho legado
-> foram removidos após a validação final; S3 ainda requer nova abertura pelo
-> usuário no LiveContainer.
+> foram removidos após a validação final. O usuário confirmou depois a abertura
+> e execução de `P0NeutralRuntime.ipa` no LiveContainer, elevando o cache a S3.
 
 **Data:** 2026-09-01  · **Base:** `c3fb2a3`  · **Execução:** `2b4f2fe` + `8821c46`
 
@@ -64,7 +64,8 @@ files=97 nonempty=97 neutral_refs=59 personal_refs=0
 - Guardas e script do gerador: **S1** — scripts compilam/verificam sintaxe.
 - Cache arm64 neutro candidato: **S2** — IPA estruturalmente validada e
   independência de caminho confirmada localmente.
-- Cache arm64 promovido: **S2** — aceitação completa pós-promoção passou.
+- Cache arm64 promovido: **S3** — o usuário confirmou que
+  `P0NeutralRuntime.ipa`, gerada após a promoção, abriu e rodou no LiveContainer.
 - Cache arm64e: **S2** local nesta execução; o runtime S3 confirmado
   anteriormente permanece referente às IPAs arm64e testadas pelo usuário.
 - Nova confirmação S3 do cache arm64 promovido ainda requer abertura de IPA
