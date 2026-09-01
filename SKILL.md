@@ -559,7 +559,7 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/make-patchset.sh` / `scripts/apply-patchset.sh` — patch-set do SDK.
 - `scripts/test_import_ish.py` — testa `import UIKit`/`SwiftUI` no iSH.
 - `scripts/sync-sdk-mtimes.py` — alinha mtimes do SDK (necessário p/ os .pcm).
-- `scripts/cleanup-toolchain.sh` — libera ~1 GB por toolchain.
+- `scripts/cleanup-toolchain.sh` — limpeza conservadora; dry-run padrão e `--apply` explícito.
 - `assets/PureSwiftDemo.swift`, `assets/SwiftUIDemo.swift` — templates puros.
 - `references/HANDOFF.md` — **ponto de retomada (leia primeiro)**.
 - `references/PURE-SWIFT-UI-STATUS.md` — ressalvas e degradações medidas.
