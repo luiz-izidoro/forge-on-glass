@@ -14,13 +14,29 @@ usage(){ echo "uso: $0 --check | --step N | --all"; exit 2; }
 [ "$#" -gt 0 ] || usage
 while [ "$#" -gt 0 ]; do case "$1" in --check) CHECK=1;; --step) shift; STEP=${1:?falta N};; --all) STEP=99;; *) usage;; esac; shift; done
 have(){ [ -e "$1" ]; }
+cache_status(){
+  label=$1; cache=$2
+  if [ ! -d "$cache" ]; then
+    printf '%s: MISSING\n' "$label"
+    return 0
+  fi
+  report=''
+  if report=$(python3 "$ROOT/scripts/check-module-cache.py" "$cache" 2>&1); then
+    printf '%s: OK\n' "$label"
+  elif printf '%s\\n' "$report" | grep -q 'personal_refs='; then
+    printf '%s: NOT-NEUTRAL\n' "$label"
+  else
+    printf '%s: FAIL\n' "$label"
+  fi
+}
 check(){
   echo "== forge-on-glass bootstrap check =="
   printf 'repo: '; [ -f "$ROOT/scripts/check-env.sh" ] && echo OK || echo FAIL
   printf 'Swift 6.3.2 frontend: '; [ -x "$SWIFT_ROOT/usr/bin/swift-frontend" ] && echo OK || echo MISSING
   printf 'iOS SDK: '; [ -f "$TOOLCHAIN/iPhoneOS26.5.sdk/usr/lib/libSystem.tbd" ] && echo OK || echo MISSING
   printf 'stdlib cache: '; [ -s "$TOOLCHAIN/exp63/SwiftShims.pcm" ] && echo OK || echo MISSING
-  printf 'pure Swift arm64 cache: '; [ -s "$TOOLCHAIN/foundation-build633/swift_SwiftUI.swiftmodule" ] && echo OK || echo MISSING
+  cache_status 'pure Swift arm64 cache' "$TOOLCHAIN/foundation-build633"
+  cache_status 'pure Swift arm64e cache' "$TOOLCHAIN/foundation-build633-arm64e"
   printf 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || echo MISSING
   printf 'glibc loader: '; [ -e "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}/ld-linux-aarch64.so.1" ] && echo OK || echo MISSING
   echo "Missing caches are expected until steps 1-5 are completed."
