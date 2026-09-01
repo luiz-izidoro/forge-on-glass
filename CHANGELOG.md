@@ -20,3 +20,8 @@
   `-Onone`/`-O`/`-Osize` build and artifact sizes.
 - Added `FoundationModelsRuntimeMain.swift`, which displays availability,
   response, and latency; actual `respond(to:)` execution remains device-only.
+- External VM regeneration recorded in `references/VALIDATION-VM-2026-09-01.md`:
+  target-specific graph `91` modules, orchestrator `93/93`, transferred cache
+  `40` Swift modules + `60` PCMs, and zero `/home/` references in valid artifacts.
+- Full arm64e acceptance includes a fresh structural build of the
+  FoundationModels generation diagnostic; device execution remains manual.
