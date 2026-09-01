@@ -1,0 +1,15 @@
+# NOTICE — third-party materials and license scope
+
+The MIT license in this repository applies only to original scripts, documentation,
+and sample source files authored for this project.
+
+This repository does **not** include or license the Apple iOS SDK, Apple headers,
+`.swiftinterface`, `.tbd`, `.swiftmodule`, `.pcm`, SDK patches, generated binaries,
+or the Swift toolchain. Those materials are obtained and used by each user under
+their own applicable Apple/Xcode and Swift licenses. The Swift project is
+licensed separately (Apache-2.0 with its own terms).
+
+The patch generator exists to create local, user-owned build inputs. Generated
+patches contain verbatim SDK context and must remain outside this repository;
+committing them is prohibited. This project is unofficial and is not affiliated
+with or endorsed by Apple Inc.

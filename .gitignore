@@ -1,0 +1,50 @@
+# NEVER commit third-party / Apple / toolchain material.
+# The scripts fetch or derive all of this on the user's own licensed machine.
+
+# Apple SDK, any extracted/patched copies
+*.sdk/
+iPhoneOS*.sdk/
+**/usr/include/
+**/*.tbd
+os.modulemap
+dispatch.modulemap
+overlay.yaml
+
+# Compiled modules / binaries (derivative works of Apple headers)
+*.swiftmodule
+*.pcm
+*.swiftinterface
+*.swiftdoc
+foundation-build/
+swift-ios-build/          # VM working dir (SDK upload, build logs, modules)
+sdk.tar
+*.err
+
+# Built apps
+*.ipa
+*.app/
+Payload/
+*.o
+*.dylib
+*.bin
+
+# Swift toolchain / glibc / Mac bundle
+swift-*-RELEASE*/
+*.artifactbundle*
+xtool-glibc/
+/opt/
+
+# Signing material — never commit
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+
+# Scratch
+/tmp/
+*.log
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
