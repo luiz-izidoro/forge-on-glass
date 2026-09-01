@@ -56,8 +56,16 @@ final class BenchViewController: UIViewController {
     }
     @objc func runBenchmark() {
         let n = 10000
+        let mode: String
+        #if BENCH_NONE
+        mode = "none (-Onone)"
+        #elseif BENCH_O
+        mode = "O (-O)"
+        #else
+        mode = "unknown build mode"
+        #endif
         output.text = [
-            "mode=\(ProcessInfo.processInfo.environment["ISB_OPT"] ?? "device-build")",
+            "mode=\(mode)",
             bench("arithmetic", Arithmetic(), n * 10),
             bench("generic-collection", GenericCollection(), n),
             bench("strings", StringWork(), n * 10),

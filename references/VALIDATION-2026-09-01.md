@@ -3,13 +3,43 @@
 This report records commands executed against the public repository tree.
 Generated SDK/toolchain artifacts are not stored here.
 
+## Retomada local — 2026-09-01
+
+The public tree was rechecked from commit `76cee60`; it remained clean. The
+following fresh checks passed serially on the iSH host:
+
+- `sh bootstrap.sh --check`;
+- `sh scripts/verify-docs.sh`;
+- `python3 scripts/check-repo-clean.py`;
+- `ISB_ARCH=arm64e sh scripts/check-env.sh`;
+- `sh scripts/regression-suite.sh --quick`;
+- `sh scripts/acceptance-suite.sh`;
+- `ISB_ARCH=arm64e ISB_WORKSPACE=/var/minis/workspace/arm64e-final sh scripts/acceptance-suite-arm64e.sh`;
+- `python3 scripts/check-module-cache.py /opt/ios-toolchain/foundation-build633-arm64e`.
+
+The final cache check reported `files=100 nonempty=100 neutral_refs=61
+personal_refs=0`. The arm64e acceptance generated five fresh IPAs and passed
+all structural guards; this remains S2 evidence only.
+
+The device benchmark was regenerated with distinct compile-time labels and
+bundle IDs, avoiding a LiveContainer collision between variants:
+
+| Variant | Bundle ID | Artifact |
+|---|---|---|
+| `none` (`-Onone`) | `com.forge.benchdevice.none` | `BenchDevice-none.ipa` |
+| `O` (`-O`) | `com.forge.benchdevice.O` | `BenchDevice-O.ipa` |
+
+Both fresh IPAs passed `validate-ipa.sh`, entry/delegate checks, and
+LiveContainer structural checks. They still require manual installation and
+tapping on the device for S4 runtime numbers.
+
 ## Static and reproducibility validation
 
 | Check | Result | Evidence |
 |---|---|---|
 | `sh scripts/verify-docs.sh` | PASS | syntax, repository policy, documentation assertions |
 | `sh bootstrap.sh --check` | PASS | repository, Swift frontend, SDK, stdlib cache, pure cache, neutral sysroot |
-| `python3 scripts/check-repo-clean.py` | PASS | 114 tracked files; no generated/licensed binaries or private paths |
+| `python3 scripts/check-repo-clean.py` | PASS | 123 tracked files; no generated/licensed binaries or private paths |
 | fresh `git clone --no-local` | PASS | clone completed in `/tmp/forge-on-glass-clean` |
 | build from fresh clone | PASS | arm64, SDK 26.5, `-primary-file`, unsigned IPA |
 
