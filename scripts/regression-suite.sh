@@ -160,6 +160,38 @@ cat "$RESULT"
 echo "============================================="
 echo "logs: $W/<caso>-<modo>/build.log"
 
+# Generator failure-path regression: a successful, silent frontend exit is the
+# iSH startup race. The wrapper must retry and then report the actionable scan
+# diagnostic, never aborting on an unset SCAN_OK variable.
+FAIL_W="$W/generator-failure"
+mkdir -p "$FAIL_W/fake-sw/usr/bin" "$FAIL_W/cache" "$FAIL_W/root"
+cat > "$FAIL_W/fake-sw/usr/bin/swift-frontend" <<'EOF'
+#!/bin/sh
+# Deliberately emulate rc=0 + no output from the iSH startup race.
+exit 0
+EOF
+chmod +x "$FAIL_W/fake-sw/usr/bin/swift-frontend"
+if ISB_VM_ROOT="$FAIL_W/root" ISB_VM_SW="$FAIL_W/fake-sw" \
+    ISB_VM_SDK="/opt/isb/sysroot/iPhoneOS26.5.sdk" \
+    ISB_VM_VFS="/opt/isb/sysroot/vfs/overlay.yaml" \
+    ISB_VM_OUT="$FAIL_W/out" ISB_SCAN_CACHE="$FAIL_W/cache" \
+    ISB_ORCHESTRATOR="$SKILL/references/linux-vm/orchestrator_vm633.py" \
+    sh "$SKILL/scripts/build-arm64-modules.sh" --pcm-only >"$FAIL_W/result.log" 2>&1; then
+  printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "FALHA" >> "$RESULT"
+  MATRIX_FAIL=1
+else
+  if grep -q 'scan-dependencies falhou' "$FAIL_W/result.log" && \
+     ! grep -q 'parameter not set' "$FAIL_W/result.log"; then
+    printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "OK" >> "$RESULT"
+  else
+    printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "FALHA" >> "$RESULT"
+    MATRIX_FAIL=1
+  fi
+fi
+rm -rf "$FAIL_W"
+
+echo "logs: $W/<caso>-<modo>/build.log"
+
 # falha o script se algum caso do modo PADRAO quebrou
 if grep -q 'primary-file *FALHA' "$RESULT" || grep -q 'debug *FALHA' "$RESULT" || [ "${MATRIX_FAIL:-0}" -ne 0 ]; then
   echo ""
