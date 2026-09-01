@@ -32,7 +32,7 @@ if [ "$DEBUG" -eq 1 ] && [ "$PURE" -eq 1 ]; then
   echo "--debug requer build-pure-ui.sh para apps com UIKit; build-ipa --pure e' Foundation-only"
   exit 2
 fi
-DEBUG_ASSET=$(CDPATH= cd -- "$(dirname "$0")/.." DEBUG_ASSET=/var/minis/skills/ios-swift-builder/assets/DebugSupport.swiftDEBUG_ASSET=/var/minis/skills/ios-swift-builder/assets/DebugSupport.swift pwd)/assets/DebugSupport.swift
+DEBUG_ASSET=/var/minis/skills/ios-swift-builder/assets/DebugSupport.swift
 if [ "$DEBUG" -eq 1 ] && [ ! -f "$DEBUG_ASSET" ]; then echo "DebugSupport.swift ausente"; exit 1; fi
 
 WORK=/tmp/ipabuild_$$

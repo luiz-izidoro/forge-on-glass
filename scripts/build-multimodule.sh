@@ -153,14 +153,14 @@ if [ "$(basename "$MAIN")" != "main.swift" ]; then
 fi
 # O app usa `#available` (direto ou via SwiftUI) -> precisa do shim do
 # ___isPlatformVersionAtLeast (libclang_rt.ios.a nao existe no toolchain Linux)
-SHIM=$(CDPATH= cd -- "$(dirname "$0")/.." SHIM=/var/minis/skills/ios-swift-builder/assets/PlatformVersionShim.swiftSHIM=/var/minis/skills/ios-swift-builder/assets/PlatformVersionShim.swift pwd)/assets/PlatformVersionShim.swift
+SHIM=/var/minis/skills/ios-swift-builder/assets/PlatformVersionShim.swift
 [ -f "$SHIM" ] && [ ! -f "$APPDIR/PlatformVersionShim.swift" ] && \
   cat "$SHIM" > "$APPDIR/PlatformVersionShim.swift"
 
 # MODO PARALELO (padrao): -primary-file por arquivo, 3 jobs.
 # Medido: whole-module TRAVA o type-checker (60+ min sem .o) no mesmo conjunto
 # que compila em ~2 min arquivo-a-arquivo.
-PAR=$(CDPATH= cd -- "$(dirname "$0")/.." PAR=/var/minis/skills/ios-swift-builder/scripts/build-parallel.pyPAR=/var/minis/skills/ios-swift-builder/scripts/build-parallel.py pwd)/scripts/build-parallel.py
+PAR=/var/minis/skills/ios-swift-builder/scripts/build-parallel.py
 rm -rf "$B/obj"; mkdir -p "$B/obj"
 python3 "$PAR" --module "$APP" --src "$APPDIR" --out "$B/obj" \
   --dep-module "$DEPMOD=$B/$DEPMOD.swiftmodule" --jobs "${JOBS:-3}" --timeout 1500 || exit 1

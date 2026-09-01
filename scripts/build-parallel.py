@@ -18,7 +18,7 @@ Uso:
                             [--parse-as-library] [--emit-module PATH]
                             [--timeout 1800] [--extra-src FILE]...
 """
-import argparse, os, subprocess, sys, time, glob
+import argparse, hashlib, os, shutil, subprocess, sys, time, glob
 
 ROOT = os.environ.get("ISB_SYSROOT", "/opt/isb/sysroot")
 if not os.path.exists(ROOT):
@@ -102,6 +102,8 @@ def main():
     ap.add_argument("--emit-module", default=None,
                     help="path do .swiftmodule a emitir (passo extra, 1 processo)")
     ap.add_argument("--timeout", type=int, default=1800)
+    ap.add_argument("--incremental", action="store_true",
+                    help="reuse valid objects from --out using a content manifest")
     a = ap.parse_args()
 
     os.makedirs(a.out, exist_ok=True)
@@ -118,6 +120,32 @@ def main():
     for dm in a.dep_module:
         mods.append("-swift-module-file=" + dm)
 
+    # Incremental cache is opt-in. The manifest includes every source, flags,
+    # compiler, SDK, VFS and module artifact; stale objects are never reused.
+    manifest = os.path.join(a.out, ".isb-manifest")
+    cache_key = hashlib.sha256()
+    cache_key.update((OPT_MODE + "\0" + TARGET + "\0" + CPU + "\0" +
+                      SF + "\0" + SDK + "\0" + VFS + "\0" +
+                      a.module + "\0" + str(a.parse_as_library) + "\0").encode())
+    for s in srcs:
+        cache_key.update(os.path.basename(s).encode() + b"\0")
+        cache_key.update(open(s, "rb").read())
+    for m in mods:
+        cache_key.update(m.encode() + b"\0")
+    key = cache_key.hexdigest()
+    cached = set()
+    if a.incremental and os.path.exists(manifest):
+        old_key = open(manifest).read().strip()
+        if old_key == key:
+            cached = {os.path.splitext(os.path.basename(s))[0] for s in srcs
+                      if os.path.exists(os.path.join(a.out,
+                                      os.path.splitext(os.path.basename(s))[0] + ".o"))}
+            if cached:
+                print("incremental: reutilizando %d objeto(s)" % len(cached), flush=True)
+        else:
+            for old in glob.glob(os.path.join(a.out, "*.o")) + glob.glob(os.path.join(a.out, "*.err")):
+                os.unlink(old)
+
     def cmd_for(primary, objpath):
         c = [SF] + BASE + ["-c"]
         if a.parse_as_library:
@@ -127,7 +155,7 @@ def main():
         c += mods + ["-o", objpath]
         return c
 
-    pending = list(srcs)
+    pending = [s for s in srcs if os.path.splitext(os.path.basename(s))[0] not in cached]
     running = {}   # popen -> (src, obj, errpath, t0)
     attempts = {}
     failed = []
@@ -190,6 +218,12 @@ def main():
         print("  FALHOU %s: %s" % (b, m))
     if failed:
         return 1
+
+    if a.incremental:
+        tmp_manifest = manifest + ".tmp"
+        with open(tmp_manifest, "w") as f:
+            f.write(key + "\n")
+        os.replace(tmp_manifest, manifest)
 
     # GUARDA: warnings que produzem um app que compila e NAO funciona.
     # (assinatura de delegate divergente do .swiftinterface patchado ->

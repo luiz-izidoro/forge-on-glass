@@ -205,7 +205,7 @@ else
   ldid -S "$PAY/$APP"
 fi
 
-mkdir -p "$ISB_WORKSPACE"
+mkdir -p "$(dirname "$OUTPUT")" "$ISB_WORKSPACE"
 
 # GUARDA FINAL: o binario realmente inicia? (thunk ObjC do delegate + _main)
 CE="$SKILL/scripts/check-entry.py"
