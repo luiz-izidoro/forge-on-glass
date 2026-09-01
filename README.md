@@ -55,6 +55,7 @@ with an SPM dependency tree.
 
 | Caveat | Detail |
 |---|---|
+| **Reprodução do cache arm64** | `scripts/build-arm64-modules.sh --pcm-only` regenera 59 PCMs neutros; `--full` exige interfaces arm64, ausentes no SDK atual (0) | os 38 `swiftmodule`s arm64 ativos são herdados; ver `references/LIMITATIONS.md` |
 | **CoreGraphics degrades Foundation in whole-module** | a file using `CGRect` can make `Bundle`/`NotificationCenter` vanish from *other* files → `--primary-file` is the default since 2026-08-23. See `references/WARNINGS-FATAIS.md` |
 | **Delegate signatures must be checked, not guessed** | the patched SDK exposes `NSDictionary`/`NSIndexPath` where Apple documents Swift types; a mismatch is only a *warning* and yields a black screen. Guards: `check-warnings.py` + `check-entry.py` |
 | Patched `.swiftinterface` | some CoreGraphics conveniences are invisible → `assets/PureSwiftKit.swift` |
@@ -167,6 +168,7 @@ scripts/
   benchmark-device-build.sh   generate none/O IPAs for device timing
   scan-dependencies.sh       generate a target-specific Linux graph
   check-module-cache.py      validate transferred module caches
+  build-arm64-modules.sh     regenerate arm64 PCMs or full modules
   verify-docs.sh              static documentation and repository assertions
   build-ipa.sh               end-to-end build (hybrid or --pure)
   build-pure-foundation.sh   compile+link a pure-Swift Foundation/Dispatch app

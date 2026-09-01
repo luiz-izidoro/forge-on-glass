@@ -1,6 +1,6 @@
 ---
 name: ios-swift-builder
-version: 1.1.0
+version: 0.2.0
 description: >-
   Build native iOS .ipa apps with modern Swift, entirely inside iSH (Alpine
   Linux on iPhone/iPad), no Mac at build time. Use this skill whenever the user
@@ -559,14 +559,18 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/make-patchset.sh` / `scripts/apply-patchset.sh` — patch-set do SDK.
 - `scripts/test_import_ish.py` — testa `import UIKit`/`SwiftUI` no iSH.
 - `scripts/sync-sdk-mtimes.py` — alinha mtimes do SDK (necessário p/ os .pcm).
-- `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
+- `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e
+  `Osize` (não mede performance no device). Neste toolchain, `Osize` foi pior
+  que `O` em tempo (42 s vs. 26 s) e tamanho (77.312 B vs. 76.328 B).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
 - `scripts/bootstrap-glibc.sh` — monta o runtime glibc aarch64 a partir de `.deb` Ubuntu arm64 fornecidos pelo usuário, com verificação SHA-256.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
 - `scripts/scan-dependencies.sh` — gera grafo por target no Linux real.
 - `scripts/check-module-cache.py` — valida PCMs/Swiftmodules transferidos.
 - `scripts/benchmark-device-build.sh` — gera variantes none/O para medir no device.
-- `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
+- `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e
+  `Osize` (não mede performance no device). Neste toolchain, `Osize` foi pior
+  que `O` em tempo (42 s vs. 26 s) e tamanho (77.312 B vs. 76.328 B).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
 - `scripts/bootstrap-glibc.sh` — monta o runtime glibc aarch64 a partir de `.deb` Ubuntu arm64 fornecidos pelo usuário, com verificação SHA-256.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
@@ -589,8 +593,10 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `assets/NativeNLBridge.m` + `assets/NativeEmbeddings.swift` — embeddings
   NaturalLanguage/NLEmbedding via bridge Swift/ObjC.
 - `assets/FoundationModelsProbe.swift` — exemplo macro-free da IA on-device.
-- `scripts/build-arm64e-modules.sh` — receita do cache arm64e + SDK 26.5 em
-  Linux; falha se FoundationModels/NaturalLanguage não forem produzidos.
+- `scripts/build-arm64-modules.sh` — gera o perfil completo quando o SDK fornece
+  interfaces arm64; em SDKs arm64e-only use `--pcm-only` para regenerar os 59
+  PCMs neutros. `--full` falha fechado com diagnóstico explícito quando não há
+  interfaces arm64.
 - `scripts/profile.sh` — seleção isolada `ISB_ARCH=arm64|arm64e`.
 - `scripts/build-livecontainer.sh` — build totalmente local para LiveContainer:
   força arm64 (executável em dispositivos arm64e), usa o linker iSH e entrega
@@ -602,8 +608,8 @@ Detalhe histórico em `references/LIMITATIONS.md` e
   pelo builder porque remove PAC.
 - `references/NATIVE-INTELLIGENCE.md` — matriz e fluxo completo de IA nativa.
 - `references/DEBUG-LIVECONTAINER-STIKDEBUG.md` — procedimento completo de instalação, JIT e console.
-- `docs/README.md` — índice da documentação operacional.
-- `docs/DEBUG-LIVECONTAINER-STIKDEBUG.md` — cópia navegável do guia de debug.
+- `docs/README.md` — índice legado; o conteúdo canônico está em `references/`.
+- `docs/DEBUG-LIVECONTAINER-STIKDEBUG.md` — ponteiro de compatibilidade para o guia em `references/`.
 - `scripts/apply-vfs-fix.sh` — install the VFS overlay that fixes os_workgroup.
 - `scripts/compile-stdlib.sh` — (re)build the iOS Swift stdlib from interfaces.
 - `assets/AppLogic.swift`, `assets/AppShell.m` — starting templates.

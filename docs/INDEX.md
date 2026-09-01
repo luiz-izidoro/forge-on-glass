@@ -7,14 +7,14 @@
 
 O diretório técnico principal é `/var/minis/skills/ios-swift-builder/`.
 
-- `docs/`: guias operacionais e índice navegável.
 - `references/`: especificações, diagnósticos, limitações e histórico técnico.
+- `docs/`: índices legados; o conteúdo técnico canônico fica em `references/`.
 - `assets/`: templates e suporte incluído nos builds.
 - `scripts/`: builders, validações e guardas automatizadas.
 
 Para o setup LiveContainer + StikDebug, comece por:
 
-- [`docs/DEBUG-LIVECONTAINER-STIKDEBUG.md`](DEBUG-LIVECONTAINER-STIKDEBUG.md)
+- [`../references/DEBUG-LIVECONTAINER-STIKDEBUG.md`](../references/DEBUG-LIVECONTAINER-STIKDEBUG.md)
 - [`../references/HANDOFF.md`](../references/HANDOFF.md) para o estado validado
 - [`docs/README.md`](README.md)
 

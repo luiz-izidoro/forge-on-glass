@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — 2026-09-01
+## 0.2.0 — 2026-09-01
 
 - Promoted a freshly generated neutral arm64 module cache with 38 Swift
   modules and 59 PCMs; validation reports zero personal-path references.
@@ -13,8 +13,14 @@
   now S3 for the tested host/device.
 - Removed the obsolete cleanup utility that had no measured targets.
 - Added `gc-workdirs.sh` with dry-run default and explicit `--apply`.
-- Completed P0 arm64 sysroot neutralization and documented the resulting
-  validation and rollback procedure.
+- Deduplicated the SDK tree by using `/opt/ios-toolchain/iPhoneOS26.5.sdk`
+  as a symlink to the neutral `/opt/isb/sysroot` copy; both architecture
+  profiles passed acceptance after the rollback window.
+- Added honest `--full` and `--pcm-only` modes to the arm64 module generator;
+  the current SDK has no arm64 Swift interfaces, so full regeneration fails
+  closed while PCM regeneration remains available.
+- Consolidated the debug documentation under `references/` and recorded that
+  this toolchain's `-Osize` benchmark is slower and larger than `-O`.
 
 ## Unreleased — 2026-08-31
 

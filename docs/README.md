@@ -7,7 +7,7 @@ continuam em [`../references/`](../references/).
 
 ## Fluxos principais
 
-- [Debug com LiveContainer + StikDebug](DEBUG-LIVECONTAINER-STIKDEBUG.md) — três camadas: trace visual, attach e sessão persistente
+- [Debug com LiveContainer + StikDebug](../references/DEBUG-LIVECONTAINER-STIKDEBUG.md) — três camadas: trace visual, attach e sessão persistente
 - [Porting de apps de terceiros](../references/PORTING-TERCEROS.md)
 - [Status do Swift/UIKit/SwiftUI puro](../references/PURE-SWIFT-UI-STATUS.md)
 - [Warnings fatais e tela preta](../references/WARNINGS-FATAIS.md)

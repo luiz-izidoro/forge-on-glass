@@ -147,7 +147,14 @@ validado”. Importar uma dependência como módulo separado degrada o bridging
 `-primary-file` e link final com `link-ipa.sh`. Só investigue o modo antigo se a
 reprodução do bug for o objetivo explícito e com `ISB_ALLOW_MULTIMODULE=1`.
 
-## 4. Ordem de validação: barata para cara
+### Otimização medida
+
+O padrão recomendado é `ISB_OPT=O`. No toolchain Swift 6.3.3 / SDK iOS 26.5,
+`-Osize` foi medido como pior que `-O` nos dois eixos: compilou em 42 s
+versus 26 s e gerou executável de 77.312 B versus 76.328 B. Essas são
+medições locais de build e tamanho, não desempenho de runtime (S2 estrutural;
+sem inferência de S4).
+
 
 Não gaste 10 minutos compilando um app grande para descobrir um erro de
 entry point. Siga esta sequência:
