@@ -11,5 +11,12 @@
 - Tested hiding both `swift/*/usr/lib/swift/embedded` directories: the arm64e
   acceptance suite still passed. They remain local removable candidates and are
   not required by the active native module cache.
-- arm64 remains the production LiveContainer profile; arm64e remains an
-  advanced, structurally validated profile pending runtime evidence.
+- Added a real zero-to-checkout recipe and staged `bootstrap.sh` with explicit
+  user-provided artifact hashes; Apple SDK and Linux module caches remain local.
+- Added opt-in incremental object caching with source/toolchain/module-content
+  invalidation; verified a two-file rebuild drops from 15s to 0s and produces
+  byte-identical executables.
+- Added `benchmark-build.sh` and public validation report with measured
+  `-Onone`/`-O`/`-Osize` build and artifact sizes.
+- Added `FoundationModelsRuntimeMain.swift`, which displays availability,
+  response, and latency; actual `respond(to:)` execution remains device-only.
