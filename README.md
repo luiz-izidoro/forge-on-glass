@@ -295,11 +295,13 @@ A skill agora possui dois perfis explícitos, sem misturar caches incompatíveis
 
 - **arm64 (validado em runtime no LiveContainer):** UIKit/SwiftUI/Foundation e
   bridges ObjC para NaturalLanguage/NLEmbedding.
-- **arm64e avançado:** aceito estruturalmente, com cache completo e LLD PAC
-  local; FoundationModels/NaturalLanguage/SwiftUI/UIKit linkam corretamente.
-- **LiveContainer:** use `scripts/build-livecontainer.sh`/guest arm64. O perfil
-  arm64e ainda requer host LiveContainer/ZSign compatível e não é declarado
-  funcional só pela validação do iSH.
+- **arm64e avançado:** cache completo e LLD PAC local; FoundationModels,
+  NaturalLanguage, SwiftUI/UIKit linkam corretamente. As IPAs arm64e novas
+  também foram abertas e executadas com sucesso no iPhone17,1 / iOS 26.6 via
+  LiveContainer (S3 no host testado).
+- **LiveContainer:** use `scripts/build-livecontainer.sh`/guest arm64; o perfil
+  arm64e foi validado no host acima, mas a compatibilidade não é garantida para
+  toda versão/host do LiveContainer.
 ```sh
 # embeddings do sistema, inclusive com o perfil arm64 já comprovado
 sh scripts/build-pure-ui.sh EmbedApp com.example.embed main.swift \
@@ -320,11 +322,12 @@ embarcados, use Core ML/Vision/Accelerate e passe `--extra-framework` conforme
 necessário. Receita do cache arm64e: `scripts/build-arm64e-modules.sh` e
 `references/NATIVE-INTELLIGENCE.md`.
 
-**Limite de runtime:** a aceitação arm64e é estrutural e local. O guest arm64e
-não está comprovado no LiveContainer: o host transforma/reassina o Mach-O, e o
-erro `arm64e.old` só pode ser diagnosticado após essa etapa no device. A rota
-LiveContainer comprovada continua sendo arm64. Não confundir `IPA válida` com
-`app hospedado pelo LiveContainer funcionando`.
+**Limite de runtime:** o perfil arm64e foi aberto e executado com sucesso no
+LiveContainer do host de teste iPhone17,1 / iOS 26.6. Isso fornece S3 para esse
+ambiente, mas não garante que todo host LiveContainer aceite todo binário PAC.
+A rota arm64 continua sendo a opção de compatibilidade mais conservadora. Não
+confundir `IPA válida` com `app hospedado pelo LiveContainer funcionando` em
+hosts ainda não testados.
 
 O alvo arm64e só aparece como READY depois que todos os módulos/PCMs foram
 reconstruídos para a mesma tripla e versão do compilador; isso evita o erro
