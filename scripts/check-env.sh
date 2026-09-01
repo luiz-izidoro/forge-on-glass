@@ -14,10 +14,6 @@ BK=/var/minis/shared/darwin-sdk/swift-modules-full
 
 ISB_SYSROOT="${ISB_SYSROOT:-/opt/isb/sysroot}"
 ISB_MODULE_CACHE="${ISB_MODULE_CACHE:-/var/tmp/isb-cache}"
-if [ ! -e "$ISB_SYSROOT/iPhoneOS26.5.sdk" ]; then
-  legacy=$(find /home -maxdepth 2 -type d -name swift-ios-build 2>/dev/null | head -1 || true)
-  [ -n "$legacy" ] && ISB_SYSROOT="$legacy"
-fi
 
 echo "=== iOS Swift Builder — environment check ==="
 
@@ -66,8 +62,8 @@ echo "==="
 # ---------------------------------------------------------------------------
 # 6. PERFIL "SWIFT PURO" (UIKit/SwiftUI) — o caminho PRINCIPAL da skill.
 #    Depende de coisas que a checagem acima NAO cobre: outra toolchain (6.3.3),
-#    outro conjunto de modulos (foundation-build633) e os paths ESPELHADOS da
-#    VM ($ISB_SYSROOT/...), porque os .pcm gravam paths absolutos.
+#    outro conjunto de modulos (foundation-build633) e o sysroot neutro
+#    espelhado em ISB_SYSROOT, porque os .pcm gravam caminhos absolutos.
 # ---------------------------------------------------------------------------
 pure=1
 echo "--- perfil Swift puro (build-pure-ui.sh / build-parallel.py) ---"
@@ -126,9 +122,9 @@ avail_gb=$((avail_kb / 1024 / 1024))
 if [ "$avail_gb" -ge 4 ]; then
   note "OK " "disco livre: ${avail_gb} GB"
 elif [ "$avail_gb" -ge 2 ]; then
-  note "?? " "disco livre: ${avail_gb} GB (baixo — veja scripts/cleanup-toolchain.sh)"
+  note "?? " "disco livre: ${avail_gb} GB (baixo — veja scripts/gc-workdirs.sh)"
 else
-  note "XX " "disco livre: ${avail_gb} GB (insuficiente p/ build) → scripts/cleanup-toolchain.sh"; pure=0
+  note "XX " "disco livre: ${avail_gb} GB (insuficiente p/ build) → scripts/gc-workdirs.sh"; pure=0
 fi
 
 # 8. Native intelligence profiles (auditable, optional).

@@ -14,10 +14,12 @@ usage(){ echo "uso: $0 --check | --step N | --all"; exit 2; }
 [ "$#" -gt 0 ] || usage
 while [ "$#" -gt 0 ]; do case "$1" in --check) CHECK=1;; --step) shift; STEP=${1:?falta N};; --all) STEP=99;; *) usage;; esac; shift; done
 have(){ [ -e "$1" ]; }
+CACHE_BAD=0
 cache_status(){
   label=$1; cache=$2
   if [ ! -d "$cache" ]; then
     printf '%s: MISSING\n' "$label"
+    CACHE_BAD=1
     return 0
   fi
   report=''
@@ -25,8 +27,10 @@ cache_status(){
     printf '%s: OK\n' "$label"
   elif printf '%s\\n' "$report" | grep -q 'personal_refs='; then
     printf '%s: NOT-NEUTRAL\n' "$label"
+    CACHE_BAD=1
   else
     printf '%s: FAIL\n' "$label"
+    CACHE_BAD=1
   fi
 }
 check(){
@@ -40,8 +44,11 @@ check(){
   printf 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || echo MISSING
   printf 'glibc loader: '; [ -e "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}/ld-linux-aarch64.so.1" ] && echo OK || echo MISSING
   echo "Missing caches are expected until steps 1-5 are completed."
+  [ "$CACHE_BAD" -eq 0 ] || return 1
 }
-if [ "$CHECK" -eq 1 ]; then check; exit 0; fi
+if [ "$CHECK" -eq 1 ]; then
+  if check; then exit 0; else exit 1; fi
+fi
 if [ "$STEP" -ge 1 ] && [ "$STEP" -le 99 ]; then
   echo "[1] Installing Alpine host tools"
   apk add clang19 lld zip xz zstd binutils patchelf git python3 wget patch

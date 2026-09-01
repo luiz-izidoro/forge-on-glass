@@ -468,7 +468,7 @@ python3 fix_loop.py <Modulo> 40    # grava /tmp/fixlog_<Mod>.json
 | `apply-patchset.sh` | aplica os patches num SDK limpo (idempotente) |
 | `test_import_ish.py` | testa imports no iSH |
 | `sync-sdk-mtimes.py` | resolve mtime dos pcm (VM→iSH) |
-| `cleanup-toolchain.sh` | limpeza conservadora; dry-run por padrão, sem promessa fixa de espaço |
+| `gc-workdirs.sh` | limpeza conservadora; dry-run por padrão, sem promessa fixa de espaço |
 | `validate-ipa.sh` | inspeciona um IPA |
 
 ### Templates (skill `assets/`)

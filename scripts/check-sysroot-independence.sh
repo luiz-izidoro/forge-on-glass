@@ -5,6 +5,20 @@ set -eu
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 BACKUP=${ISB_HOME_SHADOW:-/tmp/isb-home-shadow-$$}
 
+# If the legacy mirror was already removed, a normal fresh build is the
+# positive proof. When it exists, the destructive move-and-restore test below
+# remains available and is used during migration.
+if ! find /home -maxdepth 2 -type d -name swift-ios-build 2>/dev/null | grep -q .; then
+  OUTPUT="${ISB_OUTPUT:-/tmp/isb-sysroot-independent-$$.ipa}"
+  cd "$SKILL"
+  ISB_OUTPUT="$OUTPUT" sh scripts/build-livecontainer.sh \
+    P0SysrootIndependent com.example.p0.independent \
+    assets/PureSwiftDemo.swift
+  [ -s "$OUTPUT" ] || { echo "build produced no IPA" >&2; exit 1; }
+  echo "sysroot independence: PASS (no legacy mirror present)"
+  exit 0
+fi
+
 restore(){
   failed=0
   for dest in "$BACKUP"/*/swift-ios-build; do

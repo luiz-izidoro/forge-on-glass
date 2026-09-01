@@ -1,8 +1,11 @@
 # HANDOFF — retomada dos itens externos e pendências finais
 
 **Projeto:** `forge-on-glass` / `ios-swift-builder`  
-**Data do estado:** 2026-09-01 — retomada local + runtime confirmado
-**Último commit público local:** `6229902` — `Record confirmed device runtime evidence`
+**Data do estado:** 2026-09-01 — P0 concluído localmente; runtime do cache novo pendente
+**Último commit público local:** `dae4ad0` — `Document arm64 cache generation blocker`
+**Commits P0 de implementação:** `2b4f2fe`, `8821c46`; promoção e documentação
+pós-promoção aguardam o próximo commit
+**Árvore esperada:** limpa após o commit de conclusão
 **Árvore esperada:** limpa  
 **Objetivo deste handoff:** permitir que uma nova conversa continue sem repetir auditorias, sem perder evidência e sem publicar artefatos licenciados.
 
@@ -156,7 +159,19 @@ segundo build: 0s, “incremental: reutilizando 2 objeto(s)”
 executáveis descompactados: idênticos byte a byte
 ```
 
-### Perfil arm64
+### Perfil arm64 — cache neutro promovido
+
+- O cache ativo agora é `/opt/ios-toolchain/foundation-build633`.
+- Verificação: `97` artefatos não vazios, `personal_refs=0`, `neutral_refs=59`.
+- A cobertura é 38 módulos Swift e 59 PCMs.
+- A aceitação arm64 pós-promoção passou como **S2** e inclui o teste protegido
+  de independência do sysroot, que passou sem o espelho legado.
+- O cache anterior foi preservado temporariamente em
+  `/opt/ios-toolchain/foundation-build633-legacy-20260901-150724` para rollback.
+- O novo cache ainda não deve ser declarado S3: requer nova abertura pelo
+  usuário no LiveContainer.
+
+### Perfil arm64 (estado anterior ao P0)
 
 - Caminho de produção: `build-livecontainer.sh`, guest arm64 unsigned.
 - IPA nova passa Mach-O/SDK/slice/LC_MAIN/chained fixups/entry/delegate.
@@ -267,36 +282,23 @@ python3 references/linux-vm/orchestrator_vm633.py
 
 ---
 
-## 6. Próximos passos obrigatórios
-
-### P0 — confirmar e preservar estado
-
-```sh
-cd /var/minis/skills/ios-swift-builder
-git status --short
-git log --oneline -12
-sh scripts/verify-docs.sh
-python3 scripts/check-repo-clean.py
-```
-
-Se a árvore estiver suja, não apagar alterações sem inspecionar o diff.
+## 6. Próximos passos externos
 
 ### P1 — push público
 
-Pendente somente porque não existe URL/remoto configurado:
+Pendente somente porque não existe URL/remoto configurado. Antes do push,
+rode as guards públicas e confirme a URL fornecida pelo usuário.
 
-```sh
-git remote add origin <URL_DO_REPOSITORIO_PUBLICO>
-git push -u origin master
-```
+### P2 — runtime S3 do cache promovido
 
-Antes do push:
+O cache arm64 neutro tem evidência local S2. Para declarar S3, o usuário deve
+abrir uma IPA arm64 nova no LiveContainer. A confirmação anterior do cache
+legado não é herdada automaticamente.
 
-```sh
-git log --all -S '65.109' --oneline
-git grep -nE '65\.109|/home/[A-Za-z]|BEGIN .*PRIVATE KEY' || true
-python3 scripts/check-repo-clean.py
-```
+### P3 — métricas opcionais
+
+Latências numéricas de benchmark e FoundationModels podem ser registradas se
+forem necessárias; não foram inventadas.
 
 ### P2 — runtime FoundationModels S4
 
@@ -329,11 +331,14 @@ para todos os hosts LiveContainer.
 
 ### P5 — cache arm64 neutro
 
-Permanecem somente itens opcionais/externalizados:
+✅ Concluído localmente: cache arm64 neutro gerado sem referências pessoais,
+validado, comparado ao baseline, promovido atomicamente e aprovado pela
+aceitação arm64 com teste de independência do sysroot.
+
+Permanecem somente:
 
 - configurar remote e executar push público quando o usuário fornecer a URL;
-- obter, se desejado, um SDK/interface graph genuinamente arm64 para gerar um
-  cache arm64 neutro separado. O cache arm64 legado permanece intacto e válido;
+- solicitar nova confirmação S3 no device para o cache promovido;
 - opcionalmente registrar os valores numéricos de latência do benchmark e da
   geração FoundationModels, caso sejam necessários para comparação quantitativa.
 
@@ -411,22 +416,19 @@ Relatórios versionados:
 ---
 
 O plano técnico está encerrado no ambiente testado. Permanecem somente itens
-externos de distribuição/reprodução:
+externos de distribuição e runtime:
 
 - configurar remote e executar push público quando o usuário fornecer a URL;
-- obter, se desejado, um SDK/interface graph genuinamente arm64 para gerar um
-  cache arm64 neutro separado. O cache arm64 legado permanece intacto e válido;
-- opcionalmente registrar os valores numéricos de latência do benchmark e da
-  geração FoundationModels, caso sejam necessários para uma comparação
-  quantitativa.
+- confirmar S3 do cache arm64 promovido abrindo uma IPA nova no LiveContainer;
+- opcionalmente registrar valores numéricos de latência.
 
 Estado consolidado:
 
 ```text
-arm64 + LiveContainer: produção, S3 no iPhone17,1/iOS 26.6
-arm64e + cache neutro/PAC: S3 no iPhone17,1/iOS 26.6; S2 estrutural reproduzível
+arm64 + LiveContainer: S2 local com cache neutro promovido; S3 pendente de nova abertura
+arm64e + cache neutro/PAC: S3 confirmado no iPhone17,1/iOS 26.6
 FoundationModels respond(to:): S4 no cenário confirmado pelo usuário
 benchmark none vs O: S4 de execução; números exatos não registrados
-cache arm64 neutro: bloqueado corretamente, sem grafo arm64 compatível
+cache arm64 neutro: promovido, 97 artefatos, personal_refs=0
 GitHub: pronto localmente, sem remote/push por solicitação
 ```
