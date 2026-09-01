@@ -2,10 +2,9 @@
 
 **Projeto:** `forge-on-glass` / `ios-swift-builder`  
 **Data do estado:** 2026-09-01 — P0 concluído localmente; runtime do cache novo pendente
-**Último commit público local:** `dae4ad0` — `Document arm64 cache generation blocker`
-**Commits P0 de implementação:** `2b4f2fe`, `8821c46`; promoção e documentação
-pós-promoção aguardam o próximo commit
-**Árvore esperada:** limpa após o commit de conclusão
+**Último commit público local:** `2b1233a` — `Make the arm64 production profile sysroot-independent`
+**Commit de limpeza:** pendente nesta atualização
+**Árvore esperada:** limpa após os commits finais
 **Árvore esperada:** limpa  
 **Objetivo deste handoff:** permitir que uma nova conversa continue sem repetir auditorias, sem perder evidência e sem publicar artefatos licenciados.
 
@@ -166,10 +165,10 @@ executáveis descompactados: idênticos byte a byte
 - A cobertura é 38 módulos Swift e 59 PCMs.
 - A aceitação arm64 pós-promoção passou como **S2** e inclui o teste protegido
   de independência do sysroot, que passou sem o espelho legado.
-- O cache anterior foi preservado temporariamente em
-  `/opt/ios-toolchain/foundation-build633-legacy-20260901-150724` para rollback.
-- O novo cache ainda não deve ser declarado S3: requer nova abertura pelo
-  usuário no LiveContainer.
+- O cache anterior foi preservado temporariamente durante a promoção e removido
+  somente após todas as verificações finais passarem.
+- O novo cache não deve ser declarado S3: requer nova abertura pelo usuário no
+  LiveContainer.
 
 ### Perfil arm64 (estado anterior ao P0)
 
@@ -430,5 +429,6 @@ arm64e + cache neutro/PAC: S3 confirmado no iPhone17,1/iOS 26.6
 FoundationModels respond(to:): S4 no cenário confirmado pelo usuário
 benchmark none vs O: S4 de execução; números exatos não registrados
 cache arm64 neutro: promovido, 97 artefatos, personal_refs=0
+rollback e espelho legado: removidos após validação final
 GitHub: pronto localmente, sem remote/push por solicitação
 ```

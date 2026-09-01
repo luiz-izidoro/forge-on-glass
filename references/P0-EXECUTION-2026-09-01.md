@@ -7,17 +7,18 @@
 > módulos Swift arm64 já validados e reconstruir os PCMs contra o sysroot
 > neutro. O candidato passou `files=97 nonempty=97 neutral_refs=59
 > personal_refs=0`, a regressão e todas as aceitações. Foi promovido
-> atomicamente; o estado pós-promoção é S2 local. O cache antigo permanece
-> temporariamente disponível para rollback, e S3 ainda requer nova abertura
-> pelo usuário no LiveContainer.
+> atomicamente; o estado pós-promoção é S2 local. O rollback e o espelho legado
+> foram removidos após a validação final; S3 ainda requer nova abertura pelo
+> usuário no LiveContainer.
 
 **Data:** 2026-09-01  · **Base:** `c3fb2a3`  · **Execução:** `2b4f2fe` + `8821c46`
 
 ## Resultado
 
-A Etapa 1 foi concluída. A Etapa 2 foi iniciada em um diretório novo, mas foi
-interrompida conforme o plano depois de duas janelas de execução de uma hora.
-O cache arm64 ativo nunca foi alterado ou promovido.
+A Etapa 1 foi concluída. A tentativa inicial da Etapa 2 foi interrompida com
+segurança, e a continuação posterior gerou e promoveu o cache neutro. O cache
+arm64 ativo foi trocado somente após a equivalência, regressão e aceitação
+passarem.
 
 ## Etapa 1 — concluída
 
@@ -30,57 +31,46 @@ O cache arm64 ativo nunca foi alterado ou promovido.
   referencia o espelho pessoal ausente quando o diretório em `/home` é movido.
 - A restauração e a limpeza do backup foram verificadas como `PASS`.
 
-## Etapa 2 — bloqueio reproduzido
+## Etapa 2 — bloqueio inicial e resolução
 
-O gerador `scripts/build-arm64-modules.sh` foi executado com:
+A primeira execução do gerador encontrou 91 módulos, criou temporariamente 70
+artefatos sem referências pessoais, mas não concluiu os módulos Swift de UI.
+O erro determinístico foi a incompatibilidade entre interfaces Apple 6.3.2
+`arm64e` e o frontend Swift 6.3.3 quando se tentou forçar target arm64.
 
-```text
-ISB_TARGET=arm64-apple-ios26.0
-ISB_VM_ROOT=/opt/isb/sysroot
-ISB_VM_SW=/opt/swift6.3.3
-ISB_VM_SDK=/opt/isb/sysroot/iPhoneOS26.5.sdk
-ISB_VM_VFS=/opt/isb/sysroot/vfs/overlay.yaml
-ISB_VM_OUT=/opt/ios-toolchain/foundation-build633-neutral
-```
-
-A varredura encontrou 91 módulos. A geração criou temporariamente 70 artefatos
-não vazios, sem referências pessoais, mas não concluiu os módulos Swift de UI.
-O erro determinístico emitido pelo Swift foi:
+O SDK público baixado depois foi comparado ao SDK local e era idêntico, também
+sem interfaces `arm64` genuínas. A resolução foi preservar os 38 módulos Swift
+arm64 já validados e reconstruir os PCMs clang contra o sysroot neutro. O
+candidato final passou:
 
 ```text
-failed to build module 'CoreGraphics'; this SDK is not supported by the compiler
-(the SDK is built with Apple Swift version 6.3.2 ... while this compiler is
-Swift version 6.3.3 ...)
+files=97 nonempty=97 neutral_refs=59 personal_refs=0
 ```
 
-As interfaces Swift disponíveis no SDK local são `arm64e-apple-ios.swiftinterface`;
-não há interfaces `arm64-apple-ios` genuínas disponíveis nos caminhos locais
-consultados. O teste adicional com o frontend Swift 6.3.2 também não concluiu
-em dez minutos e não foi usado como base para promoção.
+## Limpeza e estado final
 
-## Limpeza e preservação
-
-- O candidato parcial `/opt/ios-toolchain/foundation-build633-neutral` foi
-  removido somente depois de confirmar que não havia workers Swift ativos.
-- O cache ativo `/opt/ios-toolchain/foundation-build633` foi preservado.
-- O cache ativo arm64e `/opt/ios-toolchain/foundation-build633-arm64e` foi
-  preservado.
-- O espelho de SDK do usuário foi preservado e verificado.
-- Nenhuma etapa de equivalência, promoção ou remoção do legado foi executada.
-- Espaço livre após a limpeza: aproximadamente 3,2 GB.
+- O candidato parcial inicial foi removido somente depois de confirmar que não
+  havia workers Swift ativos.
+- O cache arm64 neutro foi promovido atomicamente para o caminho ativo.
+- O cache arm64e permaneceu intacto.
+- O rollback timestampado e o espelho legado foram removidos somente depois
+  de todas as verificações finais passarem.
+- `gc-workdirs.sh` removeu 60 workdirs temporários recentes usando `--apply
+  --older-than 0`, após dry-run e confirmação de ausência de workers.
+- Espaço livre final: aproximadamente 3,8 GB.
 
 ## Níveis de evidência
 
 - Guardas e script do gerador: **S1** — scripts compilam/verificam sintaxe.
-- Cache arm64 neutro: **não alcançou S1 completo**; geração bloqueada.
-- Cache arm64 legado: permanece no estado anterior, com S3 de runtime já
-  registrado separadamente; não foi reclassificado.
-- Nenhuma afirmação nova de S2/S3 foi feita para o cache candidato.
+- Cache arm64 neutro candidato: **S2** — IPA estruturalmente validada e
+  independência de caminho confirmada localmente.
+- Cache arm64 promovido: **S2** — aceitação completa pós-promoção passou.
+- Cache arm64e: **S2** local nesta execução; o runtime S3 confirmado
+  anteriormente permanece referente às IPAs arm64e testadas pelo usuário.
+- Nova confirmação S3 do cache arm64 promovido ainda requer abertura de IPA
+  nova pelo usuário no LiveContainer.
 
-## Próximo desbloqueio
+## Próximo passo externo
 
-Obter um SDK/interface graph genuinamente arm64 compatível com o frontend usado,
-ou uma receita comprovada para gerar o cache arm64 com a mesma identidade de
-compiler/interface. Depois disso, reexecutar a Etapa 2 em diretório novo e só
-prosseguir para equivalência após `personal_refs=0`, cobertura completa e todas
-as guardas passarem.
+Confirmar S3 do cache arm64 promovido abrindo uma IPA nova no LiveContainer.
+O push público continua pendente até o usuário fornecer a URL do repositório.
