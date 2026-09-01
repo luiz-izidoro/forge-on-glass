@@ -10,13 +10,15 @@
 #  F) missing framework clang modules built implicitly into OUT (no cache copy)
 import json, os, subprocess, time, glob
 
-SW = os.environ.get("ISB_VM_SW", os.path.expanduser("~/swift-ios-build/swift-6.3.3"))
+VM_ROOT = os.environ.get("ISB_VM_ROOT", os.path.expanduser("~/swift-ios-build"))
+
+SW = os.environ.get("ISB_VM_SW", os.path.join(VM_ROOT, "swift-6.3.3"))
 SF = f"{SW}/usr/bin/swift-frontend"
-SDK = os.environ.get("ISB_VM_SDK", os.path.expanduser("~/swift-ios-build/iPhoneOS26.5.sdk"))
-OUT = os.environ.get("ISB_VM_OUT", os.path.expanduser("~/swift-ios-build/foundation-build633"))
+SDK = os.environ.get("ISB_VM_SDK", os.path.join(VM_ROOT, "iPhoneOS26.5.sdk"))
+OUT = os.environ.get("ISB_VM_OUT", os.path.join(VM_ROOT, "foundation-build633"))
 TARGET = os.environ.get("ISB_TARGET", "arm64-apple-ios26.0")
-VFS = os.environ.get("ISB_VM_VFS", os.path.expanduser("~/swift-ios-build/vfs/overlay.yaml"))
-IMPC = "/tmp/impmc"
+VFS = os.environ.get("ISB_VM_VFS", os.path.join(VM_ROOT, "vfs/overlay.yaml"))
+IMPC = os.environ.get("ISB_VM_MODULE_CACHE", os.path.join(VM_ROOT, "module-cache"))
 os.makedirs(OUT, exist_ok=True)
 ENV = dict(os.environ, HOME=os.path.expanduser("~"), TERM="dumb")
 LINUX_CF_MM = f"{SW}/usr/lib/swift/CoreFoundation/module.modulemap"
@@ -114,7 +116,11 @@ def fix(cmd, mm_swap=None, module_name=None, drop_implicit=False):
             out += ["-direct-clang-cc1-module-build", mm_swap]
             i += 2
             continue
-        a = a.replace("aarch64-apple-ios26.5", TARGET).replace("arm64-apple-ios26.5", TARGET).replace("arm64-apple-ios26.0", TARGET)
+        a = (a.replace("aarch64-apple-ios26.5", TARGET)
+               .replace("arm64e-apple-ios26.5", TARGET)
+               .replace("arm64e-apple-ios26.5.0", TARGET)
+               .replace("arm64-apple-ios26.5", TARGET)
+               .replace("arm64-apple-ios26.0", TARGET))
         if a.startswith("-swift-module-file=") and "=" in a:
             pre, val = a.split("=", 1)
             if "=" in val:
@@ -320,7 +326,7 @@ base_cmd = (index.get(('clang', 'CoreGraphics'), {}).get('details', {}).get('cla
              or index.get(('clang', 'Darwin'), {}).get('details', {}).get('clang', {}).get('commandLine'))
 
 def build_ptrauth():
-    mm = os.path.expanduser("~/swift-ios-build/swift-6.3.3/usr/lib/swift/clang/include/module.modulemap")
+    mm = os.path.join(VM_ROOT, "swift-6.3.3/usr/lib/swift/clang/include/module.modulemap")
     args = fix(base_cmd, mm_swap=mm, module_name="ptrauth", drop_implicit=True)
     args += common_extra()
     cleaned = []
@@ -350,7 +356,7 @@ def clean_cdispatch_maps(args):
     return out
 
 def build_cdispatch():
-    mm = os.path.expanduser("~/swift-ios-build/swift-6.3.3/usr/lib/swift/dispatch.linux.bak/module.modulemap")
+    mm = os.path.join(VM_ROOT, "swift-6.3.3/usr/lib/swift/dispatch.linux.bak/module.modulemap")
     args = fix(base_cmd, mm_swap=mm, module_name="CDispatch", drop_implicit=True)
     args = clean_cdispatch_maps(args)
     args += common_extra()
@@ -368,14 +374,14 @@ for name in sorted(wanted):
     if have('clang', name):
         continue
     if name == 'CDispatch':
-        mm = os.path.expanduser("~/swift-ios-build/swift-6.3.3/usr/lib/swift/dispatch.linux.bak/module.modulemap")
+        mm = os.path.join(VM_ROOT, "swift-6.3.3/usr/lib/swift/dispatch.linux.bak/module.modulemap")
         args = clean_cdispatch_maps(fix(base_cmd, mm_swap=mm, module_name=name, drop_implicit=True))
         args += common_extra()
         if not run_build('clang', name, args, 600):
             fw_fails.append(name)
         continue
     if name == 'ptrauth':
-        mm = os.path.expanduser("~/swift-ios-build/swift-6.3.3/usr/lib/swift/clang/include/module.modulemap")
+        mm = os.path.join(VM_ROOT, "swift-6.3.3/usr/lib/swift/clang/include/module.modulemap")
         args = fix(base_cmd, mm_swap=mm, module_name=name, drop_implicit=True)
         args += common_extra()
         # the toolchain's clang/include/module.modulemap ALSO defines ptrauth -> drop the whole -Xcc pair
@@ -460,13 +466,13 @@ def full_rebuild():
         if have('clang', name):
             continue
         if name == 'CDispatch':
-            mm = os.path.expanduser("~/swift-ios-build/swift-6.3.3/usr/lib/swift/dispatch.linux.bak/module.modulemap")
+            mm = os.path.join(VM_ROOT, "swift-6.3.3/usr/lib/swift/dispatch.linux.bak/module.modulemap")
             args = clean_cdispatch_maps(fix(base_cmd, mm_swap=mm, module_name=name, drop_implicit=True))
             args += common_extra()
             run_build('clang', name, args, 600)
             continue
         if name == 'ptrauth':
-            mm = os.path.expanduser("~/swift-ios-build/swift-6.3.3/usr/lib/swift/clang/include/module.modulemap")
+            mm = os.path.join(VM_ROOT, "swift-6.3.3/usr/lib/swift/clang/include/module.modulemap")
             args = fix(base_cmd, mm_swap=mm, module_name=name, drop_implicit=True)
             args += common_extra()
             cleaned = []

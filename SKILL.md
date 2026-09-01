@@ -562,9 +562,15 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
+- `scripts/scan-dependencies.sh` — gera grafo por target no Linux real.
+- `scripts/check-module-cache.py` — valida PCMs/Swiftmodules transferidos.
+- `scripts/benchmark-device-build.sh` — gera variantes none/O para medir no device.
 - `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
+- `scripts/scan-dependencies.sh` — gera grafo por target no Linux real.
+- `scripts/check-module-cache.py` — valida PCMs/Swiftmodules transferidos.
+- `scripts/benchmark-device-build.sh` — gera variantes none/O para medir no device.
 - `assets/PureSwiftDemo.swift`, `assets/SwiftUIDemo.swift` — templates puros.
 - `references/HANDOFF.md` — **ponto de retomada (leia primeiro)**.
 - `references/PURE-SWIFT-UI-STATUS.md` — ressalvas e degradações medidas.

@@ -122,7 +122,8 @@ sh scripts/acceptance-suite.sh
 See [`REPRODUCE-FROM-ZERO.md`](REPRODUCE-FROM-ZERO.md) for the complete public
 recipe, including `bootstrap.sh`, explicit artifact SHA-256 checks, the Linux
 module-cache step, incremental builds, AI diagnostics, and the S0–S4 evidence
-contract.
+contract. For the target-specific Linux graph and Docker mounts, see
+[`references/LINUX-MODULE-CACHE.md`](references/LINUX-MODULE-CACHE.md).
 
 
 Follow [`references/BOOTSTRAP.md`](references/BOOTSTRAP.md) top to bottom:
@@ -162,6 +163,9 @@ scripts/
   check-env.sh               verify toolchain, restore modules from backup
   bootstrap.sh               staged zero-to-checkout bootstrap with hashes
   benchmark-build.sh         local none/O/Osize build and size benchmark
+  benchmark-device-build.sh   generate none/O IPAs for device timing
+  scan-dependencies.sh       generate a target-specific Linux graph
+  check-module-cache.py      validate transferred module caches
   verify-docs.sh              static documentation and repository assertions
   build-ipa.sh               end-to-end build (hybrid or --pure)
   build-pure-foundation.sh   compile+link a pure-Swift Foundation/Dispatch app
