@@ -10,11 +10,17 @@ final class FoundationModelsRuntimeViewController: UIViewController {
         view.backgroundColor = UIColor.systemIndigo
         label.textColor = UIColor.white
         label.numberOfLines = 0
-        label.frame = CGRect(x: 20, y: 70, width: 360, height: 360)
+        var labelFrame = CGRect()
+        labelFrame.origin.x = 20; labelFrame.origin.y = 70
+        labelFrame.size.width = 360; labelFrame.size.height = 360
+        label.frame = labelFrame
         label.text = "Toque para testar respond(to:)"
         view.addSubview(label)
         let button = UIButton(type: .system)
-        button.frame = CGRect(x: 20, y: 450, width: 300, height: 55)
+        var buttonFrame = CGRect()
+        buttonFrame.origin.x = 20; buttonFrame.origin.y = 450
+        buttonFrame.size.width = 300; buttonFrame.size.height = 55
+        button.frame = buttonFrame
         button.setTitle("Gerar resposta", for: .normal)
         button.addTarget(self, action: #selector(generate), for: .touchUpInside)
         view.addSubview(button)
