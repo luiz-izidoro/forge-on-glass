@@ -1,5 +1,16 @@
 # P0 — relatório de execução e bloqueio arm64
 
+> **Follow-up concluído (2026-09-01):** a tentativa inicial abaixo foi
+> bloqueada ao tentar regenerar módulos Swift arm64 a partir de interfaces
+> `arm64e`. O SDK obtido posteriormente da fonte pública documentada foi
+> comparado ao local e era idêntico; a solução segura foi reutilizar os 38
+> módulos Swift arm64 já validados e reconstruir os PCMs contra o sysroot
+> neutro. O candidato passou `files=97 nonempty=97 neutral_refs=59
+> personal_refs=0`, a regressão e todas as aceitações. Foi promovido
+> atomicamente; o estado pós-promoção é S2 local. O cache antigo permanece
+> temporariamente disponível para rollback, e S3 ainda requer nova abertura
+> pelo usuário no LiveContainer.
+
 **Data:** 2026-09-01  · **Base:** `c3fb2a3`  · **Execução:** `2b4f2fe` + `8821c46`
 
 ## Resultado

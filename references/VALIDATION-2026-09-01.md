@@ -3,6 +3,32 @@
 This report records commands executed against the public repository tree.
 Generated SDK/toolchain artifacts are not stored here.
 
+## P0 — neutralização arm64 concluída localmente (2026-09-01)
+
+A execução do P0 gerou e promoveu atomicamente um cache arm64 neutro. O SDK
+baixado da fonte pública documentada foi verificado como idêntico ao SDK local;
+as interfaces Swift disponíveis continuam `arm64e`, portanto os módulos Swift
+arm64 já validados do cache ativo anterior foram preservados e os PCMs foram
+reconstruídos contra o sysroot neutro.
+
+Resultados do cache ativo `/opt/ios-toolchain/foundation-build633`:
+
+```text
+files=97 nonempty=97 neutral_refs=59 personal_refs=0
+38 swiftmodules + 59 PCMs
+```
+
+Baseline e candidato passaram `validate-ipa.sh`, `check-livecontainer.py`,
+`check-slice.py`, `check-entry.py` e `check-undefined.py`, com executáveis de
+76.488 e 76.792 bytes (diferença de 0,40%). A regressão rápida, a aceitação
+arm64 e a aceitação arm64e passaram após a promoção. A aceitação arm64 inclui
+`check-sysroot-independence.sh`, que moveu temporariamente o espelho legado,
+construiu uma IPA e confirmou a restauração por trap.
+
+O cache anterior foi preservado temporariamente em um diretório com timestamp
+para rollback. O novo cache tem evidência local **S2**; a confirmação **S3**
+exige que o usuário abra uma IPA nova no LiveContainer.
+
 ## Retomada local — 2026-09-01
 
 The public tree was rechecked from commit `6229902`; it remained clean. The

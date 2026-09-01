@@ -44,6 +44,11 @@ if python3 scripts/check-slice.py "$BIN" arm64e >/dev/null 2>&1; then
 fi
 pass "fresh local arm64 IPA and exact slice guards"
 
+# Prove the production path does not depend on the old /home mirror.
+ISB_SYSROOT="${ISB_SYSROOT:-/opt/isb/sysroot}" \
+  sh "$SKILL/scripts/check-sysroot-independence.sh" || fail "sysroot independence"
+pass "sysroot-independent arm64 build"
+
 # The quick suite retains the minimal reproducer for the cross-file bug.
 sh scripts/regression-suite.sh --quick || fail "quick regression suite"
 pass "primary-file regression and known whole-module reproducer"

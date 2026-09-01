@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased — 2026-09-01
+
+- Promoted a freshly generated neutral arm64 module cache with 38 Swift
+  modules and 59 PCMs; validation reports zero personal-path references.
+- The arm64 pure Swift profile now requires the neutral sysroot and no longer
+  falls back to an author-specific `/home` mirror.
+- Added a trap-protected sysroot-independence build to the arm64 acceptance
+  suite; the fresh IPA passes without the legacy mirror.
+- Preserved the previous arm64 cache as a timestamped rollback copy during the
+  atomic promotion. Device runtime confirmation for the newly promoted cache
+  remains a separate S3 gate.
+
+## Unreleased — 2026-09-01
+
+- Completed P0 arm64 sysroot neutralization: generated and atomically promoted
+  a 38-module/59-PCM cache with zero personal-path references.
+- Removed author-specific `/home` sysroot fallbacks from the pure Swift profile
+  and environment checker.
+- Added protected sysroot-independence coverage to the arm64 acceptance suite.
+- Added `gc-workdirs.sh` with dry-run default and explicit `--apply`; removed
+  the obsolete cleanup utility that had no measured targets.
+
 ## Unreleased — 2026-08-31
 
 - Completed hygiene and entry-guard hardening.

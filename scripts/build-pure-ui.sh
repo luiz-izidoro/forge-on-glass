@@ -81,15 +81,13 @@ if [ "$DEBUG" -eq 1 ]; then
   echo "    (debug StikDebug: runtime + get-task-allow + overlay DBG)"
 fi
 
-# Use the neutral prefix for newly generated PCMs. Existing caches may override it
-# with ISB_SYSROOT for compatibility during migration.
-# Os .pcm gravam os paths absolutos dos headers de entrada; usar /opt/... faz o
-# Clang reclamar "file has been modified since the module file".
+# The neutral sysroot is mandatory after promotion. The active module cache and
+# its PCMs are generated against this stable prefix; no /home fallback exists.
 ROOT="${ISB_SYSROOT:-/opt/isb/sysroot}"
-if [ ! -e "$ROOT/iPhoneOS26.5.sdk" ]; then
-  legacy=$(find /home -maxdepth 2 -type d -name swift-ios-build 2>/dev/null | head -1 || true)
-  [ -n "$legacy" ] && ROOT="$legacy"
-fi
+[ -e "$ROOT/iPhoneOS26.5.sdk" ] || {
+  echo "sysroot neutro ausente: $ROOT" >&2
+  exit 2
+}
 SW="$ISB_SW"
 SF="$SW/usr/bin/swift-frontend"
 SDK="$ISB_SDK"
