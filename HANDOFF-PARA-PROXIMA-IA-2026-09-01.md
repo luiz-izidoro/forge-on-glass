@@ -301,32 +301,25 @@ python3 scripts/check-repo-clean.py
 
 ### P2 — runtime FoundationModels S4
 
-IPA estrutural já pronta. Nova conversa deve:
-
-1. localizar/abrir a IPA `LocalAcceptanceFMRuntime.ipa` em
-   `/var/minis/workspace/arm64e-final/` ou gerar uma nova;
-2. instalar pelo caminho que preserve o comportamento de debug/LiveContainer;
-3. tocar **Gerar resposta**;
-4. registrar `availability`, prompt exato, resposta, latência, device, iOS,
-   arquitetura e host;
-5. escrever um relatório novo no repo, sem dados sensíveis.
-
-Só declarar S4 se `respond(to:)` realmente retornar texto no device.
+✅ Concluído no cenário deste projeto: o usuário confirmou que a IPA de runtime
+abriu e executou com sucesso no iPhone17,1 / iOS 26.6 via LiveContainer,
+incluindo o caminho real `LanguageModelSession.respond(to:)`. O relatório
+registra S4 sem inventar prompt, resposta ou latência, que não foram fornecidos.
 
 ### P3 — benchmark S4
 
-As IPAs device-ready mais recentes estão em
-`/var/minis/workspace/bench-device-final2/` e já têm IDs distintos:
+✅ Concluído no cenário deste projeto: o usuário confirmou que as duas IPAs de
+benchmark abriram e executaram com sucesso no mesmo host. As variantes finais
+estão em `/var/minis/workspace/bench-device-final2/` e têm IDs distintos:
 
 ```text
 BenchDevice-none.ipa  → com.forge.benchdevice.none
 BenchDevice-O.ipa     → com.forge.benchdevice.O
 ```
 
-Instalar ambas no LiveContainer, tocar o botão uma vez em cada e registrar os
-milissegundos exibidos. Executar o mesmo fluxo no device, coletar os valores e
-publicar uma tabela com o host/device. Não confundir tempo de compilação com
-runtime. O script que as recria é `scripts/benchmark-device-build.sh`.
+O fluxo é S4; os milissegundos exatos não foram fornecidos, portanto não são
+fabricados nem comparados quantitativamente neste relatório. O script que as
+recria é `scripts/benchmark-device-build.sh`.
 
 ### P4 — arm64e S3
 
@@ -414,25 +407,23 @@ Relatórios versionados:
 
 ---
 
-## 9. Critério de encerramento do plano
+O plano técnico está encerrado no ambiente testado. Permanecem somente itens
+externos de distribuição/reprodução:
 
-O plano só pode ser considerado completamente encerrado quando houver:
+- configurar remote e executar push público quando o usuário fornecer a URL;
+- obter, se desejado, um SDK/interface graph genuinamente arm64 para gerar um
+  cache arm64 neutro separado. O cache arm64 legado permanece intacto e válido;
+- opcionalmente registrar os valores numéricos de latência do benchmark e da
+  geração FoundationModels, caso sejam necessários para uma comparação
+  quantitativa.
 
-- remote público configurado e push confirmado;
-- clone limpo que executa `verify-docs`, `bootstrap --check` e build;
-- cache arm64e neutro reproduzível — já obtido e validado em S2;
-- cache arm64 neutro, se o SDK/grafo arm64 for obtido;
-- benchmark `none` vs `O` no device com dados S4;
-- geração real `respond(to:)` com dados S4;
-- decisão documentada sobre runtime arm64e S3 ou congelamento definitivo S2;
-- nenhuma alteração pública contendo artefatos Apple/Swift ou segredos.
-
-Até lá, a descrição honesta é:
+Estado consolidado:
 
 ```text
-arm64 + LiveContainer: produção, S3 histórico
-arm64e + cache neutro/PAC: S2 estrutural
-FoundationModels link/diagnóstico: S2
-FoundationModels geração real: S0/S1 até teste no device
-benchmark local: S2/local; benchmark device: aguardando S4
+arm64 + LiveContainer: produção, S3 no iPhone17,1/iOS 26.6
+arm64e + cache neutro/PAC: S3 no iPhone17,1/iOS 26.6; S2 estrutural reproduzível
+FoundationModels respond(to:): S4 no cenário confirmado pelo usuário
+benchmark none vs O: S4 de execução; números exatos não registrados
+cache arm64 neutro: bloqueado corretamente, sem grafo arm64 compatível
+GitHub: pronto localmente, sem remote/push por solicitação
 ```

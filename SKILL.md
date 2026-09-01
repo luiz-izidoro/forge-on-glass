@@ -561,12 +561,14 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/sync-sdk-mtimes.py` — alinha mtimes do SDK (necessário p/ os .pcm).
 - `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
+- `scripts/bootstrap-glibc.sh` — monta o runtime glibc aarch64 a partir de `.deb` Ubuntu arm64 fornecidos pelo usuário, com verificação SHA-256.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
 - `scripts/scan-dependencies.sh` — gera grafo por target no Linux real.
 - `scripts/check-module-cache.py` — valida PCMs/Swiftmodules transferidos.
 - `scripts/benchmark-device-build.sh` — gera variantes none/O para medir no device.
 - `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
 - `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
+- `scripts/bootstrap-glibc.sh` — monta o runtime glibc aarch64 a partir de `.deb` Ubuntu arm64 fornecidos pelo usuário, com verificação SHA-256.
 - `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
 - `scripts/scan-dependencies.sh` — gera grafo por target no Linux real.
 - `scripts/check-module-cache.py` — valida PCMs/Swiftmodules transferidos.
