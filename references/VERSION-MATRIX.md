@@ -3,8 +3,8 @@
 | Host compiler | Target slice | SDK / minimum OS | Status and evidence |
 |---|---|---|---|
 | Swift 6.3.2 | arm64 | iOS SDK 26.5 / iOS 26.0 | production LiveContainer route; S3 recorded on iOS 26.6 / iPhone17,1 |
-| Swift 6.3.3 | arm64 | iOS SDK 26.5 / iOS 26.0 | pure Swift UIKit/SwiftUI build; S2 in local acceptance |
-| Swift 6.3.3 | arm64e | iOS SDK 26.5 / iOS 26.5 | local PAC linker and module cache; S2 only, no device runtime evidence |
+| Swift 6.3.3 | arm64 | iOS SDK 26.5 / iOS 26.0 | pure Swift UIKit/SwiftUI build; S3 runtime validated on iPhone17,1 / iOS 26.6 via LiveContainer |
+| Swift 6.3.3 | arm64e | iOS SDK 26.5 / iOS 26.5 | local PAC linker and module cache; S3 runtime validated on iPhone17,1 / iOS 26.6 via LiveContainer; FoundationModels generation S4 confirmed by user |
 
 The Apple SDK and generated modules are user-provided and are not shipped in
 this repository. `ISB_SYSROOT` defaults to `/opt/isb/sysroot`; existing local

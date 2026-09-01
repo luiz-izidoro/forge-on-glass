@@ -36,10 +36,13 @@ tapping on the device for S4 runtime numbers.
 ### Device gate (retomada 2026-09-01)
 
 `apple-device info --compact` confirmou o host físico `iPhone17,1`, iOS 26.6,
-com 7.46 GiB de memória e estado térmico `fair`. As ferramentas expostas nesta
-sessão permitem consultar o device, mas não instalar/abrir uma IPA dentro do
-LiveContainer nem tocar a UI. Por isso não foi possível obter nova evidência
-S3/S4 nesta sessão; os resultados abaixo permanecem honestamente estruturais.
+com 7.46 GiB de memória. O usuário confirmou que todas as IPAs geradas nesta
+retomada abriram e rodaram com sucesso no device/LiveContainer. Isso fornece
+S3 para os guests arm64 e arm64e testados. O fluxo FoundationModels, incluindo
+o `LanguageModelSession.respond(to:)`, e o fluxo das duas variantes de
+benchmark também foram confirmados pelo usuário, portanto são S4 no cenário
+testado. Latências e resposta textual exatas não foram fornecidas e não são
+inventadas neste relatório.
 
 The final device-ready benchmark IPAs are in:
 
@@ -89,14 +92,18 @@ module paths, and module bytes; a mismatch invalidates cached objects.
 - **S2 arm64e:** fresh local PAC IPA set passed the offline linker, exact
   `arm64e` subtype, FoundationModels weak-link, NaturalLanguage, embeddings,
   `LC_MAIN`, chained fixups, entry/delegate, and IPA guards.
-- **S3 arm64:** previously recorded on iOS 26.6 / iPhone17,1 in LiveContainer;
-  the current local acceptance remains structural and does not reclassify it.
-- **S4 FoundationModels generation:** not claimed. The repository includes
-  `assets/FoundationModelsRuntimeMain.swift`, which draws availability,
-  response, and latency. A user must install it on a compatible device and
-  record a successful `respond(to:)` flow before claiming S4.
-- **S3 arm64e:** not claimed. The arm64e profile remains experimental S2 until
-  a fresh IPA is opened by a compatible runtime.
+- **S3 arm64:** previously recorded on iOS 26.6 / iPhone17,1 in LiveContainer.
+- **S3 arm64e:** user-confirmed fresh arm64e IPAs opened and ran successfully on
+  the same iPhone17,1 / iOS 26.6 test host. This is runtime evidence for the
+  generated arm64e guests, not a claim that every LiveContainer version accepts
+  every PAC binary.
+- **S4 FoundationModels generation:** user-confirmed the generated runtime IPA
+  executed successfully, including the real `respond(to:)` path. Exact
+  response/latency telemetry was not supplied in the confirmation, so this
+  report does not invent those values.
+- **S4 benchmark flow:** user-confirmed the generated benchmark IPAs ran
+  successfully. Exact per-variant timings were not supplied, so the local
+  compile-time benchmark numbers below remain separate from device timings.
 
 ## Space decision
 

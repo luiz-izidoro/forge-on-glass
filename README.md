@@ -162,7 +162,8 @@ LICENSE                      MIT — original files only
 scripts/
   check-env.sh               verify toolchain, restore modules from backup
   bootstrap.sh               staged zero-to-checkout bootstrap with hashes
-  benchmark-build.sh         local none/O/Osize build and size benchmark
+  bootstrap-glibc.sh          checksum-gated Ubuntu arm64 glibc assembly
+  benchmark-build.sh          local none/O/Osize build and size benchmark
   benchmark-device-build.sh   generate none/O IPAs for device timing
   scan-dependencies.sh       generate a target-specific Linux graph
   check-module-cache.py      validate transferred module caches

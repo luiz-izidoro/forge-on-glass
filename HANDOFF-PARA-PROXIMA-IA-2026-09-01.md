@@ -1,8 +1,8 @@
 # HANDOFF — retomada dos itens externos e pendências finais
 
 **Projeto:** `forge-on-glass` / `ios-swift-builder`  
-**Data do estado:** 2026-09-01 — retomada local final
-**Último commit público local:** `6d3f12e` — `Harden device benchmark variants`
+**Data do estado:** 2026-09-01 — retomada local + runtime confirmado
+**Último commit público local:** `1bb0720` — `Document final device-test handoff`
 **Árvore esperada:** limpa  
 **Objetivo deste handoff:** permitir que uma nova conversa continue sem repetir auditorias, sem perder evidência e sem publicar artefatos licenciados.
 
@@ -46,15 +46,11 @@ Commits relevantes recentes:
 
 ```text
 125e2f1 Record external VM reproducibility validation
-baa04f2 Complete VM bootstrap and device validation tools
-9c26511 Integrate AI diagnostic into arm64e acceptance
-20c19a0 Harden incremental keys and public documentation
-6cc19ec Add FoundationModels runtime diagnostic
-124b801 Complete reproducibility and pending diagnostics
+6d3f12e Harden device benchmark variants
+1bb0720 Document final device-test handoff
 ```
 
-O repositório público contém somente código/documentação original. A guarda
-pública já passou com 122 arquivos rastreados:
+A guarda pública já passou com 123 arquivos rastreados:
 
 ```text
 python3 scripts/check-repo-clean.py  → REPO CLEAN: PASS
@@ -64,6 +60,12 @@ sh scripts/verify-docs.sh             → DOCS: PASS
 Não há host, usuário pessoal, chave privada, SDK ou binário derivado rastreado.
 Ainda não existe remote Git configurado; não fazer `git push` até o usuário
 fornecer a URL do repositório público.
+
+O usuário confirmou nesta retomada que todas as IPAs geradas abriram e rodaram
+no iPhone17,1 / iOS 26.6 via LiveContainer. Isso eleva os guests testados a
+S3; o diagnóstico FoundationModels com `respond(to:)` e o fluxo de benchmark
+foram confirmados como S4 no cenário testado. Latências e resposta textual
+exatas não foram fornecidas.
 
 ---
 
@@ -328,9 +330,10 @@ runtime. O script que as recria é `scripts/benchmark-device-build.sh`.
 
 ### P4 — arm64e S3
 
-Tentar uma vez em runtime compatível, com uma IPA nova e o host adequado. Se
-falhar, manter arm64e congelado como S2 experimental e registrar erro/log. Não
-alterar o linker arm64 de produção.
+✅ Concluído no cenário deste projeto: o usuário confirmou que as IPAs arm64e
+novas abriram e rodaram com sucesso no iPhone17,1 / iOS 26.6 via LiveContainer.
+O perfil continua dependente da aceitação do host específico; não generalizar
+para todos os hosts LiveContainer.
 
 ### P5 — cache arm64 neutro
 
@@ -340,11 +343,11 @@ aceitação do novo cache.
 
 ### P6 — bootstrap glibc completo
 
-O script já exige URLs/arquivos e SHA-256 para Swift/SDK. Ainda falta tornar a
-montagem do loader glibc a partir de pacotes Ubuntu arm64 totalmente executável.
-Isso pode ser implementado como etapa separada, exigindo explicitamente um
-arquivo/espelho de pacotes e seus checksums; não baixar ou redistribuir glibc
-silenciosamente.
+✅ Implementado: `scripts/bootstrap-glibc.sh` agora monta o loader e as
+bibliotecas aarch64 a partir de `.deb` Ubuntu fornecidos pelo usuário, valida
+SHA-256 antes da extração, não instala pacotes foreign no Alpine e falha se o
+loader/runtime mínimo estiver ausente. A etapa foi integrada ao
+`bootstrap.sh --step 6` e a documentação foi atualizada.
 
 ---
 

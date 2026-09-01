@@ -22,6 +22,7 @@ check(){
   printf 'stdlib cache: '; [ -s "$TOOLCHAIN/exp63/SwiftShims.pcm" ] && echo OK || echo MISSING
   printf 'pure Swift arm64 cache: '; [ -s "$TOOLCHAIN/foundation-build633/swift_SwiftUI.swiftmodule" ] && echo OK || echo MISSING
   printf 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || echo MISSING
+  printf 'glibc loader: '; [ -e "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}/ld-linux-aarch64.so.1" ] && echo OK || echo MISSING
   echo "Missing caches are expected until steps 1-5 are completed."
 }
 if [ "$CHECK" -eq 1 ]; then check; exit 0; fi
@@ -60,5 +61,12 @@ if [ "$STEP" -ge 5 ] && [ "$STEP" -le 99 ]; then
   echo "Step 5 requires real Linux/VM/Docker: build foundation-build633 from the user's SDK and copy it to $TOOLCHAIN/."
   echo "Read references/linux-vm/orchestrator_vm633.py and references/DISPATCH-VIA-LINUX.md."
   echo "No Apple SDK, PCM, swiftmodule, or generated binary is downloaded by this script."
+fi
+if [ "$STEP" -ge 6 ] && [ "$STEP" -le 99 ]; then
+  echo "[6] Assembling glibc from user-provided Ubuntu arm64 packages"
+  sh "$ROOT/scripts/bootstrap-glibc.sh" \
+    --packages "${ISB_GLIBC_PACKAGES:?Set ISB_GLIBC_PACKAGES to a directory of Ubuntu arm64 .deb files}" \
+    --sha256 "${ISB_GLIBC_SHA256:?Set ISB_GLIBC_SHA256 to the matching sha256 file}" \
+    --out "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}"
 fi
 if [ "$STEP" -eq 99 ]; then check; fi
