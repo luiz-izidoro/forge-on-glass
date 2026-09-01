@@ -2,7 +2,7 @@
 
 **Projeto:** `forge-on-glass` / `ios-swift-builder`  
 **Data do estado:** 2026-09-01 — retomada local + runtime confirmado
-**Último commit público local:** `1bb0720` — `Document final device-test handoff`
+**Último commit público local:** `6229902` — `Record confirmed device runtime evidence`
 **Árvore esperada:** limpa  
 **Objetivo deste handoff:** permitir que uma nova conversa continue sem repetir auditorias, sem perder evidência e sem publicar artefatos licenciados.
 
@@ -45,12 +45,11 @@ Não usar nem copiar esse histórico para o GitHub.
 Commits relevantes recentes:
 
 ```text
-125e2f1 Record external VM reproducibility validation
-6d3f12e Harden device benchmark variants
-1bb0720 Document final device-test handoff
+2f7beab Finalize runtime evidence and glibc bootstrap
+6229902 Record confirmed device runtime evidence
 ```
 
-A guarda pública já passou com 123 arquivos rastreados:
+A guarda pública já passou com 124 arquivos rastreados:
 
 ```text
 python3 scripts/check-repo-clean.py  → REPO CLEAN: PASS
@@ -330,9 +329,13 @@ para todos os hosts LiveContainer.
 
 ### P5 — cache arm64 neutro
 
-Só executar se houver SDK/grafo arm64 compatível. Não reutilizar o `fscan.json`
-arm64e. O cache arm64 legado já funciona e não deve ser destruído antes de uma
-aceitação do novo cache.
+Permanecem somente itens opcionais/externalizados:
+
+- configurar remote e executar push público quando o usuário fornecer a URL;
+- obter, se desejado, um SDK/interface graph genuinamente arm64 para gerar um
+  cache arm64 neutro separado. O cache arm64 legado permanece intacto e válido;
+- opcionalmente registrar os valores numéricos de latência do benchmark e da
+  geração FoundationModels, caso sejam necessários para comparação quantitativa.
 
 ### P6 — bootstrap glibc completo
 

@@ -5,7 +5,7 @@ Generated SDK/toolchain artifacts are not stored here.
 
 ## Retomada local — 2026-09-01
 
-The public tree was rechecked from commit `76cee60`; it remained clean. The
+The public tree was rechecked from commit `6229902`; it remained clean. The
 following fresh checks passed serially on the iSH host:
 
 - `sh bootstrap.sh --check`;
@@ -19,7 +19,8 @@ following fresh checks passed serially on the iSH host:
 
 The final cache check reported `files=100 nonempty=100 neutral_refs=61
 personal_refs=0`. The arm64e acceptance generated five fresh IPAs and passed
-all structural guards; this remains S2 evidence only.
+all structural guards. User-confirmed device execution provides S3 for the
+arm64e guests and S4 for the FoundationModels/benchmark flows below.
 
 The device benchmark was regenerated with distinct compile-time labels and
 bundle IDs, avoiding a LiveContainer collision between variants:
@@ -30,8 +31,8 @@ bundle IDs, avoiding a LiveContainer collision between variants:
 | `O` (`-O`) | `com.forge.benchdevice.O` | `BenchDevice-O.ipa` |
 
 Both fresh IPAs passed `validate-ipa.sh`, entry/delegate checks, and
-LiveContainer structural checks. They still require manual installation and
-tapping on the device for S4 runtime numbers.
+LiveContainer structural checks. The user subsequently confirmed that both
+opened and ran on the device; exact runtime timings were not supplied.
 
 ### Device gate (retomada 2026-09-01)
 
