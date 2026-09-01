@@ -25,3 +25,6 @@
   `40` Swift modules + `60` PCMs, and zero `/home/` references in valid artifacts.
 - Full arm64e acceptance includes a fresh structural build of the
   FoundationModels generation diagnostic; device execution remains manual.
+- Device benchmark variants now use compile-time mode labels and distinct
+  bundle IDs (`com.forge.benchdevice.none` and `com.forge.benchdevice.O`) so
+  LiveContainer installs cannot collide; both fresh IPAs passed S2 validation.
