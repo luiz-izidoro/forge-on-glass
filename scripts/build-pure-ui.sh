@@ -96,14 +96,17 @@ SDK="$ISB_SDK"
 OUT="$ISB_FOUNDATION_BUILD"
 VFS="$ISB_VFS"
 WORK=/tmp/build-$APP-$ISB_ARCH-$$
-BIG="$WORK/objc-cache"
+CACHE_ROOT="${ISB_BUILD_CACHE:-/var/tmp/isb-build-cache}"
+CACHE_DIR="$CACHE_ROOT/$APP-$ISB_ARCH-$OPT_MODE"
+mkdir -p "$CACHE_DIR"
+BIG="$CACHE_DIR/objc-cache"
 OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
 if [ ! -d "$OUT" ] || ! find "$OUT" -maxdepth 1 -name 'swift_*.swiftmodule' -type f | grep -q .; then
   echo "PERFIL $ISB_ARCH sem cache Swift: $OUT" >&2
   [ "$ISB_ARCH" = "arm64e" ] && echo "Rode scripts/build-arm64e-modules.sh em Linux e copie o resultado para esse caminho." >&2
   exit 1
 fi
-rm -rf "$WORK" && mkdir -p "$WORK" "$BIG"
+rm -rf "$WORK" && mkdir -p "$WORK"
 
 # REGRA DO SWIFT: com VARIOS arquivos, codigo top-level (UIApplicationMain) so e'
 # permitido num arquivo literalmente chamado `main.swift`. Copiamos os fontes
@@ -164,7 +167,14 @@ if [ "$MODE" = "primary" ]; then
 
   echo "==> compilando (modo primary-file)"
   mkdir -p "$WORK/obj"
-  python3 "$BP" --module "$APP" --src "$WORK/src" --out "$WORK/obj" --jobs 3 || {
+  CACHE_ARGS=""
+  if [ "${ISB_INCREMENTAL:-0}" = "1" ]; then
+    CACHE_ARGS="--incremental"
+  else
+    rm -rf "$CACHE_DIR/obj"
+  fi
+  mkdir -p "$CACHE_DIR/obj"
+  python3 "$BP" --module "$APP" --src "$WORK/src" --out "$CACHE_DIR/obj" --jobs 3 $CACHE_ARGS || {
     echo ""
     echo "BUILD ABORTADO na compilacao arquivo-a-arquivo."
     exit 1
@@ -204,7 +214,7 @@ if [ "$MODE" = "primary" ]; then
   [ -n "$PLIST_EXTRA" ] && LINK_ARGS="$LINK_ARGS --plist-extra $PLIST_EXTRA"
   [ -n "$RESOURCES" ] && LINK_ARGS="$LINK_ARGS --resources $RESOURCES"
   [ "$UNSIGNED" -eq 1 ] && LINK_ARGS="$LINK_ARGS --unsigned"
-  sh "$LI" "$APP" "$BUNDLE" "$WORK/obj" $LINK_ARGS
+  sh "$LI" "$APP" "$BUNDLE" "$CACHE_DIR/obj" $LINK_ARGS
   exit 0
 fi
 
