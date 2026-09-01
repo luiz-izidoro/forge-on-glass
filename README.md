@@ -160,6 +160,9 @@ README.md                    this file
 LICENSE                      MIT — original files only
 scripts/
   check-env.sh               verify toolchain, restore modules from backup
+  bootstrap.sh               staged zero-to-checkout bootstrap with hashes
+  benchmark-build.sh         local none/O/Osize build and size benchmark
+  verify-docs.sh              static documentation and repository assertions
   build-ipa.sh               end-to-end build (hybrid or --pure)
   build-pure-foundation.sh   compile+link a pure-Swift Foundation/Dispatch app
   validate-ipa.sh            inspect a built IPA
