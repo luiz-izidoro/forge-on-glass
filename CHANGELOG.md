@@ -8,9 +8,9 @@
   falls back to an author-specific `/home` mirror.
 - Added a trap-protected sysroot-independence build to the arm64 acceptance
   suite; the fresh IPA passes without the legacy mirror.
-- Preserved the previous arm64 cache as a timestamped rollback copy during the
-  atomic promotion. Device runtime confirmation for the newly promoted cache
-  remains a separate S3 gate.
+- User subsequently confirmed that fresh `P0NeutralRuntime.ipa`, built with the
+  promoted neutral arm64 cache, opened and ran in LiveContainer; this cache is
+  now S3 for the tested host/device.
 
 ## Unreleased — 2026-09-01
 

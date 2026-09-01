@@ -86,11 +86,17 @@ install them side by side without a LiveContainer bundle collision.
 |---|---|---|
 | `sh scripts/verify-docs.sh` | PASS | syntax, repository policy, documentation assertions |
 | `sh bootstrap.sh --check` | PASS | repository, Swift frontend, SDK, stdlib cache, pure cache, neutral sysroot |
-| `python3 scripts/check-repo-clean.py` | PASS | 123 tracked files; no generated/licensed binaries or private paths |
+| `python3 scripts/check-repo-clean.py` | PASS | 127 tracked files; no generated/licensed binaries or private paths |
 | fresh `git clone --no-local` | PASS | clone completed in `/tmp/forge-on-glass-clean` |
 | build from fresh clone | PASS | arm64, SDK 26.5, `-primary-file`, unsigned IPA |
 
-## Local build benchmark
+### P0 runtime gate — 2026-09-01
+
+The user confirmed that the fresh `/var/minis/workspace/P0NeutralRuntime.ipa`,
+built after neutral-cache promotion, opened and ran in LiveContainer. This
+provides **S3** evidence for the promoted arm64 cache on the tested host/device.
+The confirmation did not include a new device identifier in this message; do
+not generalize beyond that tested runtime.
 
 Command: `sh scripts/benchmark-build.sh` on the iSH host, one minimal UIKit
 sample, no device runtime measurement.
