@@ -13,6 +13,20 @@ grep -q 'OPT_FLAGS' "$ROOT/scripts/build-parallel.py" || { echo 'optimization ma
 grep -q 'FoundationModelsRuntimeMain.swift' "$ROOT/REPRODUCE-FROM-ZERO.md" || { echo 'AI diagnostic instructions missing'; fail=1; }
 grep -q 'check-repo-clean.py' "$ROOT/.github/workflows/static.yml" || { echo 'CI missing repository guard'; fail=1; }
 grep -q 'verify-docs.sh' "$ROOT/.github/workflows/static.yml" || { echo 'CI missing documentation guard'; fail=1; }
+if [ -f "$ROOT/Dockerfile" ]; then
+  while IFS= read -r src; do
+    [ -n "$src" ] || continue
+    case "$src" in
+      --*) continue ;;
+    esac
+    [ -f "$ROOT/$src" ] || { echo "Dockerfile COPY missing: $src"; fail=1; continue; }
+    git -C "$ROOT" ls-files --error-unmatch -- "$src" >/dev/null 2>&1 || {
+      echo "Dockerfile COPY is not tracked: $src"; fail=1;
+    }
+  done <<EOF
+$(awk '$1 == "COPY" { print $2 }' "$ROOT/Dockerfile")
+EOF
+fi
 if find "$ROOT/docs" -type f -name '*.md' -print 2>/dev/null | while read -r f; do
   b=$(basename "$f")
   [ ! -e "$ROOT/references/$b" ] || { echo "duplicate documentation basename: $b"; exit 1; }
