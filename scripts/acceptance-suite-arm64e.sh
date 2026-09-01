@@ -3,7 +3,8 @@
 # The one-time linker/module bootstrap may use a VM; this suite never does.
 set -eu
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-WORK=/tmp/isb-acceptance-arm64e
+WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
+WORK="${ISB_ACCEPTANCE_WORK:-/tmp/isb-acceptance-arm64e}"
 rm -rf "$WORK"; mkdir -p "$WORK"
 fail() { echo "ACCEPTANCE arm64e: FAIL: $*"; exit 1; }
 ok() { echo "ACCEPTANCE arm64e: OK: $*"; }
@@ -18,23 +19,26 @@ for f in "$SKILL"/scripts/build-pure-ui.sh "$SKILL"/scripts/link-ipa.sh; do
 done
 ISB_ARCH=arm64e sh "$SKILL/scripts/check-env.sh" || fail "environment"
 cd "$SKILL"
-ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceUI com.example.acceptanceui \
+ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceUI com.example.acceptanceui \
   assets/SwiftUIDemo.swift --primary-file --unsigned \
   >"$WORK/ui.log" 2>&1 || { cat "$WORK/ui.log"; fail "SwiftUI/UIKit arm64e build"; }
-ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceFMFixed com.example.acceptancefmfixed \
+ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceFMFixed com.example.acceptancefmfixed \
   assets/FoundationModelsSafeMain.swift assets/FoundationModelsSafeProbe.swift --primary-file --unsigned \
   --weak-framework FoundationModels \
   >"$WORK/fm.log" 2>&1 || { cat "$WORK/fm.log"; fail "FoundationModels arm64e build"; }
-ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceNL com.example.acceptancenl \
+ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceNL com.example.acceptancenl \
   assets/NaturalLanguageProbeMain.swift assets/NaturalLanguageProbe.swift \
   --primary-file --extra-framework NaturalLanguage \
   --unsigned >"$WORK/nl.log" 2>&1 || { cat "$WORK/nl.log"; fail "NaturalLanguage Swift build"; }
-ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceEmb com.example.acceptanceemb \
+ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceEmb com.example.acceptanceemb \
   assets/EmbeddingsProbeMain.swift assets/NativeEmbeddings.swift --primary-file \
   --extra-objc assets/NativeNLBridge.m --extra-framework NaturalLanguage \
   --unsigned >"$WORK/emb.log" 2>&1 || { cat "$WORK/emb.log"; fail "embeddings bridge build"; }
-for app in LocalAcceptanceUI LocalAcceptanceFMFixed LocalAcceptanceNL LocalAcceptanceEmb; do
-  IPA="/var/minis/workspace/$app.ipa"; [ -s "$IPA" ] || fail "missing $IPA"
+ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceFMRuntime com.example.acceptancefmruntime \
+  assets/FoundationModelsRuntimeMain.swift --primary-file --weak-framework FoundationModels --unsigned \
+  >"$WORK/runtime.log" 2>&1 || { cat "$WORK/runtime.log"; fail "FoundationModels runtime diagnostic build"; }
+for app in LocalAcceptanceUI LocalAcceptanceFMFixed LocalAcceptanceNL LocalAcceptanceEmb LocalAcceptanceFMRuntime; do
+  IPA="$WORKSPACE/$app.ipa"; [ -s "$IPA" ] || fail "missing $IPA"
   D="$WORK/$app"; mkdir -p "$D"; unzip -q -o "$IPA" -d "$D"
   BIN="$D/Payload/$app.app/$app"
   python3 scripts/check-slice.py "$BIN" arm64e || fail "slice $app"
