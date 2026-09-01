@@ -24,8 +24,9 @@ SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 #   Determinstico e reproduzido com 2 arquivos. Com -primary-file o MESMO
 #   codigo compila em segundos, sem alteracao alguma.
 #   Ver references/WARNINGS-FATAIS.md -> "CoreGraphics degrada Foundation".
+set -e
 ISB_WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
-"${1:?uso: $0 <AppName> <BundleID> <main.swift> [outro.swift ...] [--debug]}"
+APP="${1:?uso: $0 <AppName> <BundleID> <main.swift> [outro.swift ...] [--debug]}"
 BUNDLE="${2:?falta o bundle id}"
 shift 2
 DEBUG=0
