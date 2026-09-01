@@ -560,6 +560,9 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/test_import_ish.py` — testa `import UIKit`/`SwiftUI` no iSH.
 - `scripts/sync-sdk-mtimes.py` — alinha mtimes do SDK (necessário p/ os .pcm).
 - `scripts/cleanup-toolchain.sh` — limpeza conservadora; dry-run padrão e `--apply` explícito.
+- `scripts/benchmark-build.sh` — mede tempo/tamanho local de `none`, `O` e `Osize` (não mede performance no device).
+- `scripts/bootstrap.sh` — bootstrap idempotente em etapas; exige hashes/artefatos do usuário.
+- `scripts/verify-docs.sh` — verifica sintaxe, política pública e afirmações verificáveis.
 - `assets/PureSwiftDemo.swift`, `assets/SwiftUIDemo.swift` — templates puros.
 - `references/HANDOFF.md` — **ponto de retomada (leia primeiro)**.
 - `references/PURE-SWIFT-UI-STATUS.md` — ressalvas e degradações medidas.
