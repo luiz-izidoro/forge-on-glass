@@ -264,6 +264,11 @@ Quando uma investigação descobrir uma regra nova:
 4. atualize o documento técnico detalhado e marque snapshots antigos;
 5. rode a suíte relevante e registre o nível S0–S4;
 6. só então faça commit com uma mensagem que descreva a evidência.
+7. mantenha um único ponto de retomada corrente em
+   `references/HANDOFF.md`; documentos datados são histórico e permanecem sob
+   `references/`, nunca na raiz.
+8. registre fatos de runtime com artefato, host/device e versão que os
+   produziram.
 
 Não acumule “estado atual” em handoffs históricos. Um fato de runtime deve
 sempre mencionar o artefato, host/device e versão que o produziram.

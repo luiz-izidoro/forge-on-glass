@@ -11,16 +11,10 @@
 - User subsequently confirmed that fresh `P0NeutralRuntime.ipa`, built with the
   promoted neutral arm64 cache, opened and ran in LiveContainer; this cache is
   now S3 for the tested host/device.
-
-## Unreleased — 2026-09-01
-
-- Completed P0 arm64 sysroot neutralization: generated and atomically promoted
-  a 38-module/59-PCM cache with zero personal-path references.
-- Removed author-specific `/home` sysroot fallbacks from the pure Swift profile
-  and environment checker.
-- Added protected sysroot-independence coverage to the arm64 acceptance suite.
-- Added `gc-workdirs.sh` with dry-run default and explicit `--apply`; removed
-  the obsolete cleanup utility that had no measured targets.
+- Removed the obsolete cleanup utility that had no measured targets.
+- Added `gc-workdirs.sh` with dry-run default and explicit `--apply`.
+- Completed P0 arm64 sysroot neutralization and documented the resulting
+  validation and rollback procedure.
 
 ## Unreleased — 2026-08-31
 

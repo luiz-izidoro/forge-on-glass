@@ -1,9 +1,16 @@
 # Handoff técnico — estado e retomada
 
 > **Leia primeiro:** [`BEST-PRACTICES.md`](BEST-PRACTICES.md). Este arquivo é
-> o inventário de estado e histórico operacional; não substitui as regras
-> normativas. Claims abaixo devem ser interpretados com o nível S0–S4 definido
-> no guia.
+> o ponto único de retomada corrente e o inventário de estado operacional.
+> Documentos datados são histórico e permanecem sob `references/`.
+> Claims abaixo devem ser interpretados com o nível S0–S4 definido no guia.
+
+> **Limitação ativa de reprodução:** os 38 `swift_*.swiftmodule` do perfil
+> arm64 foram preservados de uma geração anterior e não são reproduzíveis com
+> o SDK atual, que contém 247 interfaces `arm64e` e nenhuma `arm64`.
+> `build-arm64-modules.sh` regenera os 59 PCMs contra o sysroot neutro, mas não
+> os swiftmodules. Um clone novo não reconstrói o cache arm64 completo; o
+> perfil arm64e é integralmente reproduzível.
 
 
 ## 0.3. Política normativa de retomada

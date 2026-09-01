@@ -68,10 +68,6 @@ files=97 nonempty=97 neutral_refs=59 personal_refs=0
   `P0NeutralRuntime.ipa`, gerada após a promoção, abriu e rodou no LiveContainer.
 - Cache arm64e: **S2** local nesta execução; o runtime S3 confirmado
   anteriormente permanece referente às IPAs arm64e testadas pelo usuário.
-- Nova confirmação S3 do cache arm64 promovido ainda requer abertura de IPA
-  nova pelo usuário no LiveContainer.
-
 ## Próximo passo externo
 
-Confirmar S3 do cache arm64 promovido abrindo uma IPA nova no LiveContainer.
 O push público continua pendente até o usuário fornecer a URL do repositório.
