@@ -130,7 +130,18 @@ Copy the SDK, edit `os/object.h` so `OS_object`
 4. **Ship hybrid instead (works today).** Swift logic + ObjC UIKit — see SKILL.md
    and assets/. This is the recommended default until §1.1 lands.
 
-## §2. Frameworks limited in pure Swift
+## §2.1. Cache arm64 parcialmente herdado
+
+O cache arm64 ativo contém 38 `swift_*.swiftmodule` preservados de uma geração
+anterior. Eles não são reproduzíveis com o SDK atual, que contém apenas
+interfaces `arm64e` (247) e nenhuma interface `arm64` (0). O script
+`build-arm64-modules.sh` regenera com sucesso os 59 PCMs contra o sysroot
+neutro, mas não os swiftmodules. Consequentemente, um clone novo não
+reconstrói o cache arm64 completo; o perfil arm64e é integralmente
+reproduzível. Esta é uma limitação de reprodução, não uma falha do cache ativo:
+validação estrutural local é S2 e o cache promovido foi confirmado pelo usuário
+abrindo uma IPA nova no LiveContainer, S3 no host/device testado.
+
 
 **Import requirements:** the active cache for a profile must match the selected
 Swift compiler and target triple. The legacy `foundation-build/` cache belongs
