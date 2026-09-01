@@ -13,9 +13,8 @@
 #                 [--resources DIR] [--main-obj NAME] [--plist-extra XML]
 #
 # Saida: /var/minis/workspace/<AppName>.ipa
-set -e
-
-APP="${1:?uso: $0 <AppName> <BundleID> <objdir> [--debug] [--resources DIR]}"
+ISB_WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
+"${1:?uso: $0 <AppName> <BundleID> <objdir> [--debug] [--resources DIR]}"
 BUNDLE="${2:?falta o bundle id}"
 OBJDIR="${3:?falta o diretorio com os .o}"
 shift 3
@@ -72,7 +71,7 @@ for fw in $WEAK_FRAMEWORK_LIST; do WEAK_FRAMEWORK_FLAGS="$WEAK_FRAMEWORK_FLAGS -
 ROOT=/opt/isb/sysroot
 SDK="$ISB_SDK"
 WORK=/tmp/link-$APP-$ISB_ARCH-$$
-OUTPUT="${ISB_OUTPUT:-/var/minis/workspace/$APP.ipa}"
+OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
 rm -rf "$WORK" && mkdir -p "$WORK"
 
 # ORDEM DOS OBJETOS: o que contem o codigo top-level (UIApplicationMain) precisa
@@ -205,7 +204,7 @@ else
   ldid -S "$PAY/$APP"
 fi
 
-mkdir -p /var/minis/workspace
+mkdir -p "$ISB_WORKSPACE"
 
 # GUARDA FINAL: o binario realmente inicia? (thunk ObjC do delegate + _main)
 CE="$SKILL/scripts/check-entry.py"

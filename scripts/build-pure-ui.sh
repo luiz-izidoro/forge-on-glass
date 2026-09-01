@@ -24,9 +24,8 @@ SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 #   Determinstico e reproduzido com 2 arquivos. Com -primary-file o MESMO
 #   codigo compila em segundos, sem alteracao alguma.
 #   Ver references/WARNINGS-FATAIS.md -> "CoreGraphics degrada Foundation".
-set -e
-
-APP="${1:?uso: $0 <AppName> <BundleID> <main.swift> [outro.swift ...] [--debug]}"
+ISB_WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
+"${1:?uso: $0 <AppName> <BundleID> <main.swift> [outro.swift ...] [--debug]}"
 BUNDLE="${2:?falta o bundle id}"
 shift 2
 DEBUG=0
@@ -97,7 +96,7 @@ OUT="$ISB_FOUNDATION_BUILD"
 VFS="$ISB_VFS"
 WORK=/tmp/build-$APP-$ISB_ARCH-$$
 BIG="$WORK/objc-cache"
-OUTPUT="${ISB_OUTPUT:-/var/minis/workspace/$APP.ipa}"
+OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
 if [ ! -d "$OUT" ] || ! find "$OUT" -maxdepth 1 -name 'swift_*.swiftmodule' -type f | grep -q .; then
   echo "PERFIL $ISB_ARCH sem cache Swift: $OUT" >&2
   [ "$ISB_ARCH" = "arm64e" ] && echo "Rode scripts/build-arm64e-modules.sh em Linux e copie o resultado para esse caminho." >&2
@@ -373,7 +372,7 @@ EOT
 else
   ldid -S "$PAY/$APP"
 fi
-mkdir -p /var/minis/workspace
+mkdir -p "$ISB_WORKSPACE"
 
 # GUARDA FINAL: invariantes usadas pelo patcher LiveContainer.
 LCG="$SKILL/scripts/check-livecontainer.py"
