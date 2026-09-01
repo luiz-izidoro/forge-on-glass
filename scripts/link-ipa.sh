@@ -208,7 +208,7 @@ fi
 mkdir -p /var/minis/workspace
 
 # GUARDA FINAL: o binario realmente inicia? (thunk ObjC do delegate + _main)
-CE=/var/minis/skills/ios-swift-builder/scripts/check-entry.py
+CE="$SKILL/scripts/check-entry.py"
 if [ -f "$CE" ]; then
   python3 "$CE" "$PAY/$APP" || {
     echo ""
