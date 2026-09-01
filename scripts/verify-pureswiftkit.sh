@@ -4,7 +4,7 @@
 #
 # Se este script passar, a tabela de "APIs que falham" tem cobertura 100%.
 set -e
-A=/var/minis/skills/ios-swift-builder/assets
+A=$(CDPATH= cd -- "$(dirname "$0")/.." A=/var/minis/skills/ios-swift-builder/assetsA=/var/minis/skills/ios-swift-builder/assets pwd)/assets
 W=/tmp/verify-pskit
 rm -rf $W && mkdir -p $W
 

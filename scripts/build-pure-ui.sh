@@ -273,7 +273,7 @@ echo "    objeto: $(stat -c %s "$WORK/app.o") bytes"
 # O caso classico e' uma assinatura de delegate que nao casa com o
 # .swiftinterface patchado: o Swift so AVISA e o framework nunca chama o
 # metodo -> app vivo com TELA PRETA. Ver references/WARNINGS-FATAIS.md
-CW=/var/minis/skills/ios-swift-builder/scripts/check-warnings.py
+CW="$SKILL/scripts/check-warnings.py"
 if [ -f "$CW" ]; then
   python3 "$CW" "$WORK/swift.err" || {
     echo ""
@@ -376,7 +376,7 @@ fi
 mkdir -p /var/minis/workspace
 
 # GUARDA FINAL: invariantes usadas pelo patcher LiveContainer.
-LCG=/var/minis/skills/ios-swift-builder/scripts/check-livecontainer.py
+LCG="$SKILL/scripts/check-livecontainer.py"
 if [ -f "$LCG" ]; then
   python3 "$LCG" "$PAY/$APP" || { echo "BUILD ABORTADO: Mach-O incompatível com LiveContainer"; exit 1; }
 fi
@@ -384,7 +384,7 @@ fi
 # GUARDA FINAL: o binario realmente inicia?
 # Isto NAO depende do warning do compilador, que e' inconstante — olha o que
 # ficou no binario. Ver references/WARNINGS-FATAIS.md
-CE=/var/minis/skills/ios-swift-builder/scripts/check-entry.py
+CE="$SKILL/scripts/check-entry.py"
 if [ -f "$CE" ]; then
   python3 "$CE" "$PAY/$APP" || {
     echo ""
