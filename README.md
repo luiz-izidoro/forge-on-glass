@@ -22,6 +22,20 @@ with an SPM dependency tree.
 
 ---
 
+## Isto funciona para mim?
+
+| Requisito | Necessário |
+|---|---|
+| iPhone/iPad com iSH | sim |
+| iOS 26.x (testado: 26.6) | sim |
+| Acesso a um Mac com Xcode 26, **uma vez** | sim — para obter o SDK |
+| LiveContainer (ou device com JIT) | para executar as IPAs |
+| ~6 GB livres | sim |
+
+**Não testado:** outras versões de iOS/SDK, outros devices e iSH em iPad. A
+matriz completa, incluindo o host exato das validações, está em
+[`references/VERSION-MATRIX.md`](references/VERSION-MATRIX.md).
+
 ## What you get
 
 - Write **all app logic in modern Swift** (generics, closures, arrays, structs,

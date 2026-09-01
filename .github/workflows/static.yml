@@ -13,5 +13,7 @@ jobs:
         run: python3 -m py_compile scripts/*.py
       - name: Documentation and repository guards
         run: sh scripts/verify-docs.sh
+      - name: Newcomer onboarding smoke test
+        run: sh scripts/check-newcomer.sh
       - name: Repository cleanliness guard
         run: python3 scripts/check-repo-clean.py

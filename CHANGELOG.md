@@ -19,8 +19,13 @@
 - Added honest `--full` and `--pcm-only` modes to the arm64 module generator;
   the current SDK has no arm64 Swift interfaces, so full regeneration fails
   closed while PCM regeneration remains available.
-- Consolidated the debug documentation under `references/` and recorded that
-  this toolchain's `-Osize` benchmark is slower and larger than `-O`.
+- Added the `check-weak-link.py` guard and a negative strong-link test for
+  FoundationModels in arm64e acceptance.
+- Added the newcomer onboarding smoke test, Dockerfile `COPY` validation, an
+  honest tested/not-tested compatibility matrix, and issue templates requiring
+  sanitized environment evidence.
+- The clean arm64 `--pcm-only` regeneration measured 61 non-empty PCMs with
+  zero personal-path references; the full cache remains partially inherited.
 
 ## Unreleased — 2026-08-31
 
