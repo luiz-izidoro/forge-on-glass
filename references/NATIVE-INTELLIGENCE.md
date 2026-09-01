@@ -18,6 +18,43 @@ This profile supports iOS 26.5 system AI without bundling model weights:
   the same explicit module graph. Do not mix the existing `arm64` cache with
   the arm64e cache.
 
+## Evidência por camada
+
+`FoundationModels` é capability-gated: a presença do framework no SDK ou no
+link não significa que o aparelho tenha Apple Intelligence pronto.
+
+| Evidência | O que prova | Nível |
+|---|---|---|
+| `FoundationModels` aparece como `LC_LOAD_WEAK_DYLIB` | o binário linka o framework sem exigir sua presença no launch | **S2** |
+| `availability == .available` | este device/runtime tem Apple Intelligence disponível | **S3 do device** |
+| `LanguageModelSession.respond(to:)` retorna texto | o caminho completo de geração funcionou neste cenário | **S4** |
+
+A guarda `scripts/check-weak-link.py` é executada pela aceitação arm64e e também
+tem um teste negativo: uma variante forte (`--extra-framework`) precisa ser
+rejeitada. Um device sem Apple Intelligence deve reportar `unavailable`; isso é
+uma condição do aparelho (região, idioma, modelo baixado), não uma falha da
+skill.
+
+## Rotas de NaturalLanguage / NLEmbedding
+
+A rota **recomendada** é o bridge Objective-C em `assets/NativeNLBridge.m`,
+usado com `NativeEmbeddings.swift` e `--extra-objc`. Ele não depende do
+`swift_NaturalLanguage.swiftmodule` arm64e e, portanto, é a opção mais portátil
+entre os perfis e durante a reconstrução do cache.
+
+A rota Swift (`assets/NaturalLanguageProbe.swift`) é uma alternativa quando o
+cache arm64e completo já está disponível e o projeto prefere a API Swift. Ela é
+útil para validar o módulo, mas não deve ser escolhida apenas por conveniência
+se o bridge atende ao caso.
+
+## Evidência manual pendente de captura
+
+A geração real já foi confirmada pelo usuário no cenário documentado em
+`FOUNDATIONMODELS-RUNTIME.md`, elevando-o a S4 nesse cenário. Ainda não há uma
+captura reproduzível com os números; em uma nova execução, registrar device,
+iOS, slice, host, `availability`, prompt exato, resposta e latência em ms. Não
+extrapolar esse S4 para outros devices, versões ou hosts.
+
 ## Profiles
 
 O caminho recomendado para o LiveContainer é `scripts/build-livecontainer.sh`.

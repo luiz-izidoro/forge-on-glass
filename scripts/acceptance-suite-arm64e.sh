@@ -43,8 +43,26 @@ for app in LocalAcceptanceUI LocalAcceptanceFMFixed LocalAcceptanceNL LocalAccep
   BIN="$D/Payload/$app.app/$app"
   python3 scripts/check-slice.py "$BIN" arm64e || fail "slice $app"
   python3 scripts/check-livecontainer.py "$BIN" || fail "Mach-O $app"
-  python3 scripts/check-entry.py "$BIN" || fail "entry $app"
+  python3 "$SKILL/scripts/check-entry.py" "$BIN" || fail "entry $app"
+  if [ "$app" = LocalAcceptanceFMFixed ] || [ "$app" = LocalAcceptanceFMRuntime ]; then
+    python3 scripts/check-weak-link.py "$BIN" FoundationModels || fail "FoundationModels weak-link $app"
+  fi
   "$SKILL/scripts/validate-ipa.sh" "$IPA" || fail "IPA $app"
 done
+
+# Negative proof: a strong FoundationModels load command must be rejected.
+ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceFMStrong com.example.acceptancefmstrong \
+  assets/FoundationModelsSafeMain.swift assets/FoundationModelsSafeProbe.swift --primary-file \
+  --extra-framework FoundationModels --unsigned >"$WORK/strong.log" 2>&1 \
+  || { cat "$WORK/strong.log"; fail "strong-link negative fixture build"; }
+STRONG="$WORKSPACE/LocalAcceptanceFMStrong.ipa"
+[ -s "$STRONG" ] || fail "missing strong-link negative fixture"
+SD="$WORK/strong"; mkdir -p "$SD"; unzip -q -o "$STRONG" -d "$SD"
+SBIN="$SD/Payload/LocalAcceptanceFMStrong.app/LocalAcceptanceFMStrong"
+if python3 scripts/check-weak-link.py "$SBIN" FoundationModels >"$WORK/strong-guard.log" 2>&1; then
+  cat "$WORK/strong-guard.log"; fail "weak-link guard accepted strong link"
+fi
+ok "FoundationModels weak-link guard and negative test"
+
 ok "offline linker + SwiftUI/UIKit + FoundationModels + NaturalLanguage + embeddings"
 ok "acceptance arm64e PASS"
