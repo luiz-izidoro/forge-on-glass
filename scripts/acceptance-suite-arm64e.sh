@@ -35,8 +35,8 @@ ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcce
   --extra-objc assets/NativeNLBridge.m --extra-framework NaturalLanguage \
   --unsigned >"$WORK/emb.log" 2>&1 || { cat "$WORK/emb.log"; fail "embeddings bridge build"; }
 ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceFMRuntime com.example.acceptancefmruntime \
-  assets/FoundationModelsRuntimeMain.swift --primary-file --weak-framework FoundationModels --unsigned \
-  >"$WORK/runtime.log" 2>&1 || { cat "$WORK/runtime.log"; fail "FoundationModels runtime diagnostic build"; }
+    assets/FoundationModelsRuntimeMain.swift --primary-file --weak-framework FoundationModels --unsigned \
+    >"$WORK/runtime.log" 2>&1 || { cat "$WORK/runtime.log"; fail "FoundationModels runtime diagnostic build"; }
 for app in LocalAcceptanceUI LocalAcceptanceFMFixed LocalAcceptanceNL LocalAcceptanceEmb LocalAcceptanceFMRuntime; do
   IPA="$WORKSPACE/$app.ipa"; [ -s "$IPA" ] || fail "missing $IPA"
   D="$WORK/$app"; mkdir -p "$D"; unzip -q -o "$IPA" -d "$D"

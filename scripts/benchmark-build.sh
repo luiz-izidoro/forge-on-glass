@@ -1,6 +1,6 @@
 #!/bin/sh
 # benchmark-build.sh — reproducible local compile/size benchmark.
-#   Benchmark output is a TSV: mode, seconds, binary bytes, IPA bytes.
+# This measures build time and artifact size, not device runtime performance.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 OUT=${ISB_BENCH_OUT:-/tmp/isb-benchmark}

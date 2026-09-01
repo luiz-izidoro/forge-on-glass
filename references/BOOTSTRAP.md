@@ -116,9 +116,10 @@ referenced paths and header sizes).
 The old on-device partial build (35 modules, os_workgroup VFS fix) is
 documented in CONTEXT.md; it is superseded by the VM builds.
 
-`references/linux-vm/orchestrator_vm633.py` is incremental and skips valid module
-outputs. It requires the matching Swift toolchain, SDK and the scan graph; it
-must run on real Linux, not inside iSH.
+`scan-dependencies.sh` generates a target-specific graph and
+`check-module-cache.py` rejects empty or personal-path-bearing PCMs after
+transfer. See [`LINUX-MODULE-CACHE.md`](LINUX-MODULE-CACHE.md) for the Docker
+runner and explicit mounts.
 
 
 ```sh

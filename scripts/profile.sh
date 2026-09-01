@@ -3,12 +3,18 @@
 # Default remains the proven arm64 profile. arm64e is opt-in and isolated
 # because Swift modules/PCMs are target- and compiler-tag specific.
 ISB_ARCH="${ISB_ARCH:-arm64}"
+ISB_SYSROOT_EXPLICIT=0
+[ -n "${ISB_SYSROOT:-}" ] && ISB_SYSROOT_EXPLICIT=1
 ISB_SYSROOT="${ISB_SYSROOT:-/opt/isb/sysroot}"
-# Compatibility with a pre-existing local cache. New installs should use the
-# neutral prefix and regenerate their PCMs there.
-if [ ! -e "$ISB_SYSROOT/iPhoneOS26.5.sdk" ]; then
+# The pre-existing arm64 cache was built against the legacy mirrored SDK.
+# Prefer that mirror only for arm64 when the caller did not select a sysroot;
+# arm64e remains on the neutral prefix and is fully self-contained.
+if [ "$ISB_SYSROOT_EXPLICIT" -eq 0 ] && [ "$ISB_ARCH" = "arm64" ]; then
   legacy=$(find /home -maxdepth 2 -type d -name swift-ios-build 2>/dev/null | head -1 || true)
   [ -n "$legacy" ] && ISB_SYSROOT="$legacy"
+elif [ "$ISB_SYSROOT_EXPLICIT" -eq 0 ] && [ "$ISB_ARCH" = "arm64e" ] && [ ! -e "$ISB_SYSROOT/iPhoneOS26.5.sdk" ]; then
+  echo "sysroot neutro arm64e ausente: $ISB_SYSROOT" >&2
+  exit 2
 fi
 ISB_MODULE_CACHE="${ISB_MODULE_CACHE:-/var/tmp/isb-cache}"
 case "$ISB_ARCH" in
