@@ -536,9 +536,8 @@ Detalhe histórico em `references/LIMITATIONS.md` e
   `CGContext` e os helpers de `NSIndexPath`.
 
 - `scripts/check-undefined.py` — confere os símbolos indefinidos do binário
-  contra os `.tbd` do SDK (pega o que o lld aceita e o dyld recusaria).
-  A aceitação arm64 agora executa essa guarda; os perfis AcceptanceApp,
-  Foundation/Dispatch e híbrido testados retornaram **0 faltantes**.
+  contra os `.tbd` do SDK; a aceitação canônica arm64e confirma 0 faltantes
+  em todas as IPAs.
 - `assets/PlatformVersionShim.swift` — `__isPlatformVersionAtLeast`
   (necessário quando o código usa `#available`).
 - `references/WARNINGS-FATAIS.md` — 🔴 **compila mas não funciona**: causas,

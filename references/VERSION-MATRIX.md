@@ -2,20 +2,18 @@
 
 | Host compiler | Target slice | SDK / minimum OS | Testado em | Status and evidence |
 |---|---|---|---|---|
-| Swift 6.3.2 | arm64 | iOS SDK 26.5 / iOS 26.0 | iPhone17,1 / iOS 26.6 / LiveContainer (versão não registrada) | production LiveContainer route; S3 recorded on the listed host |
-| Swift 6.3.3 | arm64 | iOS SDK 26.5 / iOS 26.0 | iPhone17,1 / iOS 26.6 / LiveContainer (versão não registrada) | pure Swift UIKit/SwiftUI build; S3 runtime validated on the listed host |
-| Swift 6.3.3 | arm64e | iOS SDK 26.5 / iOS 26.5 | iPhone17,1 / iOS 26.6 / LiveContainer (versão não registrada) | local PAC linker and module cache; FoundationModels generation S4 confirmed by user in this scenario |
+| Swift 6.3.3 | arm64e | iOS SDK 26.5 / iOS 26.5 | iPhone17,1 / iOS 26.6 / LiveContainer (versão não registrada) | arm64e.v1/PAC; all 10 acceptance IPAs passed S2; user-confirmed S3/S4 for UI, Foundation/Dispatch, TortureTest 37/37, debug, hybrid, CoreML/Vision/Accelerate, FoundationModels availability/generation, NaturalLanguage and NLEmbedding |
 
-## Não testado
+## Não testado / fora da matriz operacional
 
-- SDKs ou iOS diferentes de iOS SDK 26.5 e iOS 26.6, respectivamente.
-- Outros modelos de iPhone/iPad e outros devices arm64e.
-- iSH em iPad.
-- Outras versões do LiveContainer; a versão exata do host usado nas validações
-  históricas não foi registrada e, portanto, permanece desconhecida.
-- Compatibilidade universal de `FoundationModels`: a disponibilidade depende do
-  device, região, idioma e preparação do modelo.
+- Outros modelos de iPhone/iPad e iSH em iPad.
+- Outras versões do iOS, SDK ou LiveContainer; a versão exata do LiveContainer
+  desta validação não foi registrada.
+- Disponibilidade universal do FoundationModels: depende de região, idioma,
+  modelo do device e preparação do modelo.
 
+O perfil arm64 é mantido somente como rollback local e não faz parte da matriz
+canônica de release.
 As linhas acima descrevem evidência observada, não uma promessa de
 compatibilidade. O Apple SDK e os módulos gerados são fornecidos pelo usuário e
 não são distribuídos neste repositório. `ISB_SYSROOT` defaults to

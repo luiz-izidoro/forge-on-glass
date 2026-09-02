@@ -47,9 +47,8 @@ ISB_ARCH=arm64 sh scripts/build-pure-ui.sh LegacyApp com.example.legacy \
 ```
 
 Arm64e S2 is fully covered by the matrix in
-`scripts/acceptance-suite-arm64e.sh`. S3/S4 still require opening the fresh
-IPAs in the target LiveContainer/device and exercising each labeled flow.
-
+`scripts/acceptance-suite-arm64e.sh`. The user also confirmed S3/S4 for all
+listed flows on iPhone17,1 / iOS 26.6 via the tested LiveContainer host.
 
 
 ## Arm64e acceptance matrix (S2 local)
@@ -99,7 +98,9 @@ each labeled flow before claiming runtime compatibility.
 | **Perfil legado arm64** | cache parcialmente herdado; não é o perfil operacional. Pode ser selecionado explicitamente com `ISB_ARCH=arm64` |
 | **CoreGraphics degrades Foundation in whole-module** | a file using `CGRect` can make `Bundle`/`NotificationCenter` vanish from *other* files → `--primary-file` is the default since 2026-08-23. See `references/WARNINGS-FATAIS.md` |
 | **Delegate signatures must be checked, not guessed** | the patched SDK exposes `NSDictionary`/`NSIndexPath` where Apple documents Swift types; a mismatch is only a *warning* and yields a black screen. Guards: `check-warnings.py` + `check-entry.py` |
-| Patched `.swiftinterface` | some CoreGraphics conveniences are invisible → `assets/PureSwiftKit.swift` |
+| **NLEmbedding bridge:** a IPA anterior travava ao executar o modelo. O
+  diagnóstico atual é faseado e usa `getVector:forString:` com buffer nativo;
+  ainda requer novo teste no device.
 
 ### ❌ Not working / out of scope
 
@@ -301,13 +302,19 @@ structure; FoundationModels also requires weak-link.
 Acceptance status measured in this session:
 
 - canonical `acceptance-suite.sh` → arm64e.v1/PAC matrix: **PASS**;
-- 11 fresh IPAs generated: UI, Foundation/Dispatch, TortureTest, debug,
-  hybrid, CoreML/Vision/Accelerate, FoundationModels availability/runtime,
-  NaturalLanguage, embeddings and weak-link negative fixture;
+- 10 functional IPAs generated and validated: UI, Foundation/Dispatch,
+  TortureTest, debug, hybrid, CoreML/Vision/Accelerate, FoundationModels,
+  NaturalLanguage and NLEmbedding;
 - every IPA: exact arm64e slice, chained fixups, entry point and 0 undefined
   symbols: **PASS**;
-- runtime S3/S4 still requires opening each fresh IPA in the target
-  LiveContainer/device and exercising the labeled flow.
+- user-confirmed device evidence on iPhone17,1 / iOS 26.6 via LiveContainer:
+  SwiftUI UI, Foundation/Dispatch (`file_create=true`, `dispatch_group=PASS`,
+  11 ms), TortureTest (`37/37`), debug overlay, hybrid Fibonacci (`1597`),
+  CoreML/Vision/Accelerate (`vDSP=[5,7,9]`), NaturalLanguage (`true`),
+  FoundationModels (`response=OK`, `1995 ms`) and NLEmbedding (`dimension=640`,
+  `vector_count=640`): **S3/S4 in the tested scenario**;
+- compatibility with other devices, iOS versions, SDKs and LiveContainer
+  versions remains untested.
 
 
 
@@ -327,24 +334,25 @@ fetch/derive those on the user's own licensed machine. Full analysis:
 - [`ProcursusTeam/ldid`](https://github.com/ProcursusTeam/ldid) — signing.
 - [`ish-app/ish`](https://github.com/ish-app/ish) — the Linux shell on iOS.
 
-## Perfil nativo arm64e/PAC (canônico)
+## Arm64e runtime confirmed (2026-09-02)
 
-O projeto agora usa arm64e.v1/PAC como perfil operacional único. A matriz
-canônica gera e valida IPAs novas para UI, Foundation/Dispatch, TortureTest,
-debug, híbrido Swift+ObjC, CoreML/Vision/Accelerate, FoundationModels,
-NaturalLanguage e embeddings. O cache arm64 e os scripts antigos permanecem
-somente como rollback local explícito (`ISB_ARCH=arm64`).
+The full canonical arm64e matrix was exercised by the user on iPhone17,1 / iOS
+26.6 via LiveContainer. The listed flows are S3/S4 in that tested scenario.
+Other devices, SDKs, iOS versions and LiveContainer versions remain outside the
+matrix.
 ```sh
-# embeddings do sistema, inclusive com o perfil arm64 já comprovado
 sh scripts/build-pure-ui.sh EmbedApp com.example.embed main.swift \
   --extra-objc assets/NativeNLBridge.m --extra-framework NaturalLanguage
 
-# IA on-device Apple, com cache arm64e e linker PAC local já instalado
+# IA on-device Apple, no perfil arm64e/PAC canônico
 ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAI com.example.localai \
   main.swift assets/FoundationModelsProbe.swift
 
 # aceitação completa, sem rede/VM no caminho de build
-ISB_ARCH=arm64e sh scripts/acceptance-suite-arm64e.sh
+sh scripts/acceptance-suite.sh
+
+# LiveContainer também gera arm64e por padrão
+sh scripts/build-livecontainer.sh MeuApp com.example.meuapp main.swift
 ```
 
 `FoundationModels.framework` e `NaturalLanguage.framework` do SDK 26.5 têm
@@ -358,7 +366,21 @@ necessário. Receita do cache arm64e: `scripts/build-arm64e-modules.sh` e
 visual, incluindo verificação de slice, Mach-O e símbolos indefinidos. O
 TortureTest arm64e também cobre Diffable UIKit e PureSwiftKit.
 
-**Runtime:** as IPAs finais estão em `workspace/arm64e-final`. A aceitação
-estrutural está concluída; para converter cada capacidade em S3/S4, abra a IPA
-correspondente no LiveContainer e toque o fluxo indicado na tela. Não
-extrapolar o resultado para outros hosts ou devices.
+The canonical arm64e matrix was exercised on the user device. The current
+runtime evidence is:
+
+| Capability | Evidence |
+|---|---|
+| SwiftUI/UIKit | S3/S4 — UI rendered |
+| Foundation/Dispatch | S4 — file create/exists, dispatch group, 11 ms |
+| TortureTest/Diffable/UIKit helpers | S4 — 37/37 passed |
+| Debug/StikDebug | S3 — overlay visible |
+| Swift+ObjC hybrid | S4 — Fibonacci result confirmed |
+| CoreML/Vision/Accelerate | S4 — vDSP result `[5,7,9]` |
+| NaturalLanguage Swift | S4 — model available |
+| FoundationModels | S4 — response `OK`, 1995 ms |
+| NLEmbedding bridge | S4 — dimension 640, vector count 640 |
+
+This evidence is specific to iPhone17,1 / iOS 26.6 / the tested LiveContainer
+host. Other devices, iOS versions, SDKs and LiveContainer versions remain
+untested.
