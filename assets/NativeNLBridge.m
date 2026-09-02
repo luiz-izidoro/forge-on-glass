@@ -1,43 +1,68 @@
 #import <Foundation/Foundation.h>
 #import <NaturalLanguage/NaturalLanguage.h>
+#include <stdint.h>
 
-# Bridge diagnostic (2026-09-02): the first IPA executed the embedding model
-# during viewDidLoad and copied NSData directly into an Array, making launch
-# fragile on the device. The canonical fixture now runs on explicit user action,
-# uses a stable withUnsafeMutableBytes copy, and reports nil/error visibly.
-// explicit return values; it deliberately does not use @try/@catch because the
-// arm64e SDK profile does not provide the NSException EH type to the linker.
+// The bridge intentionally uses NLEmbedding's native float buffer API. It
+// avoids NSArray<NSNumber *> and NSData ownership/bridging in the Swift guest.
 static NSString *RadarEmbeddingError = nil;
 
-NSData *radar_sentence_embedding(NSString *text) {
-    RadarEmbeddingError = nil;
-    if (text == nil || text.length == 0) {
-        RadarEmbeddingError = @"empty text";
-        return nil;
-    }
+static NLEmbedding *RadarSentenceModel(void) {
     NLEmbedding *model = [NLEmbedding sentenceEmbeddingForLanguage:NLLanguagePortuguese];
     if (model == nil) model = [NLEmbedding sentenceEmbeddingForLanguage:NLLanguageEnglish];
-    if (model == nil) {
-        RadarEmbeddingError = @"no Portuguese/English model installed";
-        return nil;
-    }
-    NSArray<NSNumber *> *values = [model vectorForString:text];
-    if (values == nil || values.count == 0) {
-        RadarEmbeddingError = @"model returned empty vector";
-        return nil;
-    }
-    NSMutableData *data = [NSMutableData dataWithLength:values.count * sizeof(double)];
-    double *result = (double *)data.mutableBytes;
-    for (NSUInteger i = 0; i < values.count; i++) result[i] = values[i].doubleValue;
-    return data;
+    return model;
 }
 
-BOOL radar_native_embedding_available(void) {
+int32_t radar_native_embedding_available(void) {
     RadarEmbeddingError = nil;
-    BOOL portuguese = [NLEmbedding sentenceEmbeddingForLanguage:NLLanguagePortuguese] != nil;
-    BOOL english = [NLEmbedding sentenceEmbeddingForLanguage:NLLanguageEnglish] != nil;
-    if (!portuguese && !english) RadarEmbeddingError = @"no Portuguese/English model installed";
-    return portuguese || english;
+    NLEmbedding *model = RadarSentenceModel();
+    if (model == nil) RadarEmbeddingError = @"no Portuguese/English model installed";
+    return model != nil ? 1 : 0;
+}
+
+int32_t radar_sentence_embedding_dimension(void) {
+    RadarEmbeddingError = nil;
+    NLEmbedding *model = RadarSentenceModel();
+    if (model == nil) {
+        RadarEmbeddingError = @"no Portuguese/English model installed";
+        return 0;
+    }
+    return (int32_t)model.dimension;
+}
+
+// Returns 1 and writes count doubles when the system model accepts the text.
+// The output buffer belongs to Swift and is never retained by Objective-C.
+int32_t radar_get_sentence_embedding(NSString *text, double *output,
+                                     int32_t capacity, int32_t *count) {
+    RadarEmbeddingError = nil;
+    if (count != NULL) *count = 0;
+    if (text == nil || text.length == 0 || output == NULL || count == NULL) {
+        RadarEmbeddingError = @"invalid input buffer";
+        return 0;
+    }
+    NLEmbedding *model = RadarSentenceModel();
+    if (model == nil) {
+        RadarEmbeddingError = @"no Portuguese/English model installed";
+        return 0;
+    }
+    NSUInteger dimension = model.dimension;
+    if (dimension == 0 || dimension > (NSUInteger)capacity) {
+        RadarEmbeddingError = @"embedding dimension exceeds output buffer";
+        return 0;
+    }
+    float *values = calloc(dimension, sizeof(float));
+    if (values == NULL) {
+        RadarEmbeddingError = @"could not allocate embedding buffer";
+        return 0;
+    }
+    BOOL ok = [model getVector:values forString:text];
+    if (ok) {
+        for (NSUInteger i = 0; i < dimension; i++) output[i] = (double)values[i];
+        *count = (int32_t)dimension;
+    } else {
+        RadarEmbeddingError = @"model returned no vector for text";
+    }
+    free(values);
+    return ok ? 1 : 0;
 }
 
 NSString *radar_native_embedding_error(void) { return RadarEmbeddingError; }

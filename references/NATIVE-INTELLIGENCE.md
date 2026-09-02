@@ -51,40 +51,52 @@ cache arm64e completo já está disponível e o projeto prefere a API Swift. Ela
 útil para validar o módulo, mas não deve ser escolhida apenas por conveniência
 se o bridge atende ao caso.
 
-## Evidência manual pendente de captura
+## Evidência manual confirmada — 2026-09-02
 
-A geração real já foi confirmada pelo usuário no cenário documentado em
-`FOUNDATIONMODELS-RUNTIME.md`, elevando-o a S4 nesse cenário. Ainda não há uma
-captura reproduzível com os números; em uma nova execução, registrar device,
-iOS, slice, host, `availability`, prompt exato, resposta e latência em ms. Não
-extrapolar esse S4 para outros devices, versões ou hosts.
+O usuário abriu e exercitou a IPA `EmbeddingsArm64eThreePhase.ipa` no
+LiveContainer em iPhone17,1 / iOS 26.6. As três fases passaram:
 
-## Profiles
+```text
+availability=true
+error=none
+Fase 1=PASS
 
-O caminho recomendado para o LiveContainer é `scripts/build-livecontainer.sh`.
-Ele é **100% local**, força o slice arm64 — compatível com iPhones arm64e — e
-entrega a IPA unsigned para o LiveContainer aplicar `MH_DYLIB`, corrigir seus
-load commands e reassinar com ZSign.
+dimension=640
+error=none
+Fase 2=PASS
 
-O modo `ISB_ARCH=arm64e` é um perfil avançado **100% local e offline**. O
-linker LLD com suporte PAC do LLVM PR [#188378](https://github.com/llvm/llvm-project/pull/188378)
-foi compilado para Linux/aarch64 e instalado em
-`/opt/ios-toolchain/ld64.lld-arm64e`. O build normal não usa SSH, SCP nem VM;
-a VM só pode ser usada uma vez para bootstrap/reconstrução do artefato.
-Não habilite `Spoof SDK Version` no LiveContainer para este teste; use o
-nightly/3.8.0 atual e, se necessário, ative `dontInjectTweakLoader`.
+vector_count=640
+first=1.4632570128014777e-05
+Fase 3=PASS
+```
+
+Isto confirma **S4** para o bridge ObjC `NLEmbedding` nesse cenário: o modelo
+foi encontrado, a dimensão foi obtida e o vetor de 640 componentes foi gerado
+sem crash. A captura também valida a cópia do buffer nativo Objective-C para
+Swift. O resultado não deve ser extrapolado para devices, regiões, idiomas ou
+versões de iOS diferentes.
+
+
+## Evidence confirmed — 2026-09-02
+
+The user opened and exercised the phased arm64e NLEmbedding IPA on
+`iPhone17,1 / iOS 26.6` via LiveContainer. The model was available, dimension
+was `640`, and vector generation returned `640` components with `Fase 3=PASS`.
+This closes the last functional flow of the canonical arm64e matrix at S4 for
+the tested scenario.
+
+
+- **arm64e.v1/PAC**: perfil canônico, usado nas IPAs funcionais e na release.
+- **arm64**: perfil legado de rollback, não usado operacionalmente.
 
 
 ```sh
 sh scripts/build-pure-ui.sh App com.example.app main.swift
 ```
 
-The new profile is opt-in:
+The command above uses the canonical arm64e.v1/PAC profile. The old arm64
+profile is available only by explicitly setting `ISB_ARCH=arm64` for rollback.
 
-```sh
-ISB_ARCH=arm64e sh scripts/build-pure-ui.sh App com.example.app \
-  main.swift assets/FoundationModelsProbe.swift
-```
 
 Before using it, run `scripts/build-arm64e-modules.sh` on a real Linux host
 with Swift 6.3.3 and the iOS 26.5 SDK. The resulting directory must be copied
@@ -138,17 +150,10 @@ ISB_ARCH=arm64e sh scripts/build-pure-ui.sh App com.example.app \
   main.swift assets/FoundationModelsProbe.swift
 ```
 
-A rota local recomendada para o seu iOS 26.6 é:
-
-```sh
-sh scripts/build-livecontainer.sh MeuApp com.exemplo.meuapp \
-  main.swift
-```
-
-Ela gera `arm64`, que é executável em iPhones arm64e, usa o linker nativo do
-iSH e deixa a IPA unsigned para o LiveContainer aplicar o patch `MH_DYLIB` e
-reassinar com ZSign. Não requer a VM.
-
+O caminho `scripts/build-pure-ui.sh` agora usa arm64e.v1/PAC por padrão. Para
+LiveContainer, `scripts/build-livecontainer.sh` também gera arm64e; arm64 só é
+selecionado explicitamente para rollback histórico. Não habilite `Spoof SDK
+Version` no host testado; se necessário, use `dontInjectTweakLoader`.
 Para `FoundationModels`/PAC arm64e nativo, a rota avançada continua:
 
 ```sh
@@ -157,9 +162,6 @@ ISB_ARCH=arm64e sh scripts/build-pure-ui.sh MeuApp com.exemplo.meuapp \
 ```
 
 O comando acima usa diretamente o LLD PAC local aarch64 e gera uma IPA
-arm64e unsigned. O erro de crash no LiveContainer não é causado pelo SDK
-26.5 em iOS 26.6: o LiveContainer transforma e reassina o convidado; para
-execução no LiveContainer, a variante arm64 unsigned continua sendo a rota
-mais conservadora, enquanto o arm64e nativo é a rota local avançada.
-
+arm64e unsigned. A compatibilidade funcional foi confirmada no iPhone17,1 / iOS
+26.6 no host LiveContainer testado.
 

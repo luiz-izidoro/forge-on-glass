@@ -58,15 +58,11 @@ sh scripts/validate-ipa.sh /var/minis/workspace/MeuApp.ipa
 python3 scripts/check-debug-ipa.py /var/minis/workspace/MeuApp.ipa # somente --debug
 ```
 
-### Quando escolher cada perfil
+### Perfis
 
-- **arm64 + `build-livecontainer.sh`:** caminho conservador e comprovado para
-  convidados do LiveContainer em iPhones arm64e. Produz IPA unsigned para o
-  host transformar/reassinar. É o padrão de compatibilidade.
-- **arm64e + `ISB_ARCH=arm64e`:** perfil nativo avançado para um runtime que
-  aceite arm64e/PAC. Exige cache completo e compatível, linker PAC e validação
-  específica. O resultado estruturalmente correto ainda não é garantia de
-  funcionamento dentro do LiveContainer atual.
+- **arm64e.v1/PAC**: perfil canônico, usado nas IPAs funcionais e na release.
+- **arm64**: perfil legado de rollback, não usado operacionalmente.
+
 - **híbrido Swift + ObjC:** plano B maduro quando uma API Swift do SDK
   patchado degrada. Use Swift para a lógica e ObjC/UIKit para a camada que
   realmente precisa dos headers ObjC.

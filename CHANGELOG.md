@@ -1,6 +1,18 @@
-# Changelog
+## 0.2.0 — 2026-09-02
 
-## 0.2.0 — 2026-09-01
+- Promoted arm64e.v1/PAC to the canonical operational profile; arm64 remains
+  explicit rollback only.
+- Added the arm64e acceptance matrix for UI, Foundation/Dispatch, TortureTest,
+  debug, hybrid, CoreML/Vision/Accelerate, FoundationModels, NaturalLanguage
+  and embeddings.
+- Fixed UIKitCore generic Swift linking with `-client_name UIKit`.
+- Fixed the NLEmbedding bridge to use a caller-owned native buffer and a phased
+  runtime diagnostic. User confirmed `availability=true`, `dimension=640`,
+  `vector_count=640` and `Fase 3=PASS` on iPhone17,1 / iOS 26.6.
+- All canonical arm64e functional flows are now S4 in the tested device/
+  LiveContainer scenario; other devices, iOS versions and LiveContainer
+  versions remain outside the evidence matrix.
+
 
 - Promoted a freshly generated neutral arm64 module cache with 38 Swift
   modules and 59 PCMs; validation reports zero personal-path references.
@@ -50,8 +62,8 @@
 - External VM regeneration recorded in `references/VALIDATION-VM-2026-09-01.md`:
   target-specific graph `91` modules, orchestrator `93/93`, transferred cache
   `40` Swift modules + `60` PCMs, and zero `/home/` references in valid artifacts.
-- Full arm64e acceptance includes a fresh structural build of the
-  FoundationModels generation diagnostic; device execution remains manual.
+- `FoundationModels` generation is now user-confirmed S4 on the tested device;
+  the previous manual-capture gap is closed.
 - User subsequently confirmed successful device execution of the generated
   arm64e IPAs, including the FoundationModels `respond(to:)` flow and both
   benchmark variants; exact benchmark timings were not supplied.
