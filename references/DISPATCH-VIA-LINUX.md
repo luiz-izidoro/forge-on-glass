@@ -6,19 +6,23 @@
 > significa validado para o cache/combinação medidos, não para qualquer SDK ou
 > toolchain futuro.
 
-**STATUS: RESOLVED.** `import Foundation` + `import Dispatch` (e Combine,
-CoreFoundation, ObjectiveC, Darwin, System, Observation, os, simd, Spatial,
-Symbols, Accessibility...) compilam e linkam em Swift puro no iSH, usando
-módulos construídos num Linux real (VM) com o MESMO toolchain swift.org 6.3.2.
+**STATUS: RESOLVED for the active profile.** `import Foundation` + `import
+Dispatch` (e Combine, CoreFoundation, ObjectiveC, Darwin, System, Observation,
+os, simd, Spatial, Symbols, Accessibility...) compile and link in pure Swift on
+iSH using the neutral Swift 6.3.3 profile. The original VM bootstrap used Swift
+6.3.2; that is historical evidence only.
 
 ## O que foi feito
 
-1. **VM Linux** (Ubuntu 26.04, x86_64 — arquitetura do host não importa; o
-   output é arm64-apple-ios) com swift.org 6.3.2 + o MESMO SDK 26.5 do iSH
-   (upload de 328MB) + o orquestrador `orchestrator_vm.py`.
-2. **73 artefatos** em `/opt/ios-toolchain/foundation-build/`: 46 `clang_*.pcm`
-   + 27 `swift_*.swiftmodule` (incl. Foundation, Dispatch, UIKit-clang).
-3. **Copiados para o iSH** — carregam porque têm a tag exata swift.org 6.3.2.
+1. **VM Linux histórica** (Ubuntu 26.04, x86_64 — arquitetura do host não
+   importa; o output é arm64-apple-ios) com Swift 6.3.2 + o MESMO SDK 26.5 do
+iSH (upload de 328MB) + o orquestrador `orchestrator_vm.py`. O cache ativo foi
+posteriormente reconstruído/promovido com Swift 6.3.3.
+2. **Cache ativo 6.3.3** — o caminho Foundation/Dispatch foi revalidado
+   localmente e produz S2 estrutural; a execução em device deste caminho
+   específico ainda está pendente.
+3. **73 artefatos históricos** em `/opt/ios-toolchain/foundation-build/` foram
+   substituídos como rota principal por `foundation-build633`.
 
 ## Os 6 fixes (receita completa em `references/linux-vm/RECEITA-DISPATCH-LINUX.md`)
 
@@ -59,13 +63,19 @@ rm -rf /root/.cache/clang
 
 ```sh
 scripts/build-pure-foundation.sh <App> <main.swift>
-# → Mach-O arm64 iOS 26.0 com Foundation+Dispatch, 186+ símbolos Swift
+# → Mach-O arm64 iOS 26.0 com Foundation+Dispatch (S2 estrutural local)
 ```
 
-## Bloqueados (bug do swift.org 6.3.2, interface-compile mode)
+## Estado atual
 
-swift:DataDetection, swift:CoreTransferable, swift:SwiftUICore, swift:UIKit —
-tipos reexportados do clang Foundation (`Foundation.NSAttributedString` etc.)
-não resolvem em contextos aninhados. Workarounds parciais (unqualify/swap de
-ordem) resolveram Accessibility, Symbols, Foundation, Dispatch. Para UIKit
-puro, usar o híbrido (ObjC UIKit + Swift Foundation) ou os clang pcms.
+O caminho acima usa o perfil neutro Swift 6.3.3 e foi revalidado no iSH.
+A execução no device/LiveContainer deste caminho específico ainda não foi
+confirmada nesta rodada; não confundir S2 estrutural com S3/S4.
+
+## Bloqueios históricos do desbloqueio Swift
+
+DataDetection, CoreTransferable, SwiftUICore e UIKit foram bloqueios do
+primeiro ciclo de geração de interfaces. O perfil ativo 6.3.3 contém os
+módulos necessários para os builds pure-Swift validados; eventuais falhas em
+APIs individuais continuam cobertas por `PureSwiftKit` ou devem ser reduzidas
+com `probe_api.py`.

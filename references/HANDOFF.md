@@ -469,7 +469,7 @@ python3 fix_loop.py <Modulo> 40    # grava /tmp/fixlog_<Mod>.json
 | `probe_api.py` | mapeia quais APIs compilam (catálogo de 65) |
 | `extract-uikitcore-tbd.sh` | gera o tbd do UIKitCore (necessário p/ linkar) |
 | `probe_multifile.sh` | compara resolução 1 vs N arquivos |
-| `build-pure-foundation.sh` | app Swift + Foundation (6.3.2) |
+| `build-pure-foundation.sh` | app Swift + Foundation/Dispatch (neutral profile 6.3.3; S2 local) |
 | `build-ipa.sh` | híbrido Swift + ObjC |
 | `make-patchset.sh` | gera os diffs do SDK (VM → patchset versionado) |
 | `apply-patchset.sh` | aplica os patches num SDK limpo (idempotente) |

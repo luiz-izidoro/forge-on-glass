@@ -107,38 +107,29 @@ public func cgAffineRotate(_ radians: Double) -> CGAffineTransform {
 }
 
 // ============================================================== BUG 2 =======
-// CGContext do overlay não tem move/addLine/setLineDash/addArc. As funções C
-// funcionam — estes wrappers dão de volta a API familiar.
+// CGContext usa a API de instância moderna neste SDK patchado. As funções C
+// equivalentes são marcadas unavailable e não devem ser usadas aqui.
 // (Funcionam no overlay: setFillColor, fill, setStrokeColor, setLineWidth,
 //  setLineCap, strokePath, beginPath, fillEllipse.)
 
 extension CGContext {
-    public func cgMove(to p: CGPoint) {
-        CGContextMoveToPoint(self, p.x, p.y)
-    }
-    public func cgAddLine(to p: CGPoint) {
-        CGContextAddLineToPoint(self, p.x, p.y)
-    }
+    public func cgMove(to p: CGPoint) { move(to: p) }
+    public func cgAddLine(to p: CGPoint) { addLine(to: p) }
     public func cgAddArc(center c: CGPoint, radius r: Double,
                          startAngle a0: Double, endAngle a1: Double,
                          clockwise: Bool = false) {
-        CGContextAddArc(self, c.x, c.y, CGFloat(r), CGFloat(a0), CGFloat(a1),
-                        clockwise ? 1 : 0)
+        addArc(center: c, radius: CGFloat(r), startAngle: CGFloat(a0),
+               endAngle: CGFloat(a1), clockwise: clockwise)
     }
     /// Linha tracejada. `lengths` vazio = volta ao traço sólido.
     public func cgSetLineDash(phase: Double = 0, lengths: [Double]) {
-        if lengths.isEmpty {
-            CGContextSetLineDash(self, 0, nil, 0)
-        } else {
-            var d = lengths.map { CGFloat($0) }
-            CGContextSetLineDash(self, CGFloat(phase), &d, d.count)
-        }
+        setLineDash(phase: CGFloat(phase), lengths: lengths.map { CGFloat($0) })
     }
-    public func cgClosePath() { CGContextClosePath(self) }
-    public func cgAddRect(_ r: CGRect) { CGContextAddRect(self, r) }
-    public func cgStrokeRect(_ r: CGRect) { CGContextStrokeRect(self, r) }
-    public func cgSaveState() { CGContextSaveGState(self) }
-    public func cgRestoreState() { CGContextRestoreGState(self) }
+    public func cgClosePath() { closePath() }
+    public func cgAddRect(_ r: CGRect) { addRect(r) }
+    public func cgStrokeRect(_ r: CGRect) { stroke(r) }
+    public func cgSaveState() { saveGState() }
+    public func cgRestoreState() { restoreGState() }
 }
 
 // ============================================================== BUG 6 =======
@@ -166,7 +157,7 @@ extension UICollectionView {
                               _ ip: IndexPath) -> UICollectionViewCell {
         return dequeueReusableCell(
             withReuseIdentifier: identifier,
-            for: NSIndexPath(item: ip.item, section: ip.section))
+            for: NSIndexPath(item: ip.item, section: ip.section) as IndexPath)
     }
 }
 
@@ -175,7 +166,7 @@ extension UITableView {
                               _ ip: IndexPath) -> UITableViewCell {
         return dequeueReusableCell(
             withIdentifier: identifier,
-            for: NSIndexPath(row: ip.row, section: ip.section))
+            for: NSIndexPath(row: ip.row, section: ip.section) as IndexPath)
     }
 }
 

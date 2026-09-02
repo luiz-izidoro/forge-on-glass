@@ -27,6 +27,25 @@ pass "script syntax"
 ISB_ARCH=arm64 sh "$SKILL/scripts/check-env.sh" || fail "arm64 environment"
 pass "arm64 environment"
 
+# Foundation/Dispatch pure-Swift smoke: this used to select the obsolete
+# 6.3.2 cache and personal /home paths. Keep it as an active S2 test.
+cat > "$WORK/foundation-probe.swift" <<'EOF'
+import Foundation
+import Dispatch
+let q = DispatchQueue(label: "acceptance")
+let g = DispatchGroup(); g.enter()
+q.async { _ = FileManager.default.fileExists(atPath: NSTemporaryDirectory()); g.leave() }
+g.wait()
+print("foundation-dispatch-ok")
+EOF
+ISB_OUTPUT="$WORK/FoundationDispatch" sh "$SKILL/scripts/build-pure-foundation.sh" \
+  FoundationDispatch "$WORK/foundation-probe.swift" || fail "Foundation/Dispatch pure build"
+python3 scripts/check-undefined.py "$WORK/FoundationDispatch" \
+  "${ISB_SYSROOT:-/opt/isb/sysroot}/iPhoneOS26.5.sdk" || fail "Foundation/Dispatch undefined symbols"
+pass "Foundation/Dispatch neutral 6.3.3 S2 smoke"
+sh "$SKILL/scripts/verify-pureswiftkit.sh" >/dev/null || fail "PureSwiftKit coverage"
+pass "PureSwiftKit workaround coverage"
+
 # Build a fresh unsigned IPA through the exact path recommended for LiveContainer.
 cd "$SKILL"
 sh scripts/build-livecontainer.sh AcceptanceApp com.example.acceptance \
@@ -37,8 +56,11 @@ sh scripts/validate-ipa.sh "$IPA" || fail "IPA validation"
 TMP="$WORK/ipa"; mkdir -p "$TMP"; unzip -q "$IPA" -d "$TMP"
 BIN="$TMP/Payload/AcceptanceApp.app/AcceptanceApp"
 [ -s "$BIN" ] || fail "missing executable"
-python3 scripts/check-livecontainer.py "$BIN" || fail "LiveContainer invariants"
-python3 scripts/check-slice.py "$BIN" arm64 || fail "exact arm64 slice"
+# Check a fresh executable against every SDK stub. This is a structural
+# undefined-symbol guard, not device/runtime proof.
+python3 scripts/check-undefined.py "$BIN" \
+  "${ISB_SYSROOT:-/opt/isb/sysroot}/iPhoneOS26.5.sdk" || fail "undefined symbols"
+
 if python3 scripts/check-slice.py "$BIN" arm64e >/dev/null 2>&1; then
   fail "arm64 guard accepted an arm64 binary as arm64e"
 fi

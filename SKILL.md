@@ -89,16 +89,15 @@ Pure-Swift console apps (no UI) also work: skip AppShell.m and compile+link
 `CoreFoundation`, `Combine`, `Observation`, `System`, `_DarwinFoundation1/2/3`,
 `_Builtin_float`. When importing these you MUST inject both shims:
 `-Xcc -fmodule-file=SwiftShims=… -Xcc -fmodule-file=_SwiftConcurrencyShims=…`
-(the prebuilt `.swiftmodule`s live in `/opt/ios-toolchain/foundation-build/`).
+(the prebuilt `.swiftmodule`s live in the active profile cache).
 
 **Since 2026-08-18, `Foundation`, `Dispatch`, `os`, `simd`, `Spatial`, `Symbols`
 and `Accessibility` ALSO import in pure Swift** — the Foundation chain was
-built on a real Linux (VM) with the matching swift.org 6.3.2 and copied back.
-Use `scripts/build-pure-foundation.sh <App> <main.swift>` (compile+link in one
-step). `import Foundation` + `import Dispatch` work end-to-end (validated:
-Mach-O arm64 iOS 26.0, 186 Swift symbols). See
-`references/DISPATCH-VIA-LINUX.md` (now SOLVED) for the VM recipe + the iSH
-symlinks that the prebuilt `.pcm` files require.
+built on a real Linux (VM) with the matching Swift 6.3.3 profile and copied
+back. Use `scripts/build-pure-foundation.sh <App> <main.swift>` (compile+link in
+one step). `import Foundation` + `import Dispatch` were revalidated locally
+with the neutral sysroot, producing a Mach-O arm64 iOS 26.0 (S2 structural).
+See `references/DISPATCH-VIA-LINUX.md` for the VM recipe and required paths.
 
 ## Pure-Swift UIKit / SwiftUI — ✅ FUNCIONA (desde 2026-08-19)
 
@@ -531,9 +530,15 @@ Detalhe histórico em `references/LIMITATIONS.md` e
   warning (que é inconstante). Integrado ao build; validado em 6 IPAs.
 - `scripts/check-protocol-sig.py` — mostra a assinatura **real** de um
   protocolo/membro no SDK patchado. **Consulte antes de escrever delegates.**
+- `PureSwiftKit.swift` — cobre as degradações Swift/ObjC catalogadas e é
+  validado por `scripts/verify-pureswiftkit.sh`. Atualmente a cobertura foi
+  revalidada: **3/3 objetos compilam**, incluindo os wrappers modernos de
+  `CGContext` e os helpers de `NSIndexPath`.
+
 - `scripts/check-undefined.py` — confere os símbolos indefinidos do binário
   contra os `.tbd` do SDK (pega o que o lld aceita e o dyld recusaria).
-- `assets/AppEntry.swift` — **template do entry point** (assinatura correta).
+  A aceitação arm64 agora executa essa guarda; os perfis AcceptanceApp,
+  Foundation/Dispatch e híbrido testados retornaram **0 faltantes**.
 - `assets/PlatformVersionShim.swift` — `__isPlatformVersionAtLeast`
   (necessário quando o código usa `#available`).
 - `references/WARNINGS-FATAIS.md` — 🔴 **compila mas não funciona**: causas,
@@ -586,8 +591,7 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/check-env.sh` — verify the toolchain is intact.
 - `scripts/build-ipa.sh` — the end-to-end build (hybrid or `--pure`).
 - `scripts/build-pure-foundation.sh` — compile+link pure-Swift app with
-  Foundation/Dispatch (módulos 6.3.2; para 6.3.3 trocar SW/OUT — ver
-  ESTADO-E-NEXT-STEPS.md §7).
+  Foundation/Dispatch using the neutral 6.3.3 profile.
 - `scripts/check-debug-ipa.py` — 🐞 guarda de IPA de debug (`get-task-allow`, esquema e instrumentação).
 - `assets/DebugSupport.swift` — logs, PID, detecção LiveContainer, overlay DBG e URL StikDebug.
 - `assets/NativeNLBridge.m` + `assets/NativeEmbeddings.swift` — embeddings

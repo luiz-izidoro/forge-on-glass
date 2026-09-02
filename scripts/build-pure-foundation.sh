@@ -1,51 +1,59 @@
 #!/bin/sh
-# build-pure-foundation.sh — compile+link a PURE-SWIFT iOS app that uses
-# Foundation/Dispatch/Combine/etc. on iSH, using the VM-built modules.
-#
+# build-pure-foundation.sh — compile+link a pure-Swift Foundation/Dispatch app.
+# Uses the same configurable neutral profile as build-pure-ui.sh.
 # Usage: build-pure-foundation.sh <AppName> <main.swift>
-# Output: <AppName> (Mach-O arm64 iOS 26.0)
-#
-# Requires (all present after the 2026-08-18 breakthrough):
-#   /opt/ios-toolchain/foundation-build/  (VM-built pcm + swiftmodule set)
-#   /opt/isb/sysroot/{iPhoneOS26.5.sdk,swift-6.3.2} symlinks
-#   /opt/swift6.3/usr/lib/swift/{dispatch,os,CoreFoundation} -> SDK symlinks
-set -e
-APP="$1"; SRC="$2"
-OBJ="/tmp/$(basename "$APP").o"
-ERRF="/tmp/$(basename "$APP").swift.err"
-SW=/opt/swift6.3
-SF="$SW/usr/bin/swift-frontend"
-SDK=/opt/ios-toolchain/iPhoneOS26.5.sdk
-OUT=/opt/ios-toolchain/foundation-build
+set -eu
+APP="${1:?uso: $0 <AppName> <main.swift>}"
+SRC="${2:?falta main.swift}"
+. "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/profile.sh"
+[ -f "$SRC" ] || { echo "fonte ausente: $SRC" >&2; exit 1; }
+[ -d "$OUT" ] || { echo "cache ausente: $OUT" >&2; exit 1; }
+OBJ="/tmp/${APP}-foundation-$$.o"
+ERRF="/tmp/${APP}-foundation-$$.err"
+BIN="${ISB_OUTPUT:-$PWD/$APP}"
+mkdir -p "$ISB_MODULE_CACHE"
 
-# --- compile (retry for the ~15-25% startup race) ---
-CMD="$SF -c -target arm64-apple-ios26.0 -sdk $SDK -resource-dir $SW/usr/lib/swift -I $OUT"
-for f in $OUT/swift_*.swiftmodule; do
-  nm=$(basename "$f" .swiftmodule | sed 's/^swift_//')
-  CMD="$CMD -swift-module-file=$nm=$f"
+# Explicit modules are required: implicit module discovery is not reliable on
+# iSH and can accidentally load a cache built with the wrong prefix.
+MOD_ARGS=""
+for f in "$OUT"/swift_*.swiftmodule; do
+  [ -f "$f" ] || continue
+  n=$(basename "$f" .swiftmodule); n=${n#swift_}
+  [ "$n" = XPC ] && continue
+  MOD_ARGS="$MOD_ARGS -swift-module-file=$n=$f"
 done
-for f in $OUT/clang_*.pcm; do
-  nm=$(basename "$f" .pcm | sed 's/^clang_//')
-  CMD="$CMD -Xcc -fmodule-file=$nm=$f"
+for f in "$OUT"/clang_*.pcm; do
+  [ -f "$f" ] || continue
+  n=$(basename "$f" .pcm); n=${n#clang_}
+  MOD_ARGS="$MOD_ARGS -Xcc -fmodule-file=$n=$f"
 done
-CMD="$CMD -Xcc -ivfsoverlay -Xcc /opt/ios-toolchain/vfs/overlay.yaml"
 
-i=0
-while [ $i -lt 6 ]; do
-  timeout 900 env -i HOME=/root TERM=dumb sh -c "$CMD '$SRC' -o $OBJ" 2>"$ERRF" || true
-  [ -s "$OBJ" ] && break
-  i=$((i+1)); sleep 1
+OK=0
+for attempt in 1 2 3 4 5 6; do
+  rm -f "$OBJ" "$ERRF"
+  # shellcheck disable=SC2086
+  "$SF" -frontend -c -target "$ISB_TARGET" $ISB_CPU_ARGS -sdk "$SDK" \
+    -resource-dir "$SW/usr/lib/swift" -module-name "$APP" \
+    -disable-implicit-swift-modules -Xcc -fno-implicit-modules \
+    -Xcc -fno-implicit-module-maps -Xcc -ivfsoverlay -Xcc "$VFS" \
+    -Xcc "-fmodules-cache-path=$BIG" $MOD_ARGS "$SRC" -o "$OBJ" \
+    2>"$ERRF" || true
+  if [ -s "$OBJ" ]; then OK=1; break; fi
+  if grep -q 'error:' "$ERRF" 2>/dev/null; then
+    echo "swift compile failed:" >&2; grep 'error:' "$ERRF" | head -10 >&2; exit 1
+  fi
+  echo "swift frontend retry $attempt" >&2
 done
-[ -s "$OBJ" ] || { echo "swift compile failed"; tail -5 "$ERRF"; exit 1; }
+[ "$OK" -eq 1 ] || { echo "swift compile failed after retries" >&2; tail -10 "$ERRF" >&2; exit 1; }
 echo "[1/2] Swift OK ($(wc -c <"$OBJ")B)"
 
-# --- link ---
-/usr/bin/clang -target arm64-apple-ios26.0 -isysroot "$SDK" -fuse-ld=lld \
-  -L "$SDK/usr/lib/swift" -L "$SDK/usr/lib" \
-  "$OBJ" \
+# shellcheck disable=SC2086
+clang -target "$ISB_TARGET" -isysroot "$SDK" -fuse-ld=lld \
+  -L "$SDK/usr/lib/swift" -L "$SDK/usr/lib" "$OBJ" \
   -framework Foundation -framework CoreFoundation -lobjc \
   -lswiftCore -lswiftFoundation -lswiftDispatch -lswift_Concurrency \
   -lswift_StringProcessing -lswiftSwiftOnoneSupport -lswiftCoreFoundation \
-  -Wl,-platform_version,ios,26.0,26.5 \
-  -o "$APP" 2>"/tmp/$(basename "$APP").link.err" || { echo "link failed"; cat "/tmp/$(basename "$APP").link.err"; exit 1; }
-echo "[2/2] Linked: $APP ($(wc -c <"$APP")B)"
+  -Wl,-platform_version,ios,26.0,26.5 -o "$BIN" \
+  2>"$ERRF" || { echo "link failed:" >&2; cat "$ERRF" >&2; exit 1; }
+echo "[2/2] Linked: $BIN ($(wc -c <"$BIN")B)"
+rm -f "$OBJ" "$ERRF"
