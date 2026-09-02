@@ -1,6 +1,6 @@
 #!/bin/sh
 # link-ipa.sh — linka, assina e empacota objetos Swift.
-# ISB_ARCH=arm64e seleciona o slice arm64e; default arm64.
+# Native arm64e is canonical; arm64 is explicit legacy rollback.
 . "$(dirname "$0")/profile.sh"
 #
 # POR QUE ISSO EXISTE:
@@ -92,7 +92,7 @@ echo "==> linkando ($nobj objeto(s), entrada: $(basename "$MAINO"))"
 # pelo documento do UIKitCore dentro do UIKit.tbd, que o lld nao percorre.
 EXTRAFW=/opt/ios-toolchain/extrafw
 EXTRAFLAGS=""
-if [ "$ISB_ARCH" != "arm64e" ] && [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
+if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
 if [ "$ISB_ARCH" = "arm64e" ]; then
@@ -109,7 +109,7 @@ if [ "$ISB_ARCH" = "arm64e" ]; then
   "$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
     -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
     -dead_strip \
-    -lSystem -lobjc $EXTRAFLAGS \
+    -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
     -framework UIKit -framework Foundation \
     -framework CoreGraphics \
     -framework QuartzCore -framework SwiftUI -framework CoreText \

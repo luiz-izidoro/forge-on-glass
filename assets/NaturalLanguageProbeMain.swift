@@ -5,8 +5,13 @@ import NaturalLanguage
 final class DirectNLViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.systemOrange
-        _ = NaturalLanguageProbe.portugueseSentenceModelAvailable
+        let label = UILabel()
+        label.textColor = UIColor.white
+        label.numberOfLines = 0
+        let available = NaturalLanguageProbe.portugueseSentenceModelAvailable
+        label.text = "NaturalLanguage Swift\nmodel_available=\(available)"
+        label.sizeToFit()
+        view.addSubview(label)
     }
 }
 final class DirectNLDelegate: UIResponder, UIApplicationDelegate {

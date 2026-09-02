@@ -25,9 +25,8 @@ if not os.path.exists(ROOT):
     candidates = glob.glob("/home/*/swift-ios-build")
     if candidates:
         ROOT = candidates[0]
-# Profiles are selected with ISB_ARCH=arm64 (default) or ISB_ARCH=arm64e.
-# Never mix the prebuilt module cache between slices.
-ARCH = os.environ.get("ISB_ARCH", "arm64")
+# Native arm64e is canonical; arm64 is explicit legacy rollback.
+ARCH = os.environ.get("ISB_ARCH", "arm64e")
 if ARCH not in ("arm64", "arm64e"):
     raise SystemExit("ISB_ARCH invalido: %s (use arm64 ou arm64e)" % ARCH)
 TARGET = os.environ.get("ISB_TARGET", ARCH + ("-apple-ios26.5" if ARCH == "arm64e" else "-apple-ios26.0"))

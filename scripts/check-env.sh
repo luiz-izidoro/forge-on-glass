@@ -69,7 +69,7 @@ pure=1
 echo "--- perfil Swift puro (build-pure-ui.sh / build-parallel.py) ---"
 
 SW633=/opt/swift6.3.3/usr/bin/swift-frontend
-if [ "${ISB_ARCH:-arm64}" = "arm64e" ]; then
+if [ "${ISB_ARCH:-arm64e}" = "arm64e" ]; then
   SW633=/opt/swift6.3.3/usr/bin/swift-frontend
 fi
 if [ -x "$SW633" ]; then
@@ -84,7 +84,7 @@ else
 fi
 
 FB=/opt/ios-toolchain/foundation-build633
-[ "${ISB_ARCH:-arm64}" = "arm64e" ] && FB=/opt/ios-toolchain/foundation-build633-arm64e
+[ "${ISB_ARCH:-arm64e}" = "arm64e" ] && FB=/opt/ios-toolchain/foundation-build633-arm64e
 if [ -d "$FB" ]; then
   nmod=$(ls "$FB"/swift_*.swiftmodule 2>/dev/null | wc -l)
   npcm=$(ls "$FB"/clang_*.pcm 2>/dev/null | wc -l)
@@ -142,7 +142,7 @@ FM_IF="$NATIVE_SDK/System/Library/Frameworks/FoundationModels.framework/Modules/
 NL_IF="$NATIVE_SDK/usr/lib/swift/NaturalLanguage.swiftmodule/arm64e-apple-ios.swiftinterface"
 [ -s "$FM_IF" ] && note "OK " "FoundationModels Swift interface arm64e (iOS 26.5)" || note "?? " "FoundationModels interface arm64e unavailable"
 [ -s "$NL_IF" ] && note "OK " "NaturalLanguage Swift interface arm64e (iOS 26.5)" || note "?? " "NaturalLanguage interface arm64e unavailable"
-if [ "${ISB_ARCH:-arm64}" = "arm64e" ]; then
+if [ "${ISB_ARCH:-arm64e}" = "arm64e" ]; then
   # The active foundation-build633-arm64e cache supplies target modules.
   # embedded/ was hidden and the complete arm64e acceptance still passed.
   note "OK " "Swift stdlib embedded arm64e (não requerido; Fase 5.2 PASS)"

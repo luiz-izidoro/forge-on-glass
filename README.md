@@ -12,13 +12,12 @@ Xcode / a device).
 > and glibc's terms. This repo ships only original scripts, docs, and sample
 > sources — no Apple/Swift/glibc material. See [Licensing](#licensing).
 
-Proven working: Swift → Mach-O arm64 (iOS 26.5 SDK) → linked with UIKit →
-ad-hoc signed → `.ipa`. **Pure-Swift `import UIKit` and `import SwiftUI` work
-on-device** (since 2026-08-19) — no Objective-C needed. `import Foundation` +
-`import Dispatch` also work in pure Swift (modules built once on a real Linux
-with the matching swift.org toolchain, then loaded on iSH). Apps built this way
-have been **run on a real device** (LiveContainer), including a 27k-line app
-with an SPM dependency tree.
+Proven working: Swift 6.3.3 → Mach-O arm64e.v1/PAC (iOS 26.5 SDK) →
+linked with UIKit/Foundation → IPA estruturally valid → LiveContainer/device
+validation path. **Pure-Swift `import UIKit` and `import SwiftUI` work on-device**
+(since 2026-08-19) — no Objective-C needed. `import Foundation` + `import
+Dispatch` also work in pure Swift. The arm64 cache is retained only as an
+explicit rollback profile.
 
 ---
 
@@ -36,9 +35,37 @@ with an SPM dependency tree.
 matriz completa, incluindo o host exato das validações, está em
 [`references/VERSION-MATRIX.md`](references/VERSION-MATRIX.md).
 
-## What you get
+## Native arm64e profile (canonical)
 
-- Write **all app logic in modern Swift** (generics, closures, arrays, structs,
+The project now treats native arm64e.v1/PAC as the single operational profile.
+All new IPAs and the canonical acceptance alias use arm64e. The old arm64 cache and scripts remain only as an explicit local rollback path
+for emergency reproduction:
+
+```sh
+ISB_ARCH=arm64 sh scripts/build-pure-ui.sh LegacyApp com.example.legacy \
+  assets/PureSwiftDemo.swift --primary-file --unsigned
+```
+
+Arm64e S2 is fully covered by the matrix in
+`scripts/acceptance-suite-arm64e.sh`. S3/S4 still require opening the fresh
+IPAs in the target LiveContainer/device and exercising each labeled flow.
+
+
+
+## Arm64e acceptance matrix (S2 local)
+
+The canonical `scripts/acceptance-suite.sh` generates and validates fresh
+arm64e.v1/PAC IPAs for UIKit/SwiftUI, Foundation/Dispatch, the full TortureTest
+(including Diffable UIKit), debug/StikDebug, Swift+ObjC hybrid, CoreML/Vision/
+Accelerate, FoundationModels availability and generation, NaturalLanguage, and
+NLEmbedding via ObjC bridge. Every IPA is checked for the exact arm64e slice,
+chained fixups, entry point, undefined symbols and IPA structure; FoundationModels
+also requires weak-link.
+
+S2 is not S3/S4: open the IPAs in the target LiveContainer/device and exercise
+each labeled flow before claiming runtime compatibility.
+
+
   Combine, Observation, Foundation, Dispatch, …) and the **UI in
   Objective-C/UIKit**, linked together (hybrid — works today).
 - **Pure-Swift console apps** with `import Foundation` / `import Dispatch` —
@@ -62,14 +89,14 @@ matriz completa, incluindo o host exato das validações, está em
 | **Porting third-party GitHub projects** | `scripts/port-third-party.py` — reactive build loop with automatic fixes |
 | Swift logic + **ObjC UIKit UI** (hybrid) | `scripts/build-ipa.sh` — the original architecture, still supported |
 | Full IPA packaging + ad-hoc signing | `build-pure-ui.sh` / `link-ipa.sh` → `validate-ipa.sh` |
-| **Acceptance / release test** | `scripts/acceptance-suite.sh` — fresh local arm64 LiveContainer IPA, validation, exact-slice negative test, environment and quick regression |
+| **Acceptance / release test** | `scripts/acceptance-suite.sh` — canonical arm64e.v1/PAC IPA matrix, structural guards, weak-link negative test and debug validation |
 | Clang modules for **UIKit, Security, CFNetwork, CoreGraphics, CoreText, QuartzCore, OSLog, XPC, MachO, UIUtilities** etc. | prebuilt `.pcm` set (usable from ObjC) |
 
 ### ⚠️ Known caveats
 
 | Caveat | Detail |
 |---|---|
-| **Reprodução do cache arm64** | `scripts/build-arm64-modules.sh --pcm-only` regenera 59 PCMs neutros; `--full` exige interfaces arm64, ausentes no SDK atual (0) | os 38 `swiftmodule`s arm64 ativos são herdados; ver `references/LIMITATIONS.md` |
+| **Perfil legado arm64** | cache parcialmente herdado; não é o perfil operacional. Pode ser selecionado explicitamente com `ISB_ARCH=arm64` |
 | **CoreGraphics degrades Foundation in whole-module** | a file using `CGRect` can make `Bundle`/`NotificationCenter` vanish from *other* files → `--primary-file` is the default since 2026-08-23. See `references/WARNINGS-FATAIS.md` |
 | **Delegate signatures must be checked, not guessed** | the patched SDK exposes `NSDictionary`/`NSIndexPath` where Apple documents Swift types; a mismatch is only a *warning* and yields a black screen. Guards: `check-warnings.py` + `check-entry.py` |
 | Patched `.swiftinterface` | some CoreGraphics conveniences are invisible → `assets/PureSwiftKit.swift` |
@@ -262,31 +289,26 @@ sh scripts/regression-suite.sh --quick
 sh scripts/acceptance-suite.sh
 ```
 
-The acceptance suite is intentionally local and does not use SSH. It checks
-shell/Python syntax, both the selected arm64 environment and the generated IPA,
-then verifies `LC_MAIN`, chained-fixup segment counts, entry-point/delegate
-symbols, exact CPU subtype, and IPA contents. It also asserts that an arm64
-binary is rejected when requested as arm64e, preventing substring false
-positives. The fresh artifact is `/var/minis/workspace/AcceptanceApp.ipa`.
+The canonical `scripts/acceptance-suite.sh` generates a complete arm64e.v1/PAC
+matrix. It checks fresh IPAs for UIKit/SwiftUI, Foundation/Dispatch,
+TortureTest/Diffable UIKit, debug/StikDebug, Swift+ObjC hybrid,
+CoreML/Vision/Accelerate, FoundationModels availability and generation,
+NaturalLanguage, and NLEmbedding via ObjC bridge. Each IPA is checked for the
+exact arm64e slice, chained fixups, entry point, undefined symbols and IPA
+structure; FoundationModels also requires weak-link.
+
 
 Acceptance status measured in this session:
 
-- `check-env.sh` — arm64 and arm64e: READY (separate caches intact).
-- `regression-suite.sh --quick` — PASS; primary-file cases pass and the
-  whole-module `Bundle` failure remains a reproducible known bug.
-- fresh `build-livecontainer.sh` — PASS; unsigned arm64 IPA, SDK 26.5,
-  `LC_MAIN`, 5 segments and matching chained-fixup metadata.
-- `validate-ipa.sh`, `check-livecontainer.py`, `check-entry.py` — PASS.
-- runtime — `/var/minis/workspace/LocalLCFinal.ipa` was opened successfully
-  in LiveContainer on iOS 26.6 (device iPhone17,1).
+- canonical `acceptance-suite.sh` → arm64e.v1/PAC matrix: **PASS**;
+- 11 fresh IPAs generated: UI, Foundation/Dispatch, TortureTest, debug,
+  hybrid, CoreML/Vision/Accelerate, FoundationModels availability/runtime,
+  NaturalLanguage, embeddings and weak-link negative fixture;
+- every IPA: exact arm64e slice, chained fixups, entry point and 0 undefined
+  symbols: **PASS**;
+- runtime S3/S4 still requires opening each fresh IPA in the target
+  LiveContainer/device and exercising the labeled flow.
 
-The arm64e local-linker experiment is deliberately not on the production
-path. LLVM PR #188378 was backported in an isolated `/tmp/llvm19-lld` tree,
-but compiling `InputFiles.cpp` on iSH exhausted the 4 GB memory limit
-(`std::bad_alloc`); iSH does not implement `swapon`. The known-good remote
-LLD remains an optional advanced fallback, while the production LiveContainer
-route stays 100% local arm64. Never replace `/usr/bin/ld64.lld` until a future
-local build passes this acceptance suite and opens on-device.
 
 
 **MIT** for this repo's original files (scripts, docs, sample Swift/ObjC).
@@ -305,19 +327,13 @@ fetch/derive those on the user's own licensed machine. Full analysis:
 - [`ProcursusTeam/ldid`](https://github.com/ProcursusTeam/ldid) — signing.
 - [`ish-app/ish`](https://github.com/ish-app/ish) — the Linux shell on iOS.
 
-## Inteligência nativa, local e arm64e (SDK iOS 26.5)
+## Perfil nativo arm64e/PAC (canônico)
 
-A skill agora possui dois perfis explícitos, sem misturar caches incompatíveis:
-
-- **arm64 (validado em runtime no LiveContainer):** UIKit/SwiftUI/Foundation e
-  bridges ObjC para NaturalLanguage/NLEmbedding.
-- **arm64e avançado:** cache completo e LLD PAC local; FoundationModels,
-  NaturalLanguage, SwiftUI/UIKit linkam corretamente. As IPAs arm64e novas
-  também foram abertas e executadas com sucesso no iPhone17,1 / iOS 26.6 via
-  LiveContainer (S3 no host testado).
-- **LiveContainer:** use `scripts/build-livecontainer.sh`/guest arm64; o perfil
-  arm64e foi validado no host acima, mas a compatibilidade não é garantida para
-  toda versão/host do LiveContainer.
+O projeto agora usa arm64e.v1/PAC como perfil operacional único. A matriz
+canônica gera e valida IPAs novas para UI, Foundation/Dispatch, TortureTest,
+debug, híbrido Swift+ObjC, CoreML/Vision/Accelerate, FoundationModels,
+NaturalLanguage e embeddings. O cache arm64 e os scripts antigos permanecem
+somente como rollback local explícito (`ISB_ARCH=arm64`).
 ```sh
 # embeddings do sistema, inclusive com o perfil arm64 já comprovado
 sh scripts/build-pure-ui.sh EmbedApp com.example.embed main.swift \
@@ -332,25 +348,17 @@ ISB_ARCH=arm64e sh scripts/acceptance-suite-arm64e.sh
 ```
 
 `FoundationModels.framework` e `NaturalLanguage.framework` do SDK 26.5 têm
-stubs para arm64 e arm64e. Foundation Models usa o modelo Apple disponível no
-sistema; não é um runtime para pesos locais de terceiros. Para modelos locais
+stubs para arm64e. Foundation Models usa o modelo Apple disponível no sistema;
+não é um runtime para pesos locais de terceiros. Para modelos locais
 embarcados, use Core ML/Vision/Accelerate e passe `--extra-framework` conforme
 necessário. Receita do cache arm64e: `scripts/build-arm64e-modules.sh` e
 `references/NATIVE-INTELLIGENCE.md`.
 
-**Foundation/Dispatch:** os perfis arm64 e arm64e agora têm smoke test local S2
-com `build-pure-foundation.sh`, incluindo verificação de slice, Mach-O e
-símbolos indefinidos. A execução desse smoke específico em device ainda não foi
-confirmada.
+**Foundation/Dispatch:** o perfil arm64e tem smoke test local S2 com IPA
+visual, incluindo verificação de slice, Mach-O e símbolos indefinidos. O
+TortureTest arm64e também cobre Diffable UIKit e PureSwiftKit.
 
-
-**Limite de runtime:** o perfil arm64e foi aberto e executado com sucesso no
-LiveContainer do host de teste iPhone17,1 / iOS 26.6. Isso fornece S3 para esse
-ambiente, mas não garante que todo host LiveContainer aceite todo binário PAC.
-A rota arm64 continua sendo a opção de compatibilidade mais conservadora. Não
-confundir `IPA válida` com `app hospedado pelo LiveContainer funcionando` em
-hosts ainda não testados.
-
-O alvo arm64e só aparece como READY depois que todos os módulos/PCMs foram
-reconstruídos para a mesma tripla e versão do compilador; isso evita o erro
-silencioso de misturar PCMs arm64 com código PAC arm64e.
+**Runtime:** as IPAs finais estão em `workspace/arm64e-final`. A aceitação
+estrutural está concluída; para converter cada capacidade em S3/S4, abra a IPA
+correspondente no LiveContainer e toque o fluxo indicado na tela. Não
+extrapolar o resultado para outros hosts ou devices.
