@@ -104,10 +104,11 @@ def objc_launch_methods(binary):
                                addr & 0x00000000FFFFFFFF]
             for candidate in candidates:
                 for base, size, off, _name in sections:
-                    # Mach-O section VMs in this SDK use the low 32-bit address
-                    # range; metadata pointers may carry a PAC/flags prefix.
-                    if base <= candidate < base + size:
-                        return off + candidate - base
+                    # Mach-O metadata in this toolchain may store either the
+                    # full VM address or its low 32-bit offset after stripping.
+                    for section_base in (base, base & 0xffffffff):
+                        if section_base <= candidate < section_base + size:
+                            return off + candidate - section_base
             return None
 
         def u64(addr):

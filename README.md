@@ -56,7 +56,7 @@ matriz completa, incluindo o host exato das validações, está em
 |---|---|
 | **Pure-Swift `import UIKit`** | `scripts/build-pure-ui.sh` — validated on-device (LiveContainer) since 2026-08-19 |
 | **Pure-Swift `import SwiftUI`** | same script; `SwiftUIDemo` runs on-device |
-| Pure-Swift `import Foundation`, `import Dispatch` | `scripts/build-pure-foundation.sh` — prebuilt modules in `/opt/ios-toolchain/foundation-build/` (built on a real Linux with the matching toolchain; see `references/DISPATCH-VIA-LINUX.md`) |
+| Pure-Swift `import Foundation`, `import Dispatch` | `scripts/build-pure-foundation.sh` — neutral 6.3.3 module profile; local S2 build validated |
 | Pure-Swift `Combine`, `CoreFoundation`, `ObjectiveC`, `Darwin`, `System`, `Observation`, `os`, `simd`, `Spatial`, `Symbols`, `Accessibility`, `CoreText`, `DataDetection`, `CoreTransferable`, `OSLog`, `_Concurrency`, `_StringProcessing` | same prebuilt module set |
 | **Apps with SPM dependency trees** | single module + `-primary-file` (`scripts/build-parallel.py` + `scripts/link-ipa.sh`) — validated with TCA 0.39.1 + 6 packages, 27k lines, running on-device |
 | **Porting third-party GitHub projects** | `scripts/port-third-party.py` — reactive build loop with automatic fixes |

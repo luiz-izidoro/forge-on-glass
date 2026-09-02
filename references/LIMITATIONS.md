@@ -36,8 +36,12 @@ linker remoto permanece somente como ferramenta histórica de bootstrap.
 > histórico** de como o muro caiu — útil para reproduzir o SDK do zero, não
 > para saber o que funciona hoje. Estado atual: `references/HANDOFF.md`.
 
-**Symptom (histórico).** `import UIKit`/`import SwiftUI` in a Swift file fails to compile
-its Swift-side interface (swift.org 6.3.2/6.3.3 interface-compile bug).
+### Historical SDK investigation (superseded)
+
+**Symptom (historical).** `import UIKit`/`import SwiftUI` in a Swift file
+failed to compile its Swift-side interface with the early toolchain/SDK
+combination. The current 6.3.3 pure-Swift profile is resolved; the remaining
+active caveat is whole-module degradation, documented below.
 
 **Progress (2026-08-19, Swift 6.3.3):** the entire Clang module chain builds on
 a real Linux (91 pcm) and ALL Swift interfaces compile except UIKit:
@@ -57,13 +61,14 @@ mechanisms + fixes are documented in
 diretos, reescrita de corpos com campos reais, remoção de
 defaults/conformances, `-import-module CoreFoundation`, etc.).
 
-### Remaining: UIKit
+### Historical remaining UIKit blocker (superseded 2026-08-19)
 
-All type errors patched. The last blocker is a **compiler crash** (swift.org
+All type errors patched. The last blocker was a **compiler crash** (swift.org
 6.3.3, `emitCBridgedToNativeValue` in SILGen — a bridging thunk of an @objc
-method with a patched non-bridgeable type). Bisect plan:
-`references/linux-vm/ESTADO-E-NEXT-STEPS.md` §3. After UIKit, verify
-`import SwiftUI` (top-level re-export module).
+method with a patched non-bridgeable type). The bisect plan is preserved in
+`references/linux-vm/ESTADO-E-NEXT-STEPS.md` §3. The current pure-Swift UIKit
+profile is resolved; the active caveat is whole-module degradation, documented
+below.
 
 ### os_workgroup — SOLVED with a real VFS overlay (do this)
 
@@ -100,14 +105,19 @@ Linux build (full recipe + orchestrator in `references/linux-vm/` and
 `references/DISPATCH-VIA-LINUX.md`). 73 modules now build & load on iSH:
 Foundation, Dispatch, UIKit (clang side), Security, CoreGraphics, os, etc.
 
-**Remaining:** the Swift-side interfaces of DataDetection, CoreTransferable,
-SwiftUICore and UIKit still fail to compile from `.swiftinterface` (swift.org
-6.3.2 bug: re-exported clang types like `Foundation.NSAttributedString` don't
-resolve in nested member contexts; partial workarounds — unqualify + member
-reorder — fixed Accessibility/Symbols). UIKit pure-Swift stays hybrid until
-this is patched in the toolchain.
+**Remaining active caveat:** the generated arm64 cache still inherits 38 Swift
+modules because the supplied SDK has no arm64 Swift interfaces. A clean
+`--pcm-only` run regenerated 61 neutral PCMs with zero personal references,
+but graph ordering/seed means the PCM count is not byte-for-byte stable.
 
-### Deep root cause (verified this round — do NOT re-try these on iSH)
+### Historical notes (superseded)
+
+The earlier UIKit compiler-crash and Foundation/Dispatch 6.3.2 path below are
+kept as historical investigation records. They are not current blockers:
+UIKit/SwiftUI are exercised by the active 6.3.3 pure-UI profile, and
+`build-pure-foundation.sh` now uses the neutral 6.3.3 profile.
+
+
 - The Dispatch Clang module build is **hermetic**: `-include <prefix.h>` is NOT
   applied (tested with `#error` in the prefix → never fired), and `-D`/VFS-header
   injection don't reach it either. Only the **modulemap** VFS overlay works
@@ -127,8 +137,9 @@ this is patched in the toolchain.
 Copy the SDK, edit `os/object.h` so `OS_object`
    becomes a plain typedef when a custom macro is set, and build against the
    patched copy. Fragile but local; last resort.
-4. **Ship hybrid instead (works today).** Swift logic + ObjC UIKit — see SKILL.md
-   and assets/. This is the recommended default until §1.1 lands.
+4. **Fallback híbrido (ainda suportado).** Swift logic + ObjC UIKit — veja
+SKILL.md e `assets/`. É útil quando uma API específica do SDK patchado não
+compila no caminho pure-Swift; não é mais o requisito geral para UIKit.
 
 ## §2.1. Cache arm64 parcialmente herdado
 
