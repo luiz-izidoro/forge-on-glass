@@ -10,7 +10,7 @@ jobs:
       - name: Shell syntax
         run: find scripts -name '*.sh' -print0 | xargs -0 -n1 sh -n
       - name: Python syntax
-        run: python3 -m py_compile scripts/*.py
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile scripts/*.py
       - name: Documentation and repository guards
         run: sh scripts/verify-docs.sh
       - name: Newcomer onboarding smoke test
