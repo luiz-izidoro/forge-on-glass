@@ -35,25 +35,17 @@ O que quebra com a ordem errada:
 | `import UIKit` + `import Foundation` | ✅ | 22.080 B |
 | `import Foundation` / `Dispatch` / etc. | ✅ | — |
 
-**Superfície de API medida (re-executado 2026-08-26): 79/101 compilam.**
-`scripts/probe_api.py` testa 101 APIs
-isoladamente → **79 compilam, 22 falham**. Rode-o antes de investir num app
-grande.
+**Superfície de API medida (reexecutado em 2026-09-01):** o catálogo contém
+101 probes e mediu **86/101 compilam** com o perfil neutro 6.3.3. As 15 falhas
+restantes são principalmente conveniências Swift ausentes ou APIs C marcadas
+`unavailable` pelo SDK patchado; o `PureSwiftKit` fornece os wrappers testados
+para esses casos. A compilação dos helpers é coberta por
+`scripts/verify-pureswiftkit.sh`. Rode `probe_api.py` novamente após alterar o
+SDK, o toolchain ou os módulos.
 
-E as 22 falhas? `scripts/audit_failures.py` classifica cada uma pelo **remédio
-real**, compilando o código corrigido para provar:
-
-| Classe | Nº | O que é |
-|---|---|---|
-| **SHIM** | 20 | resolvidas por um helper do `PureSwiftKit.swift` (verificado) |
-| **IMPORT** | 2 | não são degradação: somem com a ordem canônica de imports |
-| **ABERTA** | 0 | sem solução conhecida |
-
-As 2 do tipo IMPORT são `NSAttributedString.Key` (precisa de `import CoreText`)
-e `DispatchQueue.main` (precisa de `import Dispatch` **depois** do UIKit). O
-probe as testa com imports mínimos de propósito — para documentar *por que* a
-ordem canônica existe.
-
+As falhas do probe usam imports mínimos de propósito para documentar a ordem
+canônica e os workarounds; não representam necessariamente uma falha do
+caminho `build-pure-ui.sh` com `PureSwiftKit.swift`.
 ## 🔑 Link: o framework UIKitCore é obrigatório
 
 `UIKit.tbd` é um arquivo **multi-documento** (8 docs: UIKit + 7 private

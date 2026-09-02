@@ -338,6 +338,12 @@ embarcados, use Core ML/Vision/Accelerate e passe `--extra-framework` conforme
 necessário. Receita do cache arm64e: `scripts/build-arm64e-modules.sh` e
 `references/NATIVE-INTELLIGENCE.md`.
 
+**Foundation/Dispatch:** os perfis arm64 e arm64e agora têm smoke test local S2
+com `build-pure-foundation.sh`, incluindo verificação de slice, Mach-O e
+símbolos indefinidos. A execução desse smoke específico em device ainda não foi
+confirmada.
+
+
 **Limite de runtime:** o perfil arm64e foi aberto e executado com sucesso no
 LiveContainer do host de teste iPhone17,1 / iOS 26.6. Isso fornece S3 para esse
 ambiente, mas não garante que todo host LiveContainer aceite todo binário PAC.

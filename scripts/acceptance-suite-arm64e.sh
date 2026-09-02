@@ -17,8 +17,23 @@ file /opt/ios-toolchain/ld64.lld-arm64e | grep -q 'aarch64' || fail "linker is n
 for f in "$SKILL"/scripts/build-pure-ui.sh "$SKILL"/scripts/link-ipa.sh; do
   ! grep -qE '(^|[[:space:]])(ssh|scp)([[:space:]]|$)|link-remote-arm64e' "$f" || fail "remote dependency in $f"
 done
-ISB_ARCH=arm64e sh "$SKILL/scripts/check-env.sh" || fail "environment"
-cd "$SKILL"
+# Foundation/Dispatch pure-Swift S2 smoke in the same arm64e profile.
+cat > "$WORK/foundation-probe.swift" <<'EOF'
+import Foundation
+import Dispatch
+let q = DispatchQueue(label: "acceptance-arm64e")
+let g = DispatchGroup(); g.enter()
+q.async { _ = FileManager.default.fileExists(atPath: NSTemporaryDirectory()); g.leave() }
+g.wait()
+print("foundation-dispatch-ok")
+EOF
+ISB_ARCH=arm64e ISB_OUTPUT="$WORK/FoundationDispatch" sh scripts/build-pure-foundation.sh \
+  FoundationDispatch "$WORK/foundation-probe.swift" || fail "Foundation/Dispatch arm64e build"
+python3 scripts/check-slice.py "$WORK/FoundationDispatch" arm64e || fail "Foundation/Dispatch slice"
+python3 scripts/check-livecontainer.py "$WORK/FoundationDispatch" || fail "Foundation/Dispatch Mach-O"
+python3 scripts/check-undefined.py "$WORK/FoundationDispatch" \
+  "${ISB_SYSROOT:-/opt/isb/sysroot}/iPhoneOS26.5.sdk" || fail "Foundation/Dispatch undefined symbols"
+ok "Foundation/Dispatch neutral 6.3.3 arm64e S2 smoke"
 ISB_WORKSPACE="$WORKSPACE" ISB_ARCH=arm64e sh scripts/build-pure-ui.sh LocalAcceptanceUI com.example.acceptanceui \
   assets/SwiftUIDemo.swift --primary-file --unsigned \
   >"$WORK/ui.log" 2>&1 || { cat "$WORK/ui.log"; fail "SwiftUI/UIKit arm64e build"; }
@@ -46,6 +61,12 @@ for app in LocalAcceptanceUI LocalAcceptanceFMFixed LocalAcceptanceNL LocalAccep
   python3 "$SKILL/scripts/check-entry.py" "$BIN" || fail "entry $app"
   if [ "$app" = LocalAcceptanceFMFixed ] || [ "$app" = LocalAcceptanceFMRuntime ]; then
     python3 scripts/check-weak-link.py "$BIN" FoundationModels || fail "FoundationModels weak-link $app"
+  fi
+  python3 scripts/check-undefined.py "$BIN" \
+    "${ISB_SYSROOT:-/opt/isb/sysroot}/iPhoneOS26.5.sdk" || fail "undefined symbols $app"
+  if [ "$app" = LocalAcceptanceUI ]; then
+    STRIPBIN="$WORK/stripped-$app"; cp "$BIN" "$STRIPBIN"; llvm-strip -x "$STRIPBIN"
+    python3 scripts/check-entry.py "$STRIPBIN" || fail "stripped entry $app"
   fi
   "$SKILL/scripts/validate-ipa.sh" "$IPA" || fail "IPA $app"
 done

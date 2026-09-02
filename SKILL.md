@@ -556,11 +556,11 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `scripts/fix-loop-mm.py` — loop reativo de fixes no modo multi-módulo.
 - `scripts/port-third-party.py` — **porta apps de terceiros do GitHub (1 comando,
   loop de build reativo com fixes automáticos)** — ver seção acima.
-- `scripts/probe_api.py` — catálogo de **101 APIs**; **79/101 compilam**
-  (re-medido em 2026-08-26). Das 22 que falham, **15 são cobertas pelo
-  `assets/PureSwiftKit.swift`** (CGRect/CGContext/insets); o resto exige
-  workaround local (FileManager+UIKit, TimeInterval+UIKit, NSAttributedString.Key,
-  DispatchQueue sem import).
+- `scripts/probe_api.py` — catálogo de **101 APIs**; a reexecução em 2026-09-01
+  mediu **86/101 compilam**. As 15 falhas restantes são, em sua maioria,
+  APIs C/de conveniência marcadas `unavailable` ou extensões Swift ausentes
+  (`CGRect`/`UIEdgeInsetsMake`); `PureSwiftKit` cobre os workarounds
+  correspondentes e sua cobertura compilada é 100%.
 - `scripts/make-patchset.sh` / `scripts/apply-patchset.sh` — patch-set do SDK.
 - `scripts/test_import_ish.py` — testa `import UIKit`/`SwiftUI` no iSH.
 - `scripts/sync-sdk-mtimes.py` — alinha mtimes do SDK (necessário p/ os .pcm).
