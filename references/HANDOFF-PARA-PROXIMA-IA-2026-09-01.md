@@ -184,7 +184,8 @@ executáveis descompactados: idênticos byte a byte
 - IPA arm64e usa subtype `0x80000002`.
 - FoundationModels é weak-linked.
 - NaturalLanguage e embeddings passam.
-- O cache arm64e é S2; ainda não há S3 em runtime arm64e.
+- O cache arm64e é S2 local; runtime arm64e foi posteriormente confirmado
+  pelo usuário no iPhone17,1/iOS 26.6 via LiveContainer (ver seção 6).
 
 ---
 
