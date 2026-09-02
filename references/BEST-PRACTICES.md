@@ -27,6 +27,15 @@ versão do iOS/device, host (se houver), comando executado e resultado.
 
 ## 2. Escolha de arquitetura e caminho de build
 
+### Perfil canônico
+
+- **arm64e.v1/PAC** é o único perfil operacional e de release.
+- `ISB_ARCH=arm64` é somente rollback/debug histórico local.
+- A aceitação canônica é `sh scripts/acceptance-suite.sh`, que delega para a
+  matriz arm64e completa.
+- Não misture cache arm64, objetos arm64 ou IPA arm64 com o perfil arm64e.
+
+
 ### Caminho padrão para um app novo
 
 1. Use um **módulo Swift único**.

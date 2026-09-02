@@ -4,12 +4,14 @@ import UIKit
 final class EmbeddingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.systemGreen
         let label = UILabel()
         label.textColor = UIColor.white
+        label.numberOfLines = 0
+        let available = NativeEmbeddings.isAvailable
+        let vectorCount = NativeEmbeddings.vector(for: "teste arm64e")?.count ?? 0
+        label.text = "NLEmbedding bridge\navailable=\(available)\nvector_count=\(vectorCount)"
         label.sizeToFit()
         view.addSubview(label)
-        _ = NativeEmbeddings.isAvailable
     }
 }
 final class EmbeddingsDelegate: UIResponder, UIApplicationDelegate {

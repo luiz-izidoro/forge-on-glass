@@ -15,8 +15,12 @@ This profile supports iOS 26.5 system AI without bundling model weights:
   arm64e module cache built from that interface; use the macro-free example in
   `assets/FoundationModelsProbe.swift`.
 - `Foundation`, `Observation`, `Dispatch` and related modules remain part of
-  the same explicit module graph. Do not mix the existing `arm64` cache with
-  the arm64e cache.
+  the same explicit arm64e module graph. The old arm64 cache is rollback-only.
+
+**Canonical arm64e matrix:** fresh IPAs cover SwiftUI/UIKit, Foundation/Dispatch,
+Diffable UIKit, Swift+ObjC hybrid, CoreML/Vision/Accelerate, FoundationModels,
+NaturalLanguage, embeddings, debug/StikDebug and PureSwiftKit. Each IPA is
+validated as arm64e.v1/PAC before device testing.
 
 ## Evidência por camada
 

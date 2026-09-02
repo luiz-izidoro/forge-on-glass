@@ -588,26 +588,24 @@ Detalhe histórico em `references/LIMITATIONS.md` e
 - `references/BUG-REPORTS-2026-08-19.md` — **bug reports com logs passo a passo**
   (entry point vazio/"code 0", CGContext, TimeInterval, FileManager, CGRect,
   UIEdgeInsets) + padrão SQLite via @_silgen_name + runtime provado.
-- `scripts/check-env.sh` — verify the toolchain is intact.
-- `scripts/build-ipa.sh` — the end-to-end build (hybrid or `--pure`).
-- `scripts/build-pure-foundation.sh` — compile+link pure-Swift app with
-  Foundation/Dispatch using the neutral 6.3.3 profile.
+- `scripts/check-env.sh` — valida o toolchain 6.3.3, o cache arm64e completo,
+  linker PAC local e os stubs do SDK.
+- `scripts/build-pure-foundation.sh` — compila Foundation/Dispatch para o perfil
+  arm64e canônico; `ISB_ARCH=arm64` fica disponível somente para rollback.
 - `scripts/check-debug-ipa.py` — 🐞 guarda de IPA de debug (`get-task-allow`, esquema e instrumentação).
 - `assets/DebugSupport.swift` — logs, PID, detecção LiveContainer, overlay DBG e URL StikDebug.
 - `assets/NativeNLBridge.m` + `assets/NativeEmbeddings.swift` — embeddings
   NaturalLanguage/NLEmbedding via bridge Swift/ObjC.
 - `assets/FoundationModelsProbe.swift` — exemplo macro-free da IA on-device.
-- `scripts/build-arm64-modules.sh` — gera o perfil completo quando o SDK fornece
-  interfaces arm64; em SDKs arm64e-only use `--pcm-only` para regenerar os 59
-  PCMs neutros. `--full` falha fechado com diagnóstico explícito quando não há
-  interfaces arm64.
-- `scripts/profile.sh` — seleção isolada `ISB_ARCH=arm64|arm64e`.
+- `scripts/build-arm64-modules.sh` — ferramenta legada para o cache arm64;
+  não participa do perfil canônico.
+- `scripts/profile.sh` — seleção isolada; arm64e é padrão e `ISB_ARCH=arm64`
+  é somente rollback local.
 - `scripts/build-livecontainer.sh` — build totalmente local para LiveContainer:
-  força arm64 (executável em dispositivos arm64e), usa o linker iSH e entrega
-  IPA unsigned para o patch/re-sign do LiveContainer.
-- `scripts/acceptance-suite.sh` — teste de aceitação/release totalmente local:
-  recompila IPA, valida ambiente, Mach-O, entry point, invariantes do
-  LiveContainer e testa negativamente a guarda de slice.
+  produz arm64e.v1/PAC por padrão. Para o guest arm64 legado, use
+  explicitamente `ISB_ARCH=arm64`.
+- `scripts/acceptance-suite.sh` — alias canônico para a aceitação arm64e
+  completa. A aceitação arm64 legada requer `ISB_ARCH=arm64` diretamente.
 - `scripts/strip-arm64e-auth-relocs.py` — diagnóstico experimental; não usado
   pelo builder porque remove PAC.
 - `references/NATIVE-INTELLIGENCE.md` — matriz e fluxo completo de IA nativa.

@@ -1,8 +1,7 @@
 #!/bin/sh
 # profile.sh — target/profile selection shared by the pure Swift pipeline.
-# Default remains the proven arm64 profile. arm64e is opt-in and isolated
-# because Swift modules/PCMs are target- and compiler-tag specific.
-ISB_ARCH="${ISB_ARCH:-arm64}"
+# Native arm64e is the canonical profile. arm64 is explicit legacy rollback.
+ISB_ARCH="${ISB_ARCH:-arm64e}"
 # The pure Swift profile always uses the neutral sysroot. Its SDK and PCMs
 # are generated/validated under this stable prefix; no author-specific /home
 # mirror is consulted as a fallback.
@@ -50,9 +49,7 @@ else
   ISB_CPU_ARGS=""
 fi
 if [ "$ISB_ARCH" = "arm64e" ]; then
-  # arm64e/PAC is a local production profile. The linker is built once for
-  # Linux/aarch64 from the upstream LLD ARM64e implementation and then kept
-  # on-device. No build step may depend on SSH or a VM.
+  # Canonical arm64e profile; use ISB_ARCH=arm64 for legacy rollback only.
   ISB_LINKER="${ISB_LINKER:-/opt/ios-toolchain/ld64.lld-arm64e}"
   [ -x "$ISB_LINKER" ] || {
     echo "linker arm64e local ausente: $ISB_LINKER" >&2

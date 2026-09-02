@@ -1,7 +1,8 @@
 #!/bin/sh
 # build-pure-ui.sh — compila e empacota um app iOS 100% Swift (UIKit/SwiftUI).
-# ISB_ARCH=arm64e opt-in seleciona uma cache de módulos isolada.
-# O perfil arm64e só fica READY depois de reconstruir foundation-build633-arm64e.
+# `ISB_ARCH=arm64` is retained only for explicit legacy rollback.
+# `ISB_ARCH=arm64` is retained only for explicit legacy rollback.
+# Native arm64e/PAC is the canonical output.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
@@ -31,7 +32,7 @@ BUNDLE="${2:?falta o bundle id}"
 shift 2
 DEBUG=0
 UNSIGNED=0
-[ "${ISB_ARCH:-arm64}" = "arm64e" ] && UNSIGNED="${ISB_UNSIGNED:-1}"
+[ "${ISB_ARCH:-arm64e}" = "arm64e" ] && UNSIGNED="${ISB_UNSIGNED:-1}"
 MODE=""
 SRC_ARGS=""
 OBJC_ARGS=""
@@ -308,17 +309,17 @@ for f in $OBJC_ARGS; do
   WHOLE_EXTRA_OBJS="$WHOLE_EXTRA_OBJS $WORK/extra-obj/$base.o"
 done
 
-# UIKitCore generic stub is used only by the regular linker; the local PAC
-# linker rejects direct clients of this private framework.
+# UIKitCore generic stub is required for UIKit generic Swift classes. The PAC
+# linker accepts it when the executable identifies itself as UIKit client.
 EXTRAFW=/opt/ios-toolchain/extrafw
 EXTRAFLAGS=""
-if [ "$ISB_ARCH" != "arm64e" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
+if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
 if [ "$ISB_ARCH" = "arm64e" ]; then
   "$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
     -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -lSystem -lobjc \
+    -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
     -framework UIKit -framework Foundation $FM_LINK \
     -framework CoreGraphics \
     -framework QuartzCore -framework SwiftUI -framework CoreText -framework Combine \

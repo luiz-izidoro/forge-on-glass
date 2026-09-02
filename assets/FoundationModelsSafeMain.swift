@@ -8,7 +8,7 @@ final class FoundationModelsSafeViewController: UIViewController {
         let label = UILabel()
         label.textColor = UIColor.white
         label.numberOfLines = 0
-        label.text = "FoundationModels: aguardando disponibilidade"
+        label.text = "FoundationModels: \(SafeFoundationModels.availability)"
         label.sizeToFit()
         view.addSubview(label)
     }

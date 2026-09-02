@@ -10,24 +10,23 @@ path to solve it from a fresh session.
 
 ## §0.3. Arm64e/PAC — estado real (2026-08-28)
 
-O perfil arm64e/PAC está **resolvido localmente**. O suporte arm64e do LLVM
-PR #188378 foi compilado para Linux/aarch64 e instalado em
-`/opt/ios-toolchain/ld64.lld-arm64e` como executável estático. Depois do
-bootstrap, o build não usa rede, SSH, SCP ou VM.
+O perfil arm64e/PAC está **resolvido localmente como perfil canônico**. O
+suporte arm64e do LLVM PR #188378 foi compilado para Linux/aarch64 e instalado
+em `/opt/ios-toolchain/ld64.lld-arm64e`. Depois do bootstrap, o build não usa
+rede, SSH, SCP ou VM.
+
+O perfil arm64 é mantido apenas como rollback explícito (`ISB_ARCH=arm64`), não
+como caminho de produção.
 
 Os caminhos aceitos são:
 
-- **LiveContainer / uso diário:** `build-livecontainer.sh`, arm64 unsigned,
-  100% local; comprovado abrindo no iOS 26.6 em iPhone17,1.
-- **Arm64e/PAC nativo:** `ISB_ARCH=arm64e`, cache local isolado, linker PAC
-  local e IPA arm64e com chained fixups. Foundation, FoundationModels,
-  NaturalLanguage e embeddings foram compilados/linkados em aceitação.
+- **LiveContainer / uso diário:** `build-livecontainer.sh`, arm64e.v1/PAC
+  unsigned; a compatibilidade deve ser confirmada no host LiveContainer alvo.
+- **Arm64 legado:** `ISB_ARCH=arm64` somente para rollback/debug histórico.
 
-A guarda canônica é `scripts/acceptance-suite-arm64e.sh`; ela verifica que o
-linker é aarch64 e executável no iSH, que o caminho não contém SSH/SCP, e gera
-três IPAs novas com SDK 26.5, subtype arm64e exato, `LC_MAIN`, chained fixups,
-entry point, FoundationModels, NaturalLanguage e bridge de embeddings. O
-linker remoto permanece somente como ferramenta histórica de bootstrap.
+A aceitação arm64e gera e valida a matriz de IPAs; a suíte legacy arm64 foi
+retirada do caminho canônico. Para rollback explícito, use `ISB_ARCH=arm64` nos
+builders individuais e preserve o cache legado fora da release.
 
 
 
