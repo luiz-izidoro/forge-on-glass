@@ -37,9 +37,11 @@ def main():
         if pos + 8 > len(data):
             raise SystemExit('truncated load command')
         cmd, cmdsize = struct.unpack_from(endian + 'II', data, pos)
-        if cmdsize < 24 or pos + cmdsize > len(data):
+        if cmdsize < 8 or pos + cmdsize > len(data):
             raise SystemExit('invalid load command')
         if cmd in (LC_LOAD_DYLIB, LC_LOAD_WEAK_DYLIB):
+            if cmdsize < 24:
+                raise SystemExit('invalid dylib load command')
             nameoff = struct.unpack_from(endian + 'I', data, pos + 8)[0]
             if nameoff >= cmdsize - 8:
                 raise SystemExit('invalid dylib name offset')
