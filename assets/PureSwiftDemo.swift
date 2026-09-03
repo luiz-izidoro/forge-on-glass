@@ -2,7 +2,7 @@
 // Prova que `import UIKit` + `import Foundation` funcionam em Swift puro
 // compilado inteiramente dentro do iSH (iPhone), sem Mac no build.
 //
-// LEIA ANTES DE EDITAR: references/PURE-SWIFT-UI-STATUS.md
+// Consulte references/HANDOFF.md antes de editar.
 //   1. CGRect(x:y:width:height:) e' @_transparent e NAO resolve -> use rect()
 //   2. A ORDEM DOS IMPORTS IMPORTA: `import Foundation` ANTES de `import UIKit`.
 //      Invertido, as APIs String do UIKit passam a exigir NSString.

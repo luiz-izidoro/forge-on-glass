@@ -4,7 +4,7 @@
 
 - iOS version and device model:
 - LiveContainer version/host, if applicable:
-- Profile: `arm64` or `arm64e`:
+- Profile: `arm64e.v1/PAC`:
 - Repository commit:
 
 ## Request

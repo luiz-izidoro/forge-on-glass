@@ -9,7 +9,7 @@ continuam em [`../references/`](../references/).
 
 - [Debug com LiveContainer + StikDebug](../references/DEBUG-LIVECONTAINER-STIKDEBUG.md) — três camadas: trace visual, attach e sessão persistente
 - [Porting de apps de terceiros](../references/PORTING-TERCEROS.md)
-- [Status do Swift/UIKit/SwiftUI puro](../references/PURE-SWIFT-UI-STATUS.md)
+- [Status do Swift/UIKit/SwiftUI puro](../references/HANDOFF.md) — perfil atual e evidência
 - [Warnings fatais e tela preta](../references/WARNINGS-FATAIS.md)
 - [Handoff do projeto](../references/HANDOFF.md)
 - [Limitações](../references/LIMITATIONS.md)

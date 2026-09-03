@@ -5,7 +5,7 @@
 // linha de verde (passou) ou vermelho (falhou). O app NAO deve crashar: se algo
 // estiver quebrado, queremos VER na tela, nao perder o processo.
 //
-// IMPORTANTE: `import Foundation` ANTES de `import UIKit` (ver PURE-SWIFT-UI-STATUS.md).
+// IMPORTANTE: `import Foundation` antes de `import UIKit`.
 import Foundation
 import UIKit
 import CoreText

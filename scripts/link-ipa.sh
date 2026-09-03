@@ -1,7 +1,8 @@
 #!/bin/sh
 # link-ipa.sh — linka, assina e empacota objetos Swift.
-# Native arm64e is canonical; arm64 is explicit legacy rollback.
-. "$(dirname "$0")/profile.sh"
+# Canonical arm64e.v1/PAC linker comes from profile.sh.
+SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+. "$SKILL/scripts/profile.sh"
 #
 # POR QUE ISSO EXISTE:
 #   build-parallel.py compila arquivo-a-arquivo (-primary-file) e entrega .o,
@@ -69,7 +70,7 @@ done
 WEAK_FRAMEWORK_FLAGS=""
 for fw in $WEAK_FRAMEWORK_LIST; do WEAK_FRAMEWORK_FLAGS="$WEAK_FRAMEWORK_FLAGS -weak_framework $fw"; done
 
-ROOT=/opt/isb/sysroot
+ROOT="$ISB_SYSROOT"
 SDK="$ISB_SDK"
 WORK=/tmp/link-$APP-$ISB_ARCH-$$
 OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
@@ -90,55 +91,30 @@ echo "==> linkando ($nobj objeto(s), entrada: $(basename "$MAINO"))"
 
 # UIKitCore: os simbolos Swift das classes GENERICAS do UIKit sao exportados
 # pelo documento do UIKitCore dentro do UIKit.tbd, que o lld nao percorre.
-EXTRAFW=/opt/ios-toolchain/extrafw
+EXTRAFW="${ISB_TOOLCHAIN_ROOT:-/opt/ios-toolchain}/extrafw"
 EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
-if [ "$ISB_ARCH" = "arm64e" ]; then
-  LINKER="/opt/ios-toolchain/darwin-toolset/bin/ld64.lld"
-  PLATFORM_MIN=26.5
-else
-  LINKER="ld64.lld"
-  PLATFORM_MIN=26.0
-fi
+# Canonical arm64e/PAC linker comes from profile.sh.
 
 # arm64e uses the local authenticated LLD installed by the bootstrap step.
 # The production profile is deliberately offline: no SSH/SCP/VM fallback.
-if [ "$ISB_ARCH" = "arm64e" ]; then
-  "$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
-    -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -dead_strip \
-    -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
-    -framework UIKit -framework Foundation \
-    -framework CoreGraphics \
-    -framework QuartzCore -framework SwiftUI -framework CoreText \
-    -framework Combine \
-    $EXTRA_FRAMEWORK_FLAGS $WEAK_FRAMEWORK_FLAGS \
-    -lswiftCore -lswiftFoundation -lswiftUIKit \
-    -lswiftDarwin -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch \
-    -lswiftCoreFoundation -lswiftQuartzCore \
-    -rpath /usr/lib/swift \
-    -e _main \
-    $OBJS -o "$WORK/$APP"
-else
-  ld64.lld -arch arm64 -platform_version ios 26.0 26.5 \
-    -syslibroot "$SDK" \
-    -dead_strip \
-    -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -lSystem -lobjc \
-    $EXTRAFLAGS \
-    -framework UIKit -framework Foundation -framework CoreGraphics \
-    -framework QuartzCore -framework SwiftUI -framework CoreText \
-    -framework Combine \
-    $EXTRA_FRAMEWORK_FLAGS $WEAK_FRAMEWORK_FLAGS \
-    -lswiftCore -lswiftFoundation -lswiftUIKit \
-    -lswiftDarwin -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch \
-    -lswiftCoreFoundation -lswiftQuartzCore \
-    -rpath /usr/lib/swift \
-    -e _main \
-    $OBJS -o "$WORK/$APP"
-fi
+"$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+  -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
+  -dead_strip \
+  -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
+  -framework UIKit -framework Foundation \
+  -framework CoreGraphics \
+  -framework QuartzCore -framework SwiftUI -framework CoreText \
+  -framework Combine \
+  $EXTRA_FRAMEWORK_FLAGS $WEAK_FRAMEWORK_FLAGS \
+  -lswiftCore -lswiftFoundation -lswiftUIKit \
+  -lswiftDarwin -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch \
+  -lswiftCoreFoundation -lswiftQuartzCore \
+  -rpath /usr/lib/swift \
+  -e _main \
+  $OBJS -o "$WORK/$APP"
 
 echo "==> empacotando"
 PAY="$WORK/Payload/$APP.app"
@@ -173,7 +149,7 @@ cat > "$PAY/Info.plist" <<EOF
   <key>CFBundleVersion</key><string>$APP_BUILD</string>
   <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>MinimumOSVersion</key><string>$([ "$ISB_ARCH" = "arm64e" ] && echo 26.5 || echo 26.0)</string>
+  <key>MinimumOSVersion</key><string>26.5</string>
   <key>UIDeviceFamily</key><array><integer>1</integer></array>
   <key>UILaunchScreen</key><dict/>
   $STIK_QUERY

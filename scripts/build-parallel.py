@@ -21,18 +21,17 @@ Uso:
 import argparse, hashlib, os, subprocess, sys, time, glob
 
 ROOT = os.environ.get("ISB_SYSROOT", "/opt/isb/sysroot")
-# Native arm64e is canonical; arm64 is explicit legacy rollback.
 ARCH = os.environ.get("ISB_ARCH", "arm64e")
-if ARCH not in ("arm64", "arm64e"):
-    raise SystemExit("ISB_ARCH invalido: %s (use arm64 ou arm64e)" % ARCH)
-TARGET = os.environ.get("ISB_TARGET", ARCH + ("-apple-ios26.5" if ARCH == "arm64e" else "-apple-ios26.0"))
-CPU = os.environ.get("ISB_CPU", "apple-a12" if ARCH == "arm64e" else "apple-a7")
+if ARCH != "arm64e":
+    raise SystemExit("only arm64e.v1/PAC is supported")
+TARGET = os.environ.get("ISB_TARGET", "arm64e-apple-ios26.5")
+CPU = os.environ.get("ISB_CPU", "apple-a12")
 SW = os.environ.get("ISB_SW", "/opt/swift6.3.3")
 SF = SW + "/usr/bin/swift-frontend"
 SDK = os.environ.get("ISB_SDK", ROOT + "/iPhoneOS26.5.sdk")
 FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633-arm64e")
 VFS = os.environ.get("ISB_VFS", ROOT + "/vfs/overlay.yaml")
-BIG = os.environ.get("ISB_MODULE_CACHE", "/var/tmp/isb-cache") + "/app-" + ARCH
+BIG = os.environ.get("ISB_MODULE_CACHE", "/var/tmp/isb-cache") + "/app-arm64e"
 
 OOM_MARKERS = ("Cannot allocate memory", "out of memory", "Killed")
 

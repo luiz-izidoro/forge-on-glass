@@ -1,7 +1,6 @@
 #!/bin/sh
 # build-pure-ui.sh — compila e empacota um app iOS 100% Swift (UIKit/SwiftUI).
-# Native arm64e/PAC is the canonical output; arm64 is retained only for
-# explicit rollback/LiveContainer compatibility builds.
+# Native arm64e/PAC is the only operational and release profile.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
@@ -44,6 +43,7 @@ case "$OPT_MODE" in
   *) echo "ISB_OPT inválido: $OPT_MODE (use none, O ou Osize)" >&2; exit 2 ;;
 esac
 SWIFT_DEFINES="${ISB_SWIFT_DEFINES:-}"
+PLIST_EXTRA=""
 WEAK_FRAMEWORK_ARGS=""
 RESOURCES=""
 while [ "$#" -gt 0 ]; do
@@ -241,7 +241,7 @@ MODS=""
 for f in "$OUT"/swift_*.swiftmodule; do
   [ -f "$f" ] || continue
   n=$(basename "$f" .swiftmodule); n=${n#swift_}
-  # o overlay Swift do XPC cria ciclo os<->XPC (ver PURE-SWIFT-UI-STATUS.md)
+  # o overlay Swift do XPC cria ciclo os<->XPC; não inclua esse módulo.
   [ "$n" = "XPC" ] && continue
   # NOTA (2026-08-19): usar DOIS args (-swift-module-file X=path). O formato
   # de um arg so (-swift-module-file=X=path) faz os modulos carregarem de forma
@@ -310,33 +310,21 @@ done
 
 # UIKitCore generic stub is required for UIKit generic Swift classes. The PAC
 # linker accepts it when the executable identifies itself as UIKit client.
-EXTRAFW=/opt/ios-toolchain/extrafw
+EXTRAFW="${ISB_TOOLCHAIN_ROOT}/extrafw"
 EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
-if [ "$ISB_ARCH" = "arm64e" ]; then
-  "$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
-    -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
-    -framework UIKit -framework Foundation $FM_LINK \
-    -framework CoreGraphics \
-    -framework QuartzCore -framework SwiftUI -framework CoreText -framework Combine \
-    $EXTRA_FRAMEWORK_FLAGS $WEAK_FRAMEWORK_FLAGS -lswiftCore -lswiftFoundation -lswiftUIKit \
-    -lswiftDarwin -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch \
-    -lswiftCoreFoundation -lswiftQuartzCore -rpath /usr/lib/swift -e _main \
-    "$WORK/app.o" $WHOLE_EXTRA_OBJS -o "$WORK/$APP"
-else
-  ld64.lld -arch arm64 -platform_version ios 26.0 26.5 \
-    -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -lSystem -lobjc $EXTRAFLAGS \
-    -framework UIKit -framework Foundation -framework CoreGraphics \
-    -framework QuartzCore -framework SwiftUI -framework CoreText -framework Combine \
-    $EXTRA_FRAMEWORK_FLAGS $WEAK_FRAMEWORK_FLAGS -lswiftCore -lswiftFoundation -lswiftUIKit \
-    -lswiftDarwin -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch \
-    -lswiftCoreFoundation -lswiftQuartzCore -rpath /usr/lib/swift -e _main \
-    "$WORK/app.o" $WHOLE_EXTRA_OBJS -o "$WORK/$APP"
-fi
+"$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+  -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
+  -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
+  -framework UIKit -framework Foundation $FM_LINK \
+  -framework CoreGraphics \
+  -framework QuartzCore -framework SwiftUI -framework CoreText -framework Combine \
+  $EXTRA_FRAMEWORK_FLAGS $WEAK_FRAMEWORK_FLAGS -lswiftCore -lswiftFoundation -lswiftUIKit \
+  -lswiftDarwin -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch \
+  -lswiftCoreFoundation -lswiftQuartzCore -rpath /usr/lib/swift -e _main \
+  "$WORK/app.o" $WHOLE_EXTRA_OBJS -o "$WORK/$APP"
 
 echo "==> empacotando"
 PAY="$WORK/Payload/$APP.app"
@@ -357,7 +345,7 @@ cat > "$PAY/Info.plist" <<EOF
   <key>CFBundleVersion</key><string>$APP_BUILD</string>
   <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>MinimumOSVersion</key><string>$([ "$ISB_ARCH" = "arm64e" ] && echo 26.5 || echo 26.0)</string>
+  <key>MinimumOSVersion</key><string>26.5</string>
   <key>UIDeviceFamily</key><array><integer>1</integer></array>
   <key>UILaunchScreen</key><dict/>
   $PLIST_EXTRA

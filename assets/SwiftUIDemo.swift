@@ -1,6 +1,6 @@
 // SwiftUIDemo — app iOS 100% Swift usando SwiftUI, compilado no iSH.
 //
-// LEIA ANTES DE EDITAR: references/PURE-SWIFT-UI-STATUS.md
+// Consulte references/HANDOFF.md antes de editar.
 //   1. ORDEM DOS IMPORTS: `Foundation` ANTES de `SwiftUI`/`UIKit`.
 //   2. CGRect(x:y:width:height:) nao resolve -> construa por campos.
 //
