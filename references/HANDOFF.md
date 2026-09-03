@@ -78,9 +78,10 @@ personal paths, public addresses or user exports. Run `verify-release.sh` before
 committing. Publication still requires the user to provide a Git remote URL;
 never invent one.
 
-## Cleanup
+## Cleanup status — 2026-09-03
 
-Safe cleanup: Python bytecode, stale `/tmp` workdirs, failed candidates, old
-IPAs and scan caches. Preserve the active SDK, neutral sysroot, arm64e cache, PAC
-linker and Swift frontend until replacements are validated. Do not delete user
-source trees or alter Git history for local cleanup.
+The repository and local generated residue were cleaned. See
+`references/CLEANUP-2026-09-03.md` for the preservation/removal inventory.
+A fresh complete acceptance rerun exceeded the one-hour budget at embeddings;
+this is not claimed as a new PASS. Existing device evidence and targeted
+validation remain documented above.
