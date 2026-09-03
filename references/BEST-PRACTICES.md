@@ -241,9 +241,8 @@ Antes de entregar uma IPA ou declarar uma etapa concluída:
 - [ ] nenhum segredo ou artefato proibido no Git;
 - [ ] próximos passos definidos por evidência, não por tentativa.
 
-Documents de apoio: `HANDOFF.md` (estado), `WARNINGS-FATAIS.md` (guards),
-`NATIVE-INTELLIGENCE.md` (IA), `PROJECT-GUIDE.md` (fluxo) e
-`TEST-PLAN-AND-LOCAL-REPRO.md` (aceitação).
+Only `references/HANDOFF.md` and `references/WARNINGS-FATAIS.md` are current
+operational guidance.
 
 
 ## 13. Manutenção desta documentação
