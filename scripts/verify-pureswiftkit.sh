@@ -1,10 +1,8 @@
 #!/bin/sh
-# verify-pureswiftkit.sh — prova que o PureSwiftKit.swift resolve TODAS as
-# degradacoes catalogadas: compila um arquivo que usa cada workaround.
-#
-# Se este script passar, a tabela de "APIs que falham" tem cobertura 100%.
-set -e
-A=/var/minis/skills/ios-swift-builder/assets
+# verify-pureswiftkit.sh — prove the compatibility helpers with the configured profile.
+set -eu
+SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+A="$SKILL/assets"
 W=/tmp/verify-pskit
 rm -rf $W && mkdir -p $W
 

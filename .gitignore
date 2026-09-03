@@ -2,6 +2,8 @@
 # The scripts fetch or derive all of this on the user's own licensed machine.
 
 # Apple SDK, any extracted/patched copies
+# The canonical build consumes the SDK through the neutral sysroot; the
+# bootstrap script creates the link from the extraction root when needed.
 *.sdk/
 iPhoneOS*.sdk/
 **/usr/include/

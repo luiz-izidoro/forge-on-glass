@@ -15,7 +15,9 @@ for f in LICENSE NOTICE.md SECURITY.md CONTRIBUTING.md CHANGELOG.md \
   references/PUBLISHING.md references/PORTING-TERCEROS.md references/VERSION-MATRIX.md; do
   [ -s "$f" ] || { echo "RELEASE: missing $f"; exit 1; }
 done
-# Scan historical trees for actual personal home paths or private-key headers.
+# Reject dangling Git commits before publication; they can retain removed secrets.
+DANGLING=$(git fsck --full --no-reflogs 2>/dev/null | awk '$2 == "commit" {print $3}')
+[ -z "$DANGLING" ] || { echo "RELEASE: dangling commit objects present"; echo "$DANGLING"; exit 1; }
 for commit in $(git rev-list --all); do
   if git grep -I -nE '/home/[A-Za-z0-9_.-]+' "$commit" -- . ':(exclude)scripts/verify-release.sh' | grep -q .; then
     echo "RELEASE: forbidden personal path in history"; exit 1

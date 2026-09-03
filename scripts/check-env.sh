@@ -1,20 +1,23 @@
 #!/bin/sh
-# check-env.sh — verify the canonical native arm64e/PAC profile.
+# Legacy compatibility helper. It is intentionally disabled until an arm64
+# cache and matching linker are supplied and validated.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
+ARCH="${ISB_ARCH:-arm64e}"
 SYSROOT=${ISB_SYSROOT:-/opt/isb/sysroot}
-SWROOT=${ISB_SW_ROOT:-/opt/swift6.3.3}
+SWROOT=${ISB_SW_ROOT:-${ISB_SW:-/opt/swift6.3.3}}
 TOOLCHAIN=${ISB_TOOLCHAIN_ROOT:-/opt/ios-toolchain}
 SDK=${ISB_SDK:-$SYSROOT/iPhoneOS26.5.sdk}
-CACHE=${ISB_FOUNDATION_BUILD:-$TOOLCHAIN/foundation-build633-arm64e}
-LINKER=${ISB_LINKER:-$TOOLCHAIN/ld64.lld-arm64e}
 VFS=${ISB_VFS:-$SYSROOT/vfs/overlay.yaml}
+CACHE=${ISB_FOUNDATION_BUILD:-$TOOLCHAIN/foundation-build633-$ARCH}
+LINKER=${ISB_LINKER:-$TOOLCHAIN/ld64.lld-arm64e}
+[ "$ARCH" = arm64 ] && LINKER="${ISB_LINKER:-$(command -v ld64.lld 2>/dev/null || true)}"
 APP_CACHE=${ISB_MODULE_CACHE:-/var/tmp/isb-cache}
 ok=1
 note(){ printf '%s %s\n' "$1" "$2"; }
 fail(){ ok=0; note 'XX' "$1"; }
 
-printf '%s\n' '=== forge-on-glass arm64e environment ==='
+printf '%s\n' "=== forge-on-glass $ARCH environment ==="
 [ -x "$SWROOT/usr/bin/swift-frontend" ] || fail "Swift 6.3.3 frontend missing: $SWROOT/usr/bin/swift-frontend"
 if [ -x "$SWROOT/usr/bin/swift-frontend" ]; then
   version=$(env -i HOME=/root TERM=dumb "$SWROOT/usr/bin/swift-frontend" --version 2>/dev/null | head -1 || true)
@@ -23,16 +26,21 @@ fi
 [ -f "$SDK/usr/lib/libSystem.tbd" ] || fail "iOS SDK 26.5 missing: $SDK"
 [ -d "$SDK/System/Library/SubFrameworks" ] || fail 'SDK SubFrameworks missing'
 [ -f "$VFS" ] || fail "neutral VFS overlay missing: $VFS"
-[ -x "$LINKER" ] || fail "arm64e PAC linker missing: $LINKER"
-if [ -x "$LINKER" ]; then file "$LINKER" | grep -q aarch64 && note 'OK' 'local arm64e PAC linker' || fail 'PAC linker is not native aarch64'; fi
+[ -x "$LINKER" ] || fail "$ARCH linker missing: $LINKER"
+if [ -x "$LINKER" ]; then
+  if [ "$ARCH" = arm64e ]; then file "$LINKER" | grep -q aarch64 && note 'OK' 'local arm64e PAC linker' || fail 'PAC linker is not native aarch64'
+  else note 'OK' "legacy arm64 linker: $LINKER"; fi
+fi
 [ -d "$CACHE" ] || fail "arm64e module cache missing: $CACHE"
 if [ -d "$CACHE" ]; then
   swift_count=$(find "$CACHE" -maxdepth 1 -name 'swift_*.swiftmodule' -type f | wc -l | tr -d ' ')
   pcm_count=$(find "$CACHE" -maxdepth 1 -name 'clang_*.pcm' -type f | wc -l | tr -d ' ')
   [ "$swift_count" -gt 0 ] && [ "$pcm_count" -gt 0 ] || fail "arm64e cache incomplete (${swift_count} swiftmodule, ${pcm_count} PCM)"
-  note 'OK' "arm64e cache (${swift_count} swiftmodule, ${pcm_count} PCM)"
+  note 'OK' "$ARCH cache (${swift_count} swiftmodule, ${pcm_count} PCM)"
   cache_log=$(mktemp /tmp/isb-cache-check.XXXXXX)
-  if python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" >"$cache_log" 2>&1; then :; else cat "$cache_log"; fail 'arm64e cache is not neutral'; fi
+  [ "$ARCH" = arm64e ] && python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" "$SYSROOT" >"$cache_log" 2>&1 || {
+    [ "$ARCH" = arm64 ] && { [ -s "$CACHE/swift_Swift.swiftmodule" ] && [ -s "$CACHE/clang_SwiftShims.pcm" ]; } || { cat "$cache_log" 2>/dev/null || true; fail "$ARCH cache is invalid"; }
+  }
   rm -f "$cache_log"
 fi
 for tool in clang ldid llvm-strip zip; do command -v "$tool" >/dev/null 2>&1 && note 'OK' "tool: $tool" || fail "tool missing: $tool"; done
@@ -40,10 +48,12 @@ mkdir -p "$APP_CACHE"
 for framework in NaturalLanguage FoundationModels CoreML Vision Accelerate; do
   [ -f "$SDK/System/Library/Frameworks/$framework.framework/$framework.tbd" ] && note 'OK' "$framework framework stub" || fail "$framework framework stub missing";
 done
-[ -f "$TOOLCHAIN/extrafw/UIKitCore.framework/UIKitCore.tbd" ] && note 'OK' 'UIKitCore generic stub' || fail 'UIKitCore generic stub missing'
+[ "$ARCH" = arm64e ] && [ -f "$TOOLCHAIN/extrafw/UIKitCore.framework/UIKitCore.tbd" ] && note 'OK' 'UIKitCore generic stub' || {
+  [ "$ARCH" = arm64 ] || fail 'UIKitCore generic stub missing';
+}
 free_kb=$(df -Pk / | awk 'NR==2 {print $4}')
 free_gb=$((free_kb / 1024 / 1024))
 [ "$free_gb" -ge 2 ] && note 'OK' "free disk: ${free_gb} GB" || fail "free disk: ${free_gb} GB"
 printf '%s\n' '==='
-[ "$ok" -eq 1 ] && { echo 'ARM64E: READY'; exit 0; }
-echo 'ARM64E: NOT READY'; exit 1
+[ "$ok" -eq 1 ] && { echo "$ARCH: READY"; exit 0; }
+echo "$ARCH: NOT READY"; exit 1

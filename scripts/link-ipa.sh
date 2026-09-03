@@ -22,8 +22,7 @@ OBJDIR="${3:?falta o diretorio com os .o}"
 shift 3
 
 DEBUG=0
-UNSIGNED=0
-[ "$ISB_ARCH" = "arm64e" ] && UNSIGNED="${ISB_UNSIGNED:-1}"
+UNSIGNED="${ISB_UNSIGNED:-0}"
 RESDIR=""
 MAINOBJ="main"
 PLIST_EXTRA=""
@@ -96,14 +95,20 @@ EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
+# UIKitCore generic symbols require the PAC client-name only on arm64e.
+CLIENT_ARGS=""
+[ "$ISB_ARCH" = arm64e ] && CLIENT_ARGS="-client_name UIKit"
 # Canonical arm64e/PAC linker comes from profile.sh.
 
 # arm64e uses the local authenticated LLD installed by the bootstrap step.
 # The production profile is deliberately offline: no SSH/SCP/VM fallback.
-"$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+ARCH="$ISB_ARCH"
+PLATFORM_MIN=26.5
+[ "$ARCH" = arm64 ] && PLATFORM_MIN=26.0
+"$ISB_LINKER" -arch "$ARCH" -platform_version ios "$PLATFORM_MIN" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
   -dead_strip \
-  -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
+  -lSystem -lobjc $CLIENT_ARGS $EXTRAFLAGS \
   -framework UIKit -framework Foundation \
   -framework CoreGraphics \
   -framework QuartzCore -framework SwiftUI -framework CoreText \

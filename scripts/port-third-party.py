@@ -28,7 +28,7 @@ SKILL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD_SH = os.path.join(SKILL, "scripts", "build-pure-ui.sh")
 VALIDATE_SH = os.path.join(SKILL, "scripts", "validate-ipa.sh")
 KIT = os.path.join(SKILL, "assets", "PureSwiftKit.swift")
-WORKSPACE = "/var/minis/workspace"
+WORKSPACE = os.environ.get("ISB_WORKSPACE", "/var/minis/workspace")
 MAX_ITER = 10
 
 # Import order is defined by references/BEST-PRACTICES.md.
@@ -493,7 +493,7 @@ def post_process_ipa(app, res_dirs, scene_class, log, debug=False):
     manifest e' OBRIGATORIO para o UIKit instanciar o SceneDelegate — sem ele o
     app abre e fica com tela preta (janela nunca criada).
     """
-    work = "/tmp/build-" + app
+    work = os.environ.get("ISB_BUILD_WORK", "/tmp/build-" + app)
     pay_app = os.path.join(work, "Payload", app + ".app")
     if not os.path.isdir(pay_app):
         log_append(log, "ipa: Payload nao encontrado — post-process ignorado")
@@ -1016,12 +1016,12 @@ def run_build(app, bundle, srcs, debug=False):
     cmd = ["sh", BUILD_SH, app, bundle] + srcs + shims
     if debug:
         cmd.append("--debug")
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    build_work = os.path.join("/tmp", "build-" + app)
+    env = os.environ.copy()
+    env["ISB_BUILD_WORK"] = build_work
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     out = r.stdout + r.stderr
-    # IMPORTANTE: o build-pure-ui.sh so imprime os 20 primeiros erros
-    # (grep | head -20). Para o loop reativo, ler o swift.err COMPLETO do
-    # disco — os fixes reais podem estar alem do corte.
-    errfile = "/tmp/build-" + app + "/swift.err"
+    errfile = os.path.join(build_work, "swift.err")
     if os.path.exists(errfile):
         try:
             with open(errfile, encoding="utf-8", errors="replace") as f:

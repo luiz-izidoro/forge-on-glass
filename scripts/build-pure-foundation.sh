@@ -49,7 +49,10 @@ echo "[1/2] Swift OK ($(wc -c <"$OBJ")B)"
 
 # arm64e objects contain authenticated relocations and use the PAC linker
 # selected by profile.sh.
-"$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+ARCH="$ISB_ARCH"
+PLATFORM_MIN=26.5
+[ "$ARCH" = arm64 ] && PLATFORM_MIN=26.0
+"$ISB_LINKER" -arch "$ARCH" -platform_version ios "$PLATFORM_MIN" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
   -dead_strip -lSystem -lobjc \
   -framework Foundation -framework CoreFoundation \

@@ -43,6 +43,11 @@ PAC linker: /opt/ios-toolchain/ld64.lld-arm64e
 
 All defaults use arm64e/PAC. Do not mix caches, objects or IPAs.
 
+The explicit compatibility profile `ISB_ARCH=arm64` is retained only for
+legacy/LiveContainer consumers. It requires a separately generated
+`foundation-build633-arm64` cache and a native `ld64.lld`; arm64e artifacts are
+never reused for it. If those inputs are absent, the profile fails closed.
+
 ## Preconditions and build
 
 ```sh
@@ -100,7 +105,7 @@ sh scripts/build-pure-ui.sh EmbedApp com.example.embed main.swift \
   assets/NativeEmbeddings.swift --extra-objc assets/NativeNLBridge.m \
   --extra-framework NaturalLanguage
 
-# debug
+# debug (signed by default; use --unsigned only for a re-signing guest)
 sh scripts/build-pure-ui.sh App com.example.app main.swift --debug
 python3 scripts/check-debug-ipa.py /var/minis/workspace/App.ipa
 ```

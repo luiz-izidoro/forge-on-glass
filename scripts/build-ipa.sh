@@ -11,9 +11,9 @@
 # Output: /var/minis/workspace/<AppName>.ipa
 set -e
 
-# Canonical arm64e.v1/PAC profile only.
+# arm64e/PAC is canonical; arm64 remains an explicit legacy/LiveContainer path.
 ARCH="${ISB_ARCH:-arm64e}"
-[ "$ARCH" = arm64e ] || { echo "only arm64e.v1/PAC is supported" >&2; exit 2; }
+case "$ARCH" in arm64|arm64e) ;; *) echo "ISB_ARCH invalido: $ARCH" >&2; exit 2;; esac
 CLANG=/usr/bin/clang
 . "$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)/scripts/profile.sh"
 SW="$ISB_SW"
@@ -23,6 +23,7 @@ CACHE="$ISB_FOUNDATION_BUILD"
 MODS="$CACHE"
 DEPLOY=26.5
 SDKVER=26.5
+[ "$ARCH" = arm64 ] && DEPLOY=26.0
 TARGET="$ISB_TARGET"
 LINKER="$ISB_LINKER"
 PROFILE_MODS=""
@@ -44,7 +45,12 @@ if [ "$1" = "--pure" ]; then PURE=1; shift; fi
 APP="$1"; BUNDLE_ID="$2"
 if [ $PURE -eq 1 ]; then SWIFT_SRC="$3"; shift 3; else LOGIC_SRC="$3"; SHELL_SRC="$4"; shift 4; fi
 DEBUG=0
-for arg in "$@"; do [ "$arg" = "--debug" ] && DEBUG=1; done
+UNSIGNED="${ISB_UNSIGNED:-0}"
+for arg in "$@"; do
+  [ "$arg" = "--debug" ] && DEBUG=1
+  [ "$arg" = "--unsigned" ] && UNSIGNED=1
+ done
+if [ "$DEBUG" -eq 1 ] && [ -z "${ISB_UNSIGNED+x}" ] && [ "$UNSIGNED" = 0 ]; then UNSIGNED=0; fi
 if [ "$DEBUG" -eq 1 ] && [ "$PURE" -eq 1 ]; then
   echo "--debug requer build-pure-ui.sh para apps com UIKit; build-ipa --pure e' Foundation-only"
   exit 2
@@ -117,9 +123,11 @@ FRAMEWORKS="-framework Foundation"
 [ $PURE -eq 0 ] && FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore -lobjc"
 # Canonical arm64e/PAC framework stub comes from the configured toolchain.
 EXTRAFW="${ISB_TOOLCHAIN_ROOT}/extrafw"
-"$LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+CLIENT_ARGS=""
+[ "$ARCH" = arm64e ] && CLIENT_ARGS="-client_name UIKit"
+"$LINKER" -arch "$ARCH" -platform_version ios "$DEPLOY" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-  -F"$EXTRAFW" -framework UIKitCore -client_name UIKit \
+  -F"$EXTRAFW" -framework UIKitCore $CLIENT_ARGS \
   -lSystem -lobjc -framework UIKit -framework Foundation \
   -framework CoreGraphics -framework QuartzCore \
   -lswiftCore -lswiftFoundation -lswiftUIKit -lswiftDarwin \
@@ -178,7 +186,13 @@ cat > "$WORK/ent.plist" <<EOF
     $( [ "$DEBUG" -eq 1 ] && printf '<key>get-task-allow</key><true/>\n' )
 </dict></plist>
 EOF
-ldid -S"$WORK/ent.plist" "$APPDIR/$APP"
+if [ "$UNSIGNED" -eq 1 ]; then
+  echo "    (unsigned: LiveContainer/SideStore fara a assinatura)"
+elif [ "$DEBUG" -eq 1 ]; then
+  ldid -S"$WORK/ent.plist" "$APPDIR/$APP"
+else
+  ldid -S"$WORK/ent.plist" "$APPDIR/$APP"
+fi
 
 echo "[5] Packaging IPA..."
 mkdir -p "$OUT"; rm -f "$OUT/$APP.ipa"

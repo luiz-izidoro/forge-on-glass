@@ -7,6 +7,10 @@ ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 SYSROOT=${ISB_SYSROOT:-/opt/isb/sysroot}
 TOOLCHAIN=${ISB_TOOLCHAIN_ROOT:-/opt/ios-toolchain}
 SWIFT_ROOT=${ISB_SWIFT_ROOT:-/opt/swift6.3.3}
+SDK="${ISB_SDK:-$SYSROOT/iPhoneOS26.5.sdk}"
+CACHE="${ISB_FOUNDATION_BUILD:-$TOOLCHAIN/foundation-build633-arm64e}"
+LINKER="${ISB_LINKER:-$TOOLCHAIN/ld64.lld-arm64e}"
+VFS="${ISB_VFS:-$SYSROOT/vfs/overlay.yaml}"
 STEP=0; CHECK=0
 usage(){ echo "usage: $0 --check | --step N | --all"; exit 2; }
 [ "$#" -gt 0 ] || usage
@@ -17,10 +21,11 @@ check(){
   bad=0; echo '== forge-on-glass arm64e bootstrap check =='
   printf 'repo: '; [ -f "$ROOT/SKILL.md" ] && echo OK || { echo MISSING; bad=1; }
   printf 'Swift 6.3.3 frontend: '; [ -x "$SWIFT_ROOT/usr/bin/swift-frontend" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'iOS SDK 26.5: '; [ -f "$TOOLCHAIN/iPhoneOS26.5.sdk/usr/lib/libSystem.tbd" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'arm64e cache: '; if [ -d "$TOOLCHAIN/foundation-build633-arm64e" ] && python3 "$ROOT/scripts/check-module-cache.py" "$TOOLCHAIN/foundation-build633-arm64e" >/dev/null 2>&1; then echo OK; else echo MISSING/INVALID; bad=1; fi
+  printf 'iOS SDK 26.5: '; [ -f "$SDK/usr/lib/libSystem.tbd" ] && echo OK || { echo MISSING; bad=1; }
+  printf 'arm64e cache: '; if [ -d "$CACHE" ] && python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" >/dev/null 2>&1; then echo OK; else echo MISSING/INVALID; bad=1; fi
   printf 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'PAC linker: '; [ -x "$TOOLCHAIN/ld64.lld-arm64e" ] && echo OK || { echo MISSING; bad=1; }
+  printf 'VFS overlay: '; [ -f "$VFS" ] && echo OK || { echo MISSING; bad=1; }
+  printf 'PAC linker: '; [ -x "$LINKER" ] && echo OK || { echo MISSING; bad=1; }
   printf 'glibc loader: '; [ -e "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}/ld-linux-aarch64.so.1" ] && echo OK || { echo MISSING; bad=1; }
   [ "$bad" -eq 0 ] && return 0
   echo 'Missing inputs are expected until bootstrap stages are completed.'
@@ -45,7 +50,12 @@ if [ "$STEP" -ge 3 ] && [ "$STEP" -le 99 ]; then
   : "${ISB_SDK_ARCHIVE:?Set ISB_SDK_ARCHIVE to a user-provided iOS 26.5 SDK archive}"
   : "${ISB_SDK_SHA256:?Set ISB_SDK_SHA256 before extracting the SDK}"
   echo "$ISB_SDK_SHA256  $ISB_SDK_ARCHIVE" | sha256sum -c -
-  mkdir -p "$TOOLCHAIN"; tar xf "$ISB_SDK_ARCHIVE" -C "$TOOLCHAIN"
+  mkdir -p "$TOOLCHAIN" "$SYSROOT"
+  tar xf "$ISB_SDK_ARCHIVE" -C "$TOOLCHAIN"
+  if [ ! -e "$SYSROOT/iPhoneOS26.5.sdk" ]; then
+    [ -d "$TOOLCHAIN/iPhoneOS26.5.sdk" ] || { echo "SDK extracted but not found at $TOOLCHAIN/iPhoneOS26.5.sdk" >&2; exit 1; }
+    ln -s "$TOOLCHAIN/iPhoneOS26.5.sdk" "$SYSROOT/iPhoneOS26.5.sdk"
+  fi
 fi
 if [ "$STEP" -ge 4 ] && [ "$STEP" -le 99 ]; then
   echo 'Stage 4: stdlib and framework modules are produced with the matching Linux VM orchestrator.'

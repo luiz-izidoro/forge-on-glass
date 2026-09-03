@@ -17,19 +17,27 @@ Nunca use “funciona” sem dizer **onde** foi verificado. Use esta classifica�
 | S3 | IPA nova abriu no device/LiveContainer | runtime validado naquele host/device |
 | S4 | fluxo funcional relevante foi exercitado no device | funcional no cenário testado |
 
-`validate-ipa.sh`, `check-slice.py`, `check-entry.py` e chained fixups provam
-S2; **não provam S3**. Um host LiveContainer transforma e reassina o Mach-O,
-portanto a validação antes da importação não observa o arquivo efetivamente
-carregado depois.
+`check-module-cache.py` validates required module names, non-empty files,
+Clang PCM magic, personal-path absence and cache integrity. `neutral_refs` is
+reported for diagnosis; the cache must be generated against the configured
+sysroot and architecture.
+
+A validação estrutural prova S2 somente quando todos os guards aplicáveis passam,
+incluindo `validate-ipa.sh`, `check-slice.py`, `check-entry.py`,
+`check-undefined.py`, weak-link e chained fixups. A assinatura é exigida por
+padrão; um guest unsigned precisa declarar `ISB_REQUIRE_SIGNATURE=0`. Um host
+LiveContainer transforma e reassina o Mach-O, portanto a validação antes da
+importação não observa o arquivo efetivamente carregado depois.
 
 Ao atualizar documentação, registre sempre: data, commit, arquitetura, SDK,
 versão do iOS/device, host (se houver), comando executado e resultado.
 
 ## 2. Escolha de arquitetura e caminho de build
 
-### Perfil canônico
+`ISB_ARCH=arm64e` is the only operational/release profile. `ISB_ARCH=arm64`
+is retained only as an explicit legacy/LiveContainer compatibility path and
+requires a separate arm64 cache and linker; it fails closed when unavailable.
 
-- Builds arm64e.v1/PAC are the only supported operational and release path.
 
 
 ### Caminho padrão para um app novo

@@ -43,9 +43,17 @@ sh scripts/acceptance-suite.sh
 sh scripts/verify-release.sh
 ```
 
-The acceptance suite creates fresh arm64e IPAs and checks exact slice/subtype,
+`scripts/acceptance-suite.sh` is the canonical arm64e suite. It must be run
+from any directory; the suite changes to the skill root before resolving assets.
+The legacy arm64 compatibility path is not included because its separate cache
+is not present in this environment.
+
 PAC/chained fixups, entry point, undefined symbols, weak-link and IPA structure.
 It must run serially and use a fresh `ISB_ACCEPTANCE_WORK`/`ISB_WORKSPACE`.
+
+`ISB_ARCH=arm64` is a legacy compatibility path only. It requires
+`foundation-build633-arm64` and a matching `ld64.lld`; the current environment
+intentionally does not provide those inputs, so no arm64 PASS is claimed.
 
 ## Internal projects
 
@@ -82,6 +90,7 @@ never invent one.
 
 The repository and local generated residue were cleaned. See
 `references/CLEANUP-2026-09-03.md` for the preservation/removal inventory.
-A fresh complete acceptance rerun exceeded the one-hour budget at embeddings;
-this is not claimed as a new PASS. Existing device evidence and targeted
-validation remain documented above.
+A fresh complete acceptance rerun was completed after the corrections: all 10
+arm64e IPAs plus the negative FoundationModels strong-link fixture passed the
+structural suite. This remains S2; prior device evidence remains documented in
+`references/HANDOFF.md` and is not re-created by this run.
