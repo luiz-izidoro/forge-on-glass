@@ -2,7 +2,9 @@
 """Fail if tracked files contain generated or sensitive material."""
 import ipaddress, re, subprocess, sys
 from pathlib import Path
-files=[Path(x) for x in subprocess.check_output(["git","ls-files","-z"]).decode().split("\0") if x]
+tracked = subprocess.check_output(["git", "ls-files", "-z"]).decode()
+untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z"]).decode()
+files=[Path(x) for x in (tracked + untracked).split("\0") if x]
 errors=[]
 for p in files:
     n=str(p)

@@ -11,44 +11,31 @@
 # Output: /var/minis/workspace/<AppName>.ipa
 set -e
 
-# arm64e is canonical; arm64 remains a local rollback profile.
+# arm64e is the canonical operational profile.
 ARCH="${ISB_ARCH:-arm64e}"
+[ "$ARCH" = arm64e ] || { echo "only arm64e.v1/PAC is supported" >&2; exit 2; }
 CLANG=/usr/bin/clang
-if [ "$ARCH" = arm64e ]; then
-  . "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/profile.sh"
-  SW="$ISB_SW"
-  SF="$ISB_SW/usr/bin/swift-frontend"
-  SDK="$ISB_SDK"
-  CACHE="$ISB_FOUNDATION_BUILD"
-  MODS="$CACHE"
-  DEPLOY=26.5
-  SDKVER=26.5
-  TARGET="$ISB_TARGET"
-  LINKER="$ISB_LINKER"
-  PROFILE_MODS=""
-  for f in "$CACHE"/swift_*.swiftmodule; do
-    [ -f "$f" ] || continue
-    n=$(basename "$f" .swiftmodule); n=${n#swift_}
-    [ "$n" = XPC ] && continue
-    PROFILE_MODS="$PROFILE_MODS -swift-module-file=$n=$f"
-  done
-  for f in "$CACHE"/clang_*.pcm; do
-    [ -f "$f" ] || continue
-    n=$(basename "$f" .pcm); n=${n#clang_}
-    PROFILE_MODS="$PROFILE_MODS -Xcc -fmodule-file=$n=$f"
-  done
-else
-  SW=/opt/swift6.3
-  SF="$SW/usr/bin/swift-frontend"
-  SDK=/opt/ios-toolchain/iPhoneOS26.5.sdk
-  CACHE=/opt/ios-toolchain/exp63
-  MODS="$CACHE/modules"
-  DEPLOY=26.0
-  SDKVER=26.5
-  TARGET="arm64-apple-ios26.0"
-  LINKER=ld64.lld
-  PROFILE_MODS=""
-fi
+. "$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)/scripts/profile.sh"
+SW="$ISB_SW"
+SF="$SW/usr/bin/swift-frontend"
+SDK="$ISB_SDK"
+CACHE="$ISB_FOUNDATION_BUILD"
+MODS="$CACHE"
+DEPLOY=26.5
+SDKVER=26.5
+TARGET="$ISB_TARGET"
+LINKER="$ISB_LINKER"
+PROFILE_MODS=""
+for f in "$CACHE"/swift_*.swiftmodule; do
+  [ -f "$f" ] || continue
+  n=$(basename "$f" .swiftmodule); n=${n#swift_}
+  [ "$n" = XPC ] || PROFILE_MODS="$PROFILE_MODS -swift-module-file=$n=$f"
+done
+for f in "$CACHE"/clang_*.pcm; do
+  [ -f "$f" ] || continue
+  n=$(basename "$f" .pcm); n=${n#clang_}
+  PROFILE_MODS="$PROFILE_MODS -Xcc -fmodule-file=$n=$f"
+done
 OUT="${ISB_WORKSPACE:-/var/minis/workspace}"
 
 # ---- parse args ----
@@ -62,7 +49,7 @@ if [ "$DEBUG" -eq 1 ] && [ "$PURE" -eq 1 ]; then
   echo "--debug requer build-pure-ui.sh para apps com UIKit; build-ipa --pure e' Foundation-only"
   exit 2
 fi
-DEBUG_ASSET=/var/minis/skills/ios-swift-builder/assets/DebugSupport.swift
+DEBUG_ASSET="$(CDPATH= cd -- "$(dirname "$0")/../assets" && pwd)/DebugSupport.swift"
 if [ "$DEBUG" -eq 1 ] && [ ! -f "$DEBUG_ASSET" ]; then echo "DebugSupport.swift ausente"; exit 1; fi
 
 WORK=/tmp/ipabuild_$$

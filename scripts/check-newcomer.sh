@@ -13,10 +13,9 @@ ISB_TOOLCHAIN_ROOT="$W/toolchain" ISB_SWIFT_ROOT="$W/swift" \
 rc=$?
 set -e
 [ "$rc" -ne 0 ] || { cat "$OUT"; echo "newcomer check unexpectedly passed" >&2; exit 1; }
-for label in 'Swift 6.3.2 frontend: MISSING' 'iOS SDK: MISSING' \
-    'stdlib cache: MISSING' 'pure Swift arm64 cache: MISSING' \
-    'pure Swift arm64e cache: MISSING' 'neutral sysroot: MISSING' \
-    'glibc loader: MISSING'; do
+for label in 'Swift 6.3.3 frontend: MISSING' 'iOS SDK 26.5: MISSING' \
+    'arm64e cache: MISSING/INVALID' 'neutral sysroot: MISSING' \
+    'PAC linker: MISSING' 'glibc loader: MISSING'; do
   grep -F "$label" "$OUT" >/dev/null || { cat "$OUT"; echo "missing diagnostic: $label" >&2; exit 1; }
 done
 # Ensure the documented next-step recipe mentions every missing class.
