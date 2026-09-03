@@ -11,9 +11,10 @@
 # Output: /var/minis/workspace/<AppName>.ipa
 set -e
 
-# arm64e is the canonical operational profile.
+# arm64e is the canonical operational profile; arm64 is retained only for
+# explicit rollback/LiveContainer compatibility builds.
 ARCH="${ISB_ARCH:-arm64e}"
-[ "$ARCH" = arm64e ] || { echo "only arm64e.v1/PAC is supported" >&2; exit 2; }
+case "$ARCH" in arm64|arm64e) ;; *) echo "ISB_ARCH invalido: $ARCH" >&2; exit 2 ;; esac
 CLANG=/usr/bin/clang
 . "$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)/scripts/profile.sh"
 SW="$ISB_SW"

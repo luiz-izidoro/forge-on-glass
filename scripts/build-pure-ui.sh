@@ -1,8 +1,7 @@
 #!/bin/sh
 # build-pure-ui.sh — compila e empacota um app iOS 100% Swift (UIKit/SwiftUI).
-# `ISB_ARCH=arm64` is retained only for explicit legacy rollback.
-# `ISB_ARCH=arm64` is retained only for explicit legacy rollback.
-# Native arm64e/PAC is the canonical output.
+# Native arm64e/PAC is the canonical output; arm64 is retained only for
+# explicit rollback/LiveContainer compatibility builds.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
