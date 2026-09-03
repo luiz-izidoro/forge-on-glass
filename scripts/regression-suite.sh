@@ -93,7 +93,7 @@ echo "--- debugmode ---"
 d="$W/debugmode-debug"; mkdir -p "$d"
 cp "$W/src-debugmode/main.swift" "$d"/
 start=$(date +%s)
-if (cd "$d" && sh "$SKILL/scripts/build-pure-ui.sh" RSdebug ro.izido.rs.debug \
+if (cd "$d" && ISB_UNSIGNED=0 sh "$SKILL/scripts/build-pure-ui.sh" RSdebug ro.izido.rs.debug \
       main.swift --debug > build.log 2>&1); then
   rc=OK
   python3 "$SKILL/scripts/check-debug-ipa.py" /var/minis/workspace/RSdebug.ipa > "$d/guard.log" 2>&1 || rc="FALHA(guarda)"
