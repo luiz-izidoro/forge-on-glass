@@ -16,12 +16,9 @@ Target arm64e-apple-ios26.5
 Profile arm64e.v1/PAC
 ```
 
-The complete canonical matrix was structurally validated and exercised by the
-user on **iPhone17,1 / iOS 26.6 / LiveContainer**. Confirmed S3/S4 flows include
-SwiftUI/UIKit, Foundation/Dispatch, TortureTest 37/37, debug/StikDebug,
-Swift+ObjC hybrid, CoreML/Vision/Accelerate, NaturalLanguage, NLEmbedding and
-FoundationModels. Other devices, iOS/SDK versions, iSH on iPad and LiveContainer
-versions remain untested.
+`validate-ipa.sh` requires one app, `LC_MAIN`, chained fixups and (by default)
+a code signature. Use `ISB_REQUIRE_SIGNATURE=0` only for an explicitly unsigned
+guest handoff. `check-livecontainer.py` validates the fixup payload.
 
 ## Quick start
 
@@ -44,7 +41,7 @@ sh scripts/build-pure-foundation.sh FoundationApp main.swift
 # Swift + Objective-C/UIKit
 sh scripts/build-ipa.sh App com.example.app assets/AppLogic.swift assets/AppShell.m
 
-# FoundationModels (must remain weak-linked)
+# The `--weak-framework` form is mandatory for capability-gated AI.
 sh scripts/build-pure-ui.sh AIApp com.example.ai main.swift \
   assets/FoundationModelsProbe.swift --weak-framework FoundationModels
 

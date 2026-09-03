@@ -41,7 +41,14 @@ python3 /var/minis/skills/ios-swift-builder/scripts/check-debug-ipa.py \
   /var/minis/workspace/MeuApp.ipa
 ```
 
-`--debug` adiciona, apenas à cópia de trabalho:
+For the normal signed debug path, run:
+
+```sh
+sh scripts/build-pure-ui.sh App com.example.app main.swift --debug
+python3 scripts/check-debug-ipa.py /var/minis/workspace/App.ipa
+```
+
+Use `--unsigned` only when the next component explicitly re-signs the guest.
 
 - `assets/DebugSupport.swift`;
 - `get-task-allow=true`;

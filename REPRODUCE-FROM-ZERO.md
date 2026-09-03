@@ -12,7 +12,13 @@ cd forge-on-glass
 sh bootstrap.sh --check
 ```
 
-`bootstrap.sh --step 1` installs open Alpine tools. Steps 2 and 3 require
+A fresh clone must provide the SDK in `ISB_SYSROOT/iPhoneOS26.5.sdk` (or
+run bootstrap step 3, which extracts under `ISB_TOOLCHAIN_ROOT` and creates the
+sysroot symlink), the matching `vfs/overlay.yaml`, the Swift frontend, glibc
+loader, PAC linker and validated arm64e cache. The bootstrap script reports all
+of these inputs explicitly; stages 4/5 invoke the external Linux/VM generator
+and do not silently manufacture a cache on iSH.
+
 explicit, user-supplied URLs/archives plus SHA-256 values:
 
 ```sh
@@ -45,7 +51,10 @@ ISB_SYSROOT=/opt/isb/sysroot ISB_WORKSPACE="$PWD/out" \
   sh scripts/build-pure-ui.sh Demo com.example.demo assets/PureSwiftDemo.swift
 ```
 
-The default release profile is `ISB_OPT=O`; use `ISB_OPT=none` for diagnosis,
+For debug/StikDebug, the builder signs by default so `get-task-allow` is
+preserved. Pass `ISB_UNSIGNED=1` or `--unsigned` only for a guest that will be
+re-signed by LiveContainer/SideStore.
+
 `ISB_OPT=Osize` for size experiments, and `ISB_STRIP=1` for symbol stripping.
 `ISB_INCREMENTAL=1` enables the opt-in content-addressed object cache. A source,
 flag, SDK, VFS, module, or compiler change invalidates the cache.

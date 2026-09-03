@@ -1,19 +1,24 @@
 #!/bin/sh
-# Native arm64e.v1/PAC acceptance matrix.
+# Canonical arm64e/PAC acceptance matrix. Legacy arm64 is not part of this suite.
 # The one-time linker/module bootstrap may use a VM; this suite never does.
 set -eu
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
 WORK="${ISB_ACCEPTANCE_WORK:-/tmp/isb-acceptance-arm64e}"
+# The canonical command is executed from the skill root so relative assets work.
+cd "$SKILL"
 rm -rf "$WORK"; mkdir -p "$WORK"
 fail() { echo "ACCEPTANCE arm64e: FAIL: $*"; exit 1; }
 ok() { echo "ACCEPTANCE arm64e: OK: $*"; }
 [ "${ISB_ARCH:-arm64e}" = arm64e ] || fail "run with ISB_ARCH=arm64e"
 for f in "$SKILL"/scripts/*.sh; do sh -n "$f" || fail "shell syntax: $f"; done
-python3 -m py_compile "$SKILL"/scripts/*.py || fail "Python syntax"
-[ -x /opt/ios-toolchain/ld64.lld-arm64e ] || fail "local PAC linker missing"
-file /opt/ios-toolchain/ld64.lld-arm64e | grep -q 'aarch64' || fail "linker is not native aarch64"
-/opt/ios-toolchain/ld64.lld-arm64e --version >/dev/null || fail "local linker does not execute"
+PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile "$SKILL"/scripts/*.py || fail "Python syntax"
+LINKER="${ISB_LINKER:-/opt/ios-toolchain/ld64.lld-arm64e}"
+[ -x "$LINKER" ] || fail "local PAC linker missing: $LINKER"
+file "$LINKER" | grep -q 'aarch64' || fail "linker is not native aarch64"
+"$LINKER" --version >/dev/null || fail "linker does not execute"
+python3 "$SKILL/scripts/check-module-cache.py" \
+  "${ISB_FOUNDATION_BUILD:-/opt/ios-toolchain/foundation-build633-arm64e}" || fail "module cache"
 for f in "$SKILL"/scripts/build-pure-ui.sh "$SKILL"/scripts/link-ipa.sh; do
   ! grep -qE '(^|[[:space:]])(ssh|scp)([[:space:]]|$)|link-remote-arm64e' "$f" || fail "remote dependency in $f"
 done
@@ -68,7 +73,12 @@ for app in LocalAcceptanceUI LocalAcceptanceFoundation LocalAcceptanceTorture Lo
     STRIPBIN="$WORK/stripped-$app"; cp "$BIN" "$STRIPBIN"; llvm-strip -x "$STRIPBIN"
     python3 scripts/check-entry.py "$STRIPBIN" || fail "stripped entry $app"
   fi
-  "$SKILL/scripts/validate-ipa.sh" "$IPA" || fail "IPA $app"
+  if [ "$app" = LocalAcceptanceDebug ]; then
+    validate_extra="ISB_REQUIRE_SIGNATURE=1"
+  else
+    validate_extra="ISB_REQUIRE_SIGNATURE=0"
+  fi
+  env $validate_extra "$SKILL/scripts/validate-ipa.sh" "$IPA" || fail "IPA $app"
 done
 
 # Negative proof: a strong FoundationModels load command must be rejected.

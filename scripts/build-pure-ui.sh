@@ -1,6 +1,7 @@
 #!/bin/sh
 # build-pure-ui.sh — compila e empacota um app iOS 100% Swift (UIKit/SwiftUI).
-# Native arm64e/PAC is the only operational and release profile.
+# The release/operational profile is arm64e/PAC. The explicit arm64 compatibility
+# profile requires the separate `foundation-build633-arm64` cache and linker.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
@@ -29,8 +30,8 @@ APP="${1:?uso: $0 <AppName> <BundleID> <main.swift> [outro.swift ...] [--debug]}
 BUNDLE="${2:?falta o bundle id}"
 shift 2
 DEBUG=0
-UNSIGNED=0
-[ "${ISB_ARCH:-arm64e}" = "arm64e" ] && UNSIGNED="${ISB_UNSIGNED:-1}"
+UNSIGNED="${ISB_UNSIGNED:-0}"
+UNSIGNED_EXPLICIT=0
 MODE=""
 SRC_ARGS=""
 OBJC_ARGS=""
@@ -49,7 +50,7 @@ RESOURCES=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --debug) DEBUG=1 ;;
-    --unsigned) UNSIGNED=1 ;;
+    --unsigned) UNSIGNED=1; UNSIGNED_EXPLICIT=1 ;;
     --primary-file) MODE=primary ;;
     --whole-module) MODE=whole ;;
     --extra-objc) OBJC_ARGS="$OBJC_ARGS $2"; shift ;;
@@ -62,10 +63,11 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
-if [ "$ISB_ARCH" = "arm64e" ]; then
-  echo "    (perfil arm64e ativo; IA nativa somente quando declarada pelo projeto)"
+if [ "$DEBUG" -eq 1 ] && [ "$UNSIGNED_EXPLICIT" -eq 0 ] && [ -z "${ISB_UNSIGNED+x}" ]; then
+  UNSIGNED=0
 fi
 export ISB_SWIFT_DEFINES="$SWIFT_DEFINES"
+ARCH="$ISB_ARCH"
 SRCS="$SRC_ARGS"
 [ -n "$SRCS" ] || { echo "falta pelo menos um .swift"; exit 1; }
 
@@ -81,19 +83,22 @@ if [ "$DEBUG" -eq 1 ]; then
   echo "    (debug StikDebug: runtime + get-task-allow + overlay DBG)"
 fi
 
-# The neutral sysroot is mandatory after promotion. The active module cache and
+# The default is a signed ad-hoc IPA. LiveContainer/SideStore wrappers pass
+# --unsigned explicitly because they re-sign or inject the guest.
+# The active module cache and its PCMs are generated against the configured
+# sysroot; no personal-path fallback exists.
 # its PCMs are generated against this stable prefix; no /home fallback exists.
 ROOT="${ISB_SYSROOT:-/opt/isb/sysroot}"
-[ -e "$ROOT/iPhoneOS26.5.sdk" ] || {
-  echo "sysroot neutro ausente: $ROOT" >&2
-  exit 2
-}
 SW="$ISB_SW"
 SF="$SW/usr/bin/swift-frontend"
 SDK="$ISB_SDK"
 OUT="$ISB_FOUNDATION_BUILD"
 VFS="$ISB_VFS"
-WORK=/tmp/build-$APP-$ISB_ARCH-$$
+[ -e "$SDK" ] || {
+  echo "SDK ausente: $SDK" >&2
+  exit 2
+}
+WORK="${ISB_BUILD_WORK:-/tmp/build-$APP-$ISB_ARCH-$$}"
 CACHE_ROOT="${ISB_BUILD_CACHE:-/var/tmp/isb-build-cache}"
 CACHE_DIR="$CACHE_ROOT/$APP-$ISB_ARCH-$OPT_MODE"
 mkdir -p "$CACHE_DIR"
@@ -101,7 +106,8 @@ BIG="$CACHE_DIR/objc-cache"
 OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
 if [ ! -d "$OUT" ] || ! find "$OUT" -maxdepth 1 -name 'swift_*.swiftmodule' -type f | grep -q .; then
   echo "PERFIL $ISB_ARCH sem cache Swift: $OUT" >&2
-  [ "$ISB_ARCH" = "arm64e" ] && echo "Rode scripts/build-arm64e-modules.sh em Linux e copie o resultado para esse caminho." >&2
+  [ "$ISB_ARCH" = "arm64e" ] && echo "Rode build-arm64e-modules.sh no Linux/VM e copie o cache arm64e." >&2
+  [ "$ISB_ARCH" = "arm64" ] && echo "Rota legada: forneça um cache arm64 separado em $OUT." >&2
   exit 1
 fi
 rm -rf "$WORK" && mkdir -p "$WORK"
@@ -184,16 +190,14 @@ if [ "$MODE" = "primary" ]; then
     [ -f "$f" ] || { echo "bridge ObjC ausente: $f"; exit 1; }
     base=$(basename "$f" .m)
     mkdir -p "$WORK/extra-obj"
-    LD="$ROOT/xtool-glibc/lib/ld-linux-aarch64.so.1"
-    [ -x "$LD" ] || LD="/opt/xtool-glibc/lib/ld-linux-aarch64.so.1"
+    LD="$ISB_GLIBC_ROOT/ld-linux-aarch64.so.1"
+    [ -x "$LD" ] || { echo "glibc loader ausente: $LD"; exit 1; }
     CLANG_LIB="$SW/usr/bin/clang-21"
-    [ -x "$CLANG_LIB" ] || CLANG_LIB="/opt/swift6.3.3/usr/bin/clang-21"
     CLANG_RES="$SW/usr/lib/clang/21"
-    [ -d "$CLANG_RES" ] || CLANG_RES="/opt/swift6.3.3/usr/lib/clang/21"
     BRIDGE_OK=0
     for attempt in 1 2 3; do
       rm -f "$WORK/extra-obj/$base.o" "$WORK/extra-obj/$base.o.tmp"
-      if LD_LIBRARY_PATH="/opt/xtool-glibc/lib" "$LD" --library-path /opt/xtool-glibc/lib "$CLANG_LIB" -target "$ISB_TARGET" -isysroot "$SDK" -resource-dir "$CLANG_RES" -fmodules -fobjc-arc -c "$f" -o "$WORK/extra-obj/$base.o" \
+      if LD_LIBRARY_PATH="$ISB_GLIBC_ROOT" "$LD" --library-path "$ISB_GLIBC_ROOT" "$CLANG_LIB" -target "$ISB_TARGET" -isysroot "$SDK" -resource-dir "$CLANG_RES" -fmodules -fobjc-arc -c "$f" -o "$WORK/extra-obj/$base.o" \
         -F"$SDK/System/Library/Frameworks" -F"$SDK/System/Library/SubFrameworks" -I"$SDK/usr/include" \
         -fmodules-cache-path="$WORK/objc-cache" -Xclang -fmodule-feature -Xclang found_incompatible_headers__check_search_paths 2>"$WORK/extra-obj/$base.err" && [ -s "$WORK/extra-obj/$base.o" ]; then
         BRIDGE_OK=1; break
@@ -296,28 +300,29 @@ for f in $OBJC_ARGS; do
   [ -f "$f" ] || { echo "bridge ObjC ausente: $f"; exit 1; }
   base=$(basename "$f" .m)
   mkdir -p "$WORK/extra-obj"
-  LD="/opt/xtool-glibc/lib/ld-linux-aarch64.so.1"
-  [ -x "$LD" ] || LD="$ROOT/xtool-glibc/lib/ld-linux-aarch64.so.1"
+  LD="$ISB_GLIBC_ROOT/ld-linux-aarch64.so.1"
+  [ -x "$LD" ] || { echo "glibc loader ausente: $LD"; exit 1; }
   CLANG_LIB="$SW/usr/bin/clang-21"
-  [ -x "$CLANG_LIB" ] || CLANG_LIB="/opt/swift6.3.3/usr/bin/clang-21"
   CLANG_RES="$SW/usr/lib/clang/21"
-  [ -d "$CLANG_RES" ] || CLANG_RES="/opt/swift6.3.3/usr/lib/clang/21"
-  LD_LIBRARY_PATH="/opt/xtool-glibc/lib" "$LD" --library-path /opt/xtool-glibc/lib "$CLANG_LIB" -target "$ISB_TARGET" -isysroot "$SDK" -resource-dir "$CLANG_RES" -fmodules -fobjc-arc -c "$f" -o "$WORK/extra-obj/$base.o" \
+  # The active toolchain root supplies the glibc loader and clang resources.
+  LD_LIBRARY_PATH="$ISB_GLIBC_ROOT" "$LD" --library-path "$ISB_GLIBC_ROOT" "$CLANG_LIB" -target "$ISB_TARGET" -isysroot "$SDK" -resource-dir "$CLANG_RES" -fmodules -fobjc-arc -c "$f" -o "$WORK/extra-obj/$base.o" \
     -F"$SDK/System/Library/Frameworks" -F"$SDK/System/Library/SubFrameworks" -I"$SDK/usr/include" \
     -fmodules-cache-path="$WORK/objc-cache" -Xclang -fmodule-feature -Xclang found_incompatible_headers__check_search_paths 2>"$WORK/extra-obj/$base.err" || { cat "$WORK/extra-obj/$base.err"; exit 1; }
   WHOLE_EXTRA_OBJS="$WHOLE_EXTRA_OBJS $WORK/extra-obj/$base.o"
 done
 
-# UIKitCore generic stub is required for UIKit generic Swift classes. The PAC
-# linker accepts it when the executable identifies itself as UIKit client.
+# UIKitCore generic stub is required for UIKit generic Swift classes.
 EXTRAFW="${ISB_TOOLCHAIN_ROOT}/extrafw"
 EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
-"$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+# arm64e/PAC uses the UIKitCore generic stub and client name; legacy arm64 does not.
+CLIENT_ARGS=""
+[ "$ARCH" = arm64e ] && CLIENT_ARGS="-client_name UIKit"
+"$ISB_LINKER" -arch "$ARCH" -platform_version ios "$([ "$ARCH" = arm64e ] && echo 26.5 || echo 26.0)" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-  -lSystem -lobjc -client_name UIKit $EXTRAFLAGS \
+  -lSystem -lobjc $CLIENT_ARGS $EXTRAFLAGS \
   -framework UIKit -framework Foundation $FM_LINK \
   -framework CoreGraphics \
   -framework QuartzCore -framework SwiftUI -framework CoreText -framework Combine \

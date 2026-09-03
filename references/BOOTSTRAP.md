@@ -80,8 +80,9 @@ git clone --filter=blob:none --sparse --depth 1 https://github.com/xybp888/iOS-S
 git sparse-checkout set iPhoneOS26.5.sdk
 mv iPhoneOS26.5.sdk /opt/ios-toolchain/
 ```
-iOS 26 note: UIKit split into SubFrameworks; ObjC builds need
-`-F <SDK>/System/Library/SubFrameworks`.
+The canonical build consumes the SDK through the neutral sysroot. Step 3 extracts
+into `ISB_TOOLCHAIN_ROOT` and creates `ISB_SYSROOT/iPhoneOS26.5.sdk` as a symlink
+when needed. The same `ISB_SYSROOT` must contain `vfs/overlay.yaml`.
 
 # Optional Mac artifactbundle
 

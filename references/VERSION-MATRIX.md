@@ -2,7 +2,7 @@
 
 | Host compiler | Target slice | SDK / minimum OS | Testado em | Status and evidence |
 |---|---|---|---|---|
-| Swift 6.3.3 | arm64e | iOS SDK 26.5 / iOS 26.5 | iPhone17,1 / iOS 26.6 / LiveContainer (versão não registrada) | arm64e.v1/PAC; all 10 acceptance IPAs passed S2; user-confirmed S3/S4 for UI, Foundation/Dispatch, TortureTest 37/37, debug, hybrid, CoreML/Vision/Accelerate, FoundationModels availability/generation, NaturalLanguage and NLEmbedding |
+| Swift 6.3.3 | arm64e | iOS SDK 26.5 / iOS 26.5 | iPhone17,1 / iOS 26.6 / LiveContainer (versão não registrada) | arm64e.v1/PAC; 10 IPAs da aceitação final desta correção passaram S2 estrutural; S3/S4 históricos confirmados pelo usuário para UI, Foundation/Dispatch, TortureTest 37/37, debug, hybrid, CoreML/Vision/Accelerate, FoundationModels, NaturalLanguage e NLEmbedding |
 
 ## Não testado / fora da matriz operacional
 
