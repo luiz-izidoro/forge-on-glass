@@ -21,10 +21,6 @@ Uso:
 import argparse, hashlib, os, subprocess, sys, time, glob
 
 ROOT = os.environ.get("ISB_SYSROOT", "/opt/isb/sysroot")
-if not os.path.exists(ROOT):
-    candidates = glob.glob("/home/*/swift-ios-build")
-    if candidates:
-        ROOT = candidates[0]
 # Native arm64e is canonical; arm64 is explicit legacy rollback.
 ARCH = os.environ.get("ISB_ARCH", "arm64e")
 if ARCH not in ("arm64", "arm64e"):
@@ -34,7 +30,7 @@ CPU = os.environ.get("ISB_CPU", "apple-a12" if ARCH == "arm64e" else "apple-a7")
 SW = os.environ.get("ISB_SW", "/opt/swift6.3.3")
 SF = SW + "/usr/bin/swift-frontend"
 SDK = os.environ.get("ISB_SDK", ROOT + "/iPhoneOS26.5.sdk")
-FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633" + ("-arm64e" if ARCH == "arm64e" else ""))
+FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633-arm64e")
 VFS = os.environ.get("ISB_VFS", ROOT + "/vfs/overlay.yaml")
 BIG = os.environ.get("ISB_MODULE_CACHE", "/var/tmp/isb-cache") + "/app-" + ARCH
 

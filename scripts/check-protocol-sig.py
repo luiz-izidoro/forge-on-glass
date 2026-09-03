@@ -22,8 +22,8 @@ import os
 import re
 import sys
 
-SDK = os.environ.get("IOS_SDK", "/opt/isb/sysroot/iPhoneOS26.5.sdk")
-FB = "/opt/ios-toolchain/foundation-build633"
+SDK = os.environ.get("ISB_SDK", os.environ.get("IOS_SDK", "/opt/isb/sysroot/iPhoneOS26.5.sdk"))
+FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633-arm64e")
 
 
 def interface_files():
