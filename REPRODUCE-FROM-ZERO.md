@@ -27,7 +27,7 @@ Ubuntu aarch64 packages and is not redistributed. Follow the exact commands in
 Pure UIKit/SwiftUI imports additionally require a module cache built once on a
 real Linux VM or Docker host using the user's SDK. The existing orchestrator is
 `references/linux-vm/orchestrator_vm633.py`; its output is copied locally to
-`/opt/ios-toolchain/foundation-build633` and must not be committed.
+`/opt/ios-toolchain/foundation-build633-arm64e` and must not be committed.
 
 ## First build
 

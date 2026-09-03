@@ -15,8 +15,14 @@ for f in LICENSE NOTICE.md SECURITY.md CONTRIBUTING.md CHANGELOG.md \
   references/PUBLISHING.md references/PORTING-TERCEROS.md references/VERSION-MATRIX.md; do
   [ -s "$f" ] || { echo "RELEASE: missing $f"; exit 1; }
 done
-for needle in '/home/example' 'BEGIN RSA PRIVATE KEY' 'BEGIN OPENSSH PRIVATE KEY'; do
-  git log --all -S "$needle" --oneline | grep -q . && { echo "RELEASE: forbidden history match"; exit 1; } || true
+# Scan historical trees for actual personal home paths or private-key headers.
+for commit in $(git rev-list --all); do
+  if git grep -I -nE '/home/[A-Za-z0-9_.-]+' "$commit" -- . ':(exclude)scripts/verify-release.sh' | grep -q .; then
+    echo "RELEASE: forbidden personal path in history"; exit 1
+  fi
+  if git grep -I -nE -- '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----' "$commit" -- . ':(exclude)scripts/verify-release.sh' | grep -q .; then
+    echo "RELEASE: private key in history"; exit 1
+  fi
 done
 grep -q arm64e scripts/profile.sh
 grep -q acceptance-suite-arm64e.sh scripts/acceptance-suite.sh

@@ -95,10 +95,8 @@ git clone https://github.com/kabiroberai/swift-sdk-darwin && cd swift-sdk-darwin
 ./build.sh auto aarch64          # → output/darwin-linux-aarch64.artifactbundle.zip
 # transfer the zip to /var/minis/shared/darwin-sdk/ on-device.
 ```
-The bundle ships the SDK as text `.swiftinterface` only (prebuilt binary modules
-are intentionally excluded and, being Apple-tagged, would be rejected by our
-swift.org frontend anyway). It's useful mainly to get a version-matched SDK and
-the Linux LLVM toolset (`ld64.lld`). See PROCEDIMENTO-MAC.md in that folder.
+The historical Mac artifactbundle notes refer to an older Swift 6.3.2
+experiment; they are archival only. The current profile is Swift 6.3.3/arm64e.
 
 ## 4. Build the arm64e module cache on real Linux/VM
 
