@@ -1,6 +1,7 @@
 #!/bin/sh
 # profile.sh — target/profile selection shared by the pure Swift pipeline.
-# Native arm64e is the canonical profile. arm64 is explicit legacy rollback.
+# Native arm64e/PAC is the canonical profile; arm64 remains an explicit
+# rollback/LiveContainer compatibility profile.
 ISB_ARCH="${ISB_ARCH:-arm64e}"
 # The pure Swift profile always uses the neutral sysroot. Its SDK and PCMs
 # are generated/validated under this stable prefix; no author-specific /home
