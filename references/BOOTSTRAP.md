@@ -83,20 +83,11 @@ mv iPhoneOS26.5.sdk /opt/ios-toolchain/
 iOS 26 note: UIKit split into SubFrameworks; ObjC builds need
 `-F <SDK>/System/Library/SubFrameworks`.
 
-### The Mac step (once) — only if you also want the *matched* Darwin toolset/SDK
+# Optional Mac artifactbundle
 
-The open SDK above is enough for the current pipeline. The original session also
-generated a full `darwin.artifactbundle` on a Mac with Xcode 26 (Swift 6.3.2):
-
-```sh
-# ON A MAC with Xcode 26 (xcrun swift --version must be 6.3.x):
-brew install rsync
-git clone https://github.com/kabiroberai/swift-sdk-darwin && cd swift-sdk-darwin
-./build.sh auto aarch64          # → output/darwin-linux-aarch64.artifactbundle.zip
-# transfer the zip to /var/minis/shared/darwin-sdk/ on-device.
-```
-The historical Mac artifactbundle notes refer to an older Swift 6.3.2
-experiment; they are archival only. The current profile is Swift 6.3.3/arm64e.
+A matched Darwin artifactbundle is optional and is not required by normal
+arm64e builds. If you obtain one, keep it outside this repository and record
+its source and checksum.
 
 ## 4. Build the arm64e module cache on real Linux/VM
 

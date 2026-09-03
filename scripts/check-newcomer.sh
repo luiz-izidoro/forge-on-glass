@@ -20,7 +20,9 @@ for label in 'Swift 6.3.3 frontend: MISSING' 'iOS SDK 26.5: MISSING' \
 done
 # Ensure the documented next-step recipe mentions every missing class.
 grep -q 'bootstrap.sh --step' "$SKILL/REPRODUCE-FROM-ZERO.md"
-grep -q 'compile-stdlib.sh' "$SKILL/REPRODUCE-FROM-ZERO.md"
+# The canonical generator is executed on real Linux/VM; local builds consume
+# its validated arm64e output.
+grep -q 'build-arm64e-modules.sh\|orchestrator_vm633.py' "$SKILL/REPRODUCE-FROM-ZERO.md"
 grep -q 'orchestrator_vm633.py' "$SKILL/REPRODUCE-FROM-ZERO.md"
 grep -q 'BOOTSTRAP.md' "$SKILL/REPRODUCE-FROM-ZERO.md"
 # No traceback is an acceptable onboarding diagnostic.

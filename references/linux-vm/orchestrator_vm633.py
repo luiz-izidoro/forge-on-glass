@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# orchestrator_vm.py — v4 FINAL: explicit-module build of Foundation+UIKit chain.
+# orchestrator_vm633.py — explicit-module build of the arm64e Foundation/UIKit chain.
 # Breakthroughs baked in:
 #  A) symlink $SW/usr/lib/swift/{dispatch,os,CoreFoundation} -> SDK (run_build.sh)
 #  B) pre-build SwiftShims/_SwiftConcurrencyShims/_AvailabilityInternal pcm
@@ -15,8 +15,8 @@ VM_ROOT = os.environ.get("ISB_VM_ROOT", os.path.expanduser("~/swift-ios-build"))
 SW = os.environ.get("ISB_VM_SW", os.path.join(VM_ROOT, "swift-6.3.3"))
 SF = f"{SW}/usr/bin/swift-frontend"
 SDK = os.environ.get("ISB_VM_SDK", os.path.join(VM_ROOT, "iPhoneOS26.5.sdk"))
-OUT = os.environ.get("ISB_VM_OUT", os.path.join(VM_ROOT, "foundation-build633"))
-TARGET = os.environ.get("ISB_TARGET", "arm64-apple-ios26.0")
+OUT = os.environ.get("ISB_VM_OUT", os.path.join(VM_ROOT, "foundation-build633-arm64e"))
+TARGET = os.environ.get("ISB_TARGET", "arm64e-apple-ios26.5")
 PCM_ONLY = os.environ.get("ISB_PCM_ONLY", "0") == "1"
 VFS = os.environ.get("ISB_VM_VFS", os.path.join(VM_ROOT, "vfs/overlay.yaml"))
 IMPC = os.environ.get("ISB_VM_MODULE_CACHE", os.path.join(VM_ROOT, "module-cache"))

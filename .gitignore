@@ -15,7 +15,7 @@ overlay.yaml
 *.pcm
 *.swiftinterface
 *.swiftdoc
-foundation-build/
+foundation-build*/
 swift-ios-build/          # VM working dir (SDK upload, build logs, modules)
 sdk.tar
 *.err

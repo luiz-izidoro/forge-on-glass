@@ -193,10 +193,8 @@ runtime.
 
 ### As DUAS causas que travaram este port (independentes)
 
-**1. Type-checker travado** (build não terminava)
-Modo whole-module explode com a inferência genérica do TCA. Fix: `-primary-file`
-(arquivo-a-arquivo) → 60+ min travado vira **~6 min**.
-Detalhes: `TYPECHECKER-E-MULTIMODULO.md`.
+The current builder uses `-primary-file` to isolate files within one module;
+reduce large expressions when type checking becomes slow.
 
 **2. Assinatura do AppDelegate** (build OK, app com tela preta)
 `application(_:didFinishLaunchingWithOptions:)` não casa com o
@@ -212,26 +210,16 @@ python3 scripts/build-parallel.py --module <App> --src <dir> --out /tmp/obj --jo
 # depois linkar com as flags do build-pure-ui.sh
 ```
 
-> **Multi-módulo (`build-multimodule.sh`)**: 🔴 DEPRECADO em 2026-08-23 —
-> degrada o bridging String↔NSString. Historicamente: compila e linka, mas **nenhum app
-> gerado por ele jamais abriu no device**. Está marcado como NÃO VALIDADO EM
-> RUNTIME. Não é a causa da tela preta (o módulo único também dava preto antes
-> do fix nº 2), mas continua sem prova. Prefira módulo único.
+- **Multi-arquivo:** mantenha um único módulo arm64e e use `-primary-file`.
+  O antigo experimento de módulos separados foi removido e não é suportado.
 
 Fontes do Minesweeper: `/var/minis/workspace/minesweeper-port/`
 (`single-src/` = o que roda; `dep-src/`+`app-src/` = experimento multi-módulo).
 
-## 11. Erros de INFERÊNCIA não têm fix automático
+A investigação de inferência foi arquivada; use `-primary-file`, reduza o caso
+e torne os tipos explícitos quando um build ficar lento.
 
-O loop reativo conserta imports, membros ausentes e tipos degradados. Ele **não
-conserta inferência**. Sintoma: o arquivo não dá erro — ele **trava**
-(processo vivo, 0% CPU, sem `.o`). Ou dá erros que mentem sobre a causa
-(`extra argument 'qos' in call` quando o problema é o `Self(...)` da linha
-anterior).
-
-Receita: isole com `-primary-file`, bisseccione o arquivo por blocos e
-reescreva com tipos nominais explícitos. Casos concretos em
-`TYPECHECKER-E-MULTIMODULO.md` §5.
+Receita:
 
 ## 12. Ordem de import: `Dispatch` DEPOIS de `UIKit`
 
@@ -248,5 +236,4 @@ Com `Dispatch` antes do `UIKit`, o overlay Swift do Dispatch não carrega e o
 ```
 ld64.lld: error: undefined symbol: ___isPlatformVersionAtLeast
 ```
-Fix: incluir `assets/PlatformVersionShim.swift` no build (o
-`build-multimodule.sh` injeta sozinho).
+O link final inclui `PlatformVersionShim.swift` quando o projeto usa `#available`.

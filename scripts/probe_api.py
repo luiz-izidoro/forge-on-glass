@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """probe_api.py — testa, UMA A UMA, se uma API compila em Swift puro no iSH.
 
-Serve para MAPEAR a superficie real das degradacoes: em vez de escrever um app
-gigante e ficar cego a cada erro, cada snippet e' compilado isoladamente e o
-resultado (OK / erro exato) vai para uma tabela.
+The current builder keeps a compatibility probe catalog for supported APIs.
 
 Uso: python3 probe_api.py            # roda o catalogo embutido
      python3 probe_api.py <arquivo>  # roda um catalogo custom (formato abaixo)
@@ -15,7 +13,7 @@ import os, sys, glob, subprocess, json
 SW = '/opt/swift6.3.3'
 SF = f'{SW}/usr/bin/swift-frontend'
 SDK = '/opt/isb/sysroot/iPhoneOS26.5.sdk'
-OUT = '/opt/ios-toolchain/foundation-build633'
+OUT = '/opt/ios-toolchain/foundation-build633-arm64e'
 VFS = '/opt/isb/sysroot/vfs/overlay.yaml'
 BIG = '/var/tmp/isb-cache/probe'
 os.makedirs(BIG, exist_ok=True)
@@ -93,7 +91,7 @@ CATALOG = [
     ("Task",                      "Foundation",       '_ = Task { 1 }'),
     ("existencial any",           "Foundation",       'let x: [any CustomStringConvertible] = [1, "a"]; _ = x.count'),
 
-    # --- degradacoes catalogadas nos BUG-REPORTS (sessao 6-7) ---
+    # --- known API compatibility probes ---
     ("TimeInterval (Foundation)",  "Foundation",       'let t: TimeInterval = 1; _ = t'),
     ("CGRect.width/.height",       "Foundation|UIKit", 'let r = CGRect(); _ = r.width; _ = r.height'),
     ("CGRectGetWidth (C)",         "Foundation|UIKit", '_ = CGRectGetWidth(CGRect()); _ = CGRectGetHeight(CGRect())'),
@@ -126,7 +124,7 @@ CATALOG = [
     # reexporta NSFileManager de forma diferente ("different definitions in
     # different modules"). No probe global falha; dentro de classes compila;
     # a overload URL-based do enumerator SOME sempre. Ver BUG 4 em
-    # references/BUG-REPORTS-2026-08-19.md
+    # Known Foundation/UIKit compatibility behavior.
     ("FileManager c/ UIKit (instavel)", "Foundation|UIKit", 'let fm = FileManager.default; _ = fm.enumerator(atPath: "/tmp")'),
     ("CGRect.height/width",       "Foundation|UIKit", 'var r = CGRect(); _ = r.height; _ = r.width'),
     ("CGRect C funcs",            "Foundation|UIKit", 'var r = CGRect(); let h = CGRectGetHeight(r); let w = CGRectGetWidth(r); _ = (h, w)'),
@@ -181,7 +179,7 @@ def probe(name, imports, code):
     src = '/tmp/probe_api.swift'
     imp = '\n'.join(f'import {m}' for m in imports.split('|'))
     open(src, 'w').write(f'{imp}\npublic func f() {{\n  {code}\n}}\n')
-    args = [SF, '-frontend', '-typecheck', '-target', 'arm64-apple-ios26.0',
+    args = [SF, '-frontend', '-typecheck', '-target', 'arm64e-apple-ios26.5',
             '-sdk', SDK, '-enable-objc-interop', '-swift-version', '5',
             '-disable-implicit-swift-modules', '-Xcc', '-fno-implicit-modules',
             '-Xcc', '-fno-implicit-module-maps',

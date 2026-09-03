@@ -15,8 +15,7 @@ Fluxo:
      e o build e repetido — ate passar ou sobrarem erros desconhecidos.
   4. Valida o IPA e escreve <AppName>-port.md (relatorio) no workspace.
 
-Os fixes replicam o que esta documentado em references/PURE-SWIFT-UI-STATUS.md
-e references/BUG-REPORTS-2026-08-19.md — mas aplicados por maquina, nao a mao.
+The adaptation rules are maintained in the current project guide and handoff.
 """
 
 import os
@@ -32,7 +31,7 @@ KIT = os.path.join(SKILL, "assets", "PureSwiftKit.swift")
 WORKSPACE = "/var/minis/workspace"
 MAX_ITER = 10
 
-# Ordem canonica de imports (medida: ver PURE-SWIFT-UI-STATUS.md)
+# Import order is defined by references/BEST-PRACTICES.md.
 CANON = {"Foundation": 1, "CoreFoundation": 2, "SwiftUI": 3,
          "UIKit": 4, "CoreText": 5, "Dispatch": 6, "Combine": 7, "Darwin": 8}
 # NOTA (2026-08-22): Dispatch DEPOIS de UIKit e' obrigatorio. Medido com 4
@@ -894,7 +893,7 @@ def fix_known_errors(work_dir, build_out, log):
         #   "value of type 'DispatchQueue' has no member 'async'"
         #   "does not conform to protocol 'Scheduler'"
         #   "extra argument 'qos' in call" / "missing arguments for parameters 'attr'"
-        # Ver references/TYPECHECKER-E-MULTIMODULO.md §3.
+        # See references/BEST-PRACTICES.md for the type-checking guidance.
         if (re.search(r"cannot find(?: type)? 'DispatchQueue' in scope", msg)
                 or "Foundation.DispatchQueue" in msg
                 or "does not conform to protocol 'Scheduler'" in msg

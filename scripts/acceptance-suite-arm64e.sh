@@ -1,5 +1,5 @@
 #!/bin/sh
-# acceptance-suite-arm64e.sh — canonical native arm64e/PAC acceptance matrix.
+# Native arm64e.v1/PAC acceptance matrix.
 # The one-time linker/module bootstrap may use a VM; this suite never does.
 set -eu
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)

@@ -11,10 +11,9 @@
 # Output: /var/minis/workspace/<AppName>.ipa
 set -e
 
-# arm64e is the canonical operational profile; arm64 is retained only for
-# explicit rollback/LiveContainer compatibility builds.
+# Canonical arm64e.v1/PAC profile only.
 ARCH="${ISB_ARCH:-arm64e}"
-case "$ARCH" in arm64|arm64e) ;; *) echo "ISB_ARCH invalido: $ARCH" >&2; exit 2 ;; esac
+[ "$ARCH" = arm64e ] || { echo "only arm64e.v1/PAC is supported" >&2; exit 2; }
 CLANG=/usr/bin/clang
 . "$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)/scripts/profile.sh"
 SW="$ISB_SW"
@@ -116,24 +115,17 @@ fi
 echo "[3] Linking..."
 FRAMEWORKS="-framework Foundation"
 [ $PURE -eq 0 ] && FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore -lobjc"
-if [ "$ARCH" = arm64e ]; then
-  # UIKitCore exports generic UIKit Swift symbols. It permits UIKit as client.
-  "$LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
-    -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -F/opt/ios-toolchain/extrafw -framework UIKitCore -client_name UIKit \
-    -lSystem -lobjc -framework UIKit -framework Foundation \
-    -framework CoreGraphics -framework QuartzCore \
-    -lswiftCore -lswiftFoundation -lswiftUIKit -lswiftDarwin \
-    -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch -lswiftCoreFoundation \
-    -lswiftQuartzCore -rpath /usr/lib/swift -e _main \
-    $OBJS -o "$APPDIR/$APP"
-else
-  # shellcheck disable=SC2086
-  "$CLANG" -target "$TARGET" -isysroot "$SDK" -fuse-ld=lld \
-    -F "$SDK/System/Library/SubFrameworks" -L "$SDK/usr/lib/swift" \
-    -Wl,-platform_version,ios,$DEPLOY,$SDKVER -Wl,-dead_strip \
-    $FRAMEWORKS $OBJS -o "$APPDIR/$APP"
-fi
+# Canonical arm64e/PAC framework stub comes from the configured toolchain.
+EXTRAFW="${ISB_TOOLCHAIN_ROOT}/extrafw"
+"$LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+  -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
+  -F"$EXTRAFW" -framework UIKitCore -client_name UIKit \
+  -lSystem -lobjc -framework UIKit -framework Foundation \
+  -framework CoreGraphics -framework QuartzCore \
+  -lswiftCore -lswiftFoundation -lswiftUIKit -lswiftDarwin \
+  -lswiftObjectiveC -lswiftCoreGraphics -lswiftDispatch -lswiftCoreFoundation \
+  -lswiftQuartzCore -rpath /usr/lib/swift -e _main \
+  $OBJS -o "$APPDIR/$APP"
 llvm-strip "$APPDIR/$APP" 2>/dev/null || true
 echo "    Link OK ($(wc -c <"$APPDIR/$APP")B)"
 

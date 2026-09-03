@@ -29,11 +29,7 @@ versão do iOS/device, host (se houver), comando executado e resultado.
 
 ### Perfil canônico
 
-- **arm64e.v1/PAC** é o único perfil operacional e de release.
-- `ISB_ARCH=arm64` é somente rollback/debug histórico local.
-- A aceitação canônica é `sh scripts/acceptance-suite.sh`, que delega para a
-  matriz arm64e completa.
-- Não misture cache arm64, objetos arm64 ou IPA arm64 com o perfil arm64e.
+- Builds arm64e.v1/PAC are the only supported operational and release path.
 
 
 ### Caminho padrão para um app novo
@@ -60,8 +56,8 @@ python3 scripts/check-debug-ipa.py /var/minis/workspace/MeuApp.ipa # somente --d
 
 ### Perfis
 
-- **arm64e.v1/PAC**: perfil canônico, usado nas IPAs funcionais e na release.
-- **arm64**: perfil legado de rollback, não usado operacionalmente.
+- **arm64e.v1/PAC**: único perfil operacional, usado em builds locais,
+  LiveContainer e release.
 
 - **híbrido Swift + ObjC:** plano B maduro quando uma API Swift do SDK
   patchado degrada. Use Swift para a lógica e ObjC/UIKit para a camada que
@@ -72,13 +68,8 @@ python3 scripts/check-debug-ipa.py /var/minis/workspace/MeuApp.ipa # somente --d
 
 ### Nunca misture artefatos
 
-Separe, no mínimo, por arquitetura e processo:
-
-- cache/module set arm64 e arm64e;
-- diretório temporário de compilação;
-- IPA de saída;
-- logs;
-- bundle ID de teste.
+Separe, no mínimo, o cache arm64e, o diretório temporário de compilação,
+IPAs de saída, logs e bundle IDs de teste.
 
 Use `ISB_OUTPUT` para nomes estáveis e únicos. Não deixe builds concorrentes
 escreverem `MeuApp.ipa`, nem reutilize objetos de outra arquitetura. PCMs e
@@ -135,22 +126,12 @@ Regras práticas:
 - mantenha o primeiro arquivo compilado com `Foundation` importado;
 - use `-parse-as-library` para módulos de biblioteca, evitando `_main` duplicado.
 
-### `-primary-file` é a defesa padrão
+### `-primary-file` é o padrão
 
-O modo `--whole-module` continua útil como experimento ou módulo de
-declarações, mas não é o caminho normal. Há uma degradação cross-file
-reprodutível: um arquivo com CoreGraphics pode fazer `Bundle`,
-`NotificationCenter` e outros nomes de Foundation desaparecerem de outro
-arquivo. `-primary-file` evita essa classe de falha e também reduz explosões do
- type-checker.
-
-### Módulo separado está proibido por padrão
-
-`build-multimodule.sh` está **deprecado e quebrado**, não apenas “não
-validado”. Importar uma dependência como módulo separado degrada o bridging
-`String`↔`NSString` no módulo do app e já causou tela preta. Use módulo único,
-`-primary-file` e link final com `link-ipa.sh`. Só investigue o modo antigo se a
-reprodução do bug for o objetivo explícito e com `ISB_ALLOW_MULTIMODULE=1`.
+O builder usa um único módulo arm64e e `-primary-file` por padrão. O antigo
+experimento de módulos separados não faz parte deste repositório nem do fluxo
+de produção. Mantenha o código cross-file no módulo único e use `link-ipa.sh`
+para o link final.
 
 ### Otimização medida
 
@@ -164,15 +145,14 @@ sem inferência de S4).
 Não gaste 10 minutos compilando um app grande para descobrir um erro de
 entry point. Siga esta sequência:
 
-1. `sh scripts/check-env.sh` — toolchain, caches, espaço e perfil.
+1. `sh scripts/check-env.sh` — toolchain, cache, espaço e perfil.
 2. `sh -n` nos scripts e `python3 -m py_compile` nos scripts Python alterados.
 3. `sh scripts/regression-suite.sh --quick` — especialmente após mexer em
    linker, SDK, módulos ou flags.
 4. build novo com `ISB_OUTPUT` exclusivo.
 5. `check-warnings.py`, `check-entry.py`, `check-undefined.py` e
    `validate-ipa.sh`.
-6. `acceptance-suite.sh` para o caminho arm64 LiveContainer; a variante
-   `acceptance-suite-arm64e.sh` para o perfil arm64e.
+6. `sh scripts/acceptance-suite.sh` para o perfil arm64e/PAC.
 7. instalação e teste visual no device.
 8. somente então adicione uma dependência ou uma capacidade complexa.
 
@@ -238,7 +218,7 @@ resultado incrementalmente.
 - corrigir “tela preta” reescrevendo a lógica antes de checar o delegate;
 - usar documentação antiga como estado atual;
 - compilar o app inteiro para cada hipótese;
-- compartilhar `WORK`, objetos ou IPA entre arm64 e arm64e;
+- não misturar caches, objetos ou IPAs de perfis diferentes;
 - adicionar framework “por garantia” sem declarar a razão e validar o link;
 - usar `UserDefaults` para segredo, token ou API key;
 - chamar `BGTaskScheduler` como se fosse execução garantida;
@@ -261,8 +241,8 @@ Antes de entregar uma IPA ou declarar uma etapa concluída:
 - [ ] nenhum segredo ou artefato proibido no Git;
 - [ ] próximos passos definidos por evidência, não por tentativa.
 
-Documentos de apoio: `HANDOFF.md` (estado), `WARNINGS-FATAIS.md` (guards),
-`TYPECHECKER-E-MULTIMODULO.md` (compilação), `NATIVE-INTELLIGENCE.md` (IA) e
+Documents de apoio: `HANDOFF.md` (estado), `WARNINGS-FATAIS.md` (guards),
+`NATIVE-INTELLIGENCE.md` (IA), `PROJECT-GUIDE.md` (fluxo) e
 `TEST-PLAN-AND-LOCAL-REPRO.md` (aceitação).
 
 

@@ -47,25 +47,15 @@ done
 [ "$OK" -eq 1 ] || { echo "swift compile failed after retries" >&2; tail -10 "$ERRF" >&2; exit 1; }
 echo "[1/2] Swift OK ($(wc -c <"$OBJ")B)"
 
-# arm64e objects contain authenticated relocations and must use the PAC linker
-# selected by profile.sh. The generic clang driver is correct for arm64 only.
-if [ "$ISB_ARCH" = arm64e ]; then
-  "$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
-    -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
-    -dead_strip -lSystem -lobjc \
-    -framework Foundation -framework CoreFoundation \
-    -lswiftCore -lswiftFoundation -lswiftDispatch -lswift_Concurrency \
-    -lswift_StringProcessing -lswiftSwiftOnoneSupport -lswiftCoreFoundation \
-    -rpath /usr/lib/swift -e _main "$OBJ" -o "$BIN" \
-    2>"$ERRF" || { echo "link failed:" >&2; cat "$ERRF" >&2; exit 1; }
-else
-  clang -target "$ISB_TARGET" -isysroot "$SDK" -fuse-ld=lld \
-    -L "$SDK/usr/lib/swift" -L "$SDK/usr/lib" "$OBJ" \
-    -framework Foundation -framework CoreFoundation -lobjc \
-    -lswiftCore -lswiftFoundation -lswiftDispatch -lswift_Concurrency \
-    -lswift_StringProcessing -lswiftSwiftOnoneSupport -lswiftCoreFoundation \
-    -Wl,-platform_version,ios,26.0,26.5 -o "$BIN" \
-    2>"$ERRF" || { echo "link failed:" >&2; cat "$ERRF" >&2; exit 1; }
-fi
+# arm64e objects contain authenticated relocations and use the PAC linker
+# selected by profile.sh.
+"$ISB_LINKER" -arch arm64e -platform_version ios 26.5 26.5 \
+  -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
+  -dead_strip -lSystem -lobjc \
+  -framework Foundation -framework CoreFoundation \
+  -lswiftCore -lswiftFoundation -lswiftDispatch -lswift_Concurrency \
+  -lswift_StringProcessing -lswiftSwiftOnoneSupport -lswiftCoreFoundation \
+  -rpath /usr/lib/swift -e _main "$OBJ" -o "$BIN" \
+  2>"$ERRF" || { echo "link failed:" >&2; cat "$ERRF" >&2; exit 1; }
 echo "[2/2] Linked: $BIN ($(wc -c <"$BIN")B)"
 rm -f "$OBJ" "$ERRF"

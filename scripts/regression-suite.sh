@@ -161,8 +161,8 @@ echo "============================================="
 echo "logs: $W/<caso>-<modo>/build.log"
 
 # Generator failure-path regression: a successful, silent frontend exit is the
-# iSH startup race. The wrapper must retry and then report the actionable scan
-# diagnostic, never aborting on an unset SCAN_OK variable.
+# iSH startup race. The canonical arm64e wrapper must retry and then report the
+# actionable scan diagnostic, never aborting on an unset status variable.
 FAIL_W="$W/generator-failure"
 mkdir -p "$FAIL_W/fake-sw/usr/bin" "$FAIL_W/cache" "$FAIL_W/root"
 cat > "$FAIL_W/fake-sw/usr/bin/swift-frontend" <<'EOF'
@@ -176,7 +176,7 @@ if ISB_VM_ROOT="$FAIL_W/root" ISB_VM_SW="$FAIL_W/fake-sw" \
     ISB_VM_VFS="/opt/isb/sysroot/vfs/overlay.yaml" \
     ISB_VM_OUT="$FAIL_W/out" ISB_SCAN_CACHE="$FAIL_W/cache" \
     ISB_ORCHESTRATOR="$SKILL/references/linux-vm/orchestrator_vm633.py" \
-    sh "$SKILL/scripts/build-arm64-modules.sh" --pcm-only >"$FAIL_W/result.log" 2>&1; then
+    sh "$SKILL/scripts/build-arm64e-modules.sh" >"$FAIL_W/result.log" 2>&1; then
   printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "FALHA" >> "$RESULT"
   MATRIX_FAIL=1
 else

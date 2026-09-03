@@ -12,8 +12,7 @@
 - Disponibilidade universal do FoundationModels: depende de região, idioma,
   modelo do device e preparação do modelo.
 
-O perfil arm64 é mantido somente como rollback local e não faz parte da matriz
-canônica de release.
+O perfil arm64e/PAC é o único perfil operacional e de release.
 As linhas acima descrevem evidência observada, não uma promessa de
 compatibilidade. O Apple SDK e os módulos gerados são fornecidos pelo usuário e
 não são distribuídos neste repositório. `ISB_SYSROOT` defaults to

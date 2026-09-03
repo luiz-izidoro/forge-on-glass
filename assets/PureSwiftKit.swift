@@ -1,8 +1,6 @@
 // PureSwiftKit.swift — camada de compatibilidade para apps 100% Swift no iSH.
 //
-// Reúne, num arquivo só, os workarounds de TODAS as degradações conhecidas do
-// toolchain (ver references/BUG-REPORTS-2026-08-19.md). Substitui o antigo
-// CGCompat.swift, que cobria apenas a geometria.
+// Reúne workarounds mantidos pelo perfil arm64e/PAC.
 //
 // USO: adicione este arquivo ao build junto dos seus fontes:
 //   build-pure-ui.sh MeuApp com.x.y "Views.swift PureSwiftKit.swift main.swift"

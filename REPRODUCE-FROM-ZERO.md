@@ -22,7 +22,8 @@ ISB_SDK_ARCHIVE=... ISB_SDK_SHA256=... sh scripts/bootstrap.sh --step 3
 
 The glibc loader step is intentionally explicit because it is assembled from
 Ubuntu aarch64 packages and is not redistributed. Follow the exact commands in
-`references/BOOTSTRAP.md`, then run `sh scripts/compile-stdlib.sh` (step 4).
+`references/BOOTSTRAP.md`, then run the canonical arm64e module generator on a
+real Linux/VM host.
 
 Pure UIKit/SwiftUI imports additionally require a module cache built once on a
 real Linux VM or Docker host using the user's SDK. The existing orchestrator is

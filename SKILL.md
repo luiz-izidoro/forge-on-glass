@@ -41,8 +41,7 @@ module cache: /opt/ios-toolchain/foundation-build633-arm64e
 PAC linker: /opt/ios-toolchain/ld64.lld-arm64e
 ```
 
-All defaults use arm64e. Do not mix architecture caches, objects or IPAs.
-Legacy arm64 is not a release path.
+All defaults use arm64e/PAC. Do not mix caches, objects or IPAs.
 
 ## Preconditions and build
 
