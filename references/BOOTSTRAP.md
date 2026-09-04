@@ -84,7 +84,8 @@ Sparse-clone ONE SDK folder (repo is huge):
 cd /tmp && mkdir s && cd s
 git clone --filter=blob:none --sparse --depth 1 https://github.com/xybp888/iOS-SDKs.git .
 git sparse-checkout set iPhoneOS26.5.sdk
-mv iPhoneOS26.5.sdk /opt/ios-toolchain/
+mkdir -p "${ISB_SYSROOT:-/opt/isb/sysroot}"
+mv iPhoneOS26.5.sdk "${ISB_SYSROOT:-/opt/isb/sysroot}/"
 ```
 The canonical build consumes the SDK through `ISB_SYSROOT`; step 3 extracts
 into the configured sysroot directly. `ISB_SDK` may point to another explicit

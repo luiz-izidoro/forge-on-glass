@@ -15,7 +15,10 @@ Fluxo:
      e o build e repetido — ate passar ou sobrarem erros desconhecidos.
   4. Valida o IPA e escreve <AppName>-port.md (relatorio) no workspace.
 
-The adaptation rules are maintained in the current project guide and handoff.
+`ISB_PORT_WORK_ROOT` controls the isolated source-copy directory (default
+`/tmp`). `ISB_BUILD_WORK` controls the builder's intermediate directory and
+`ISB_WORKSPACE` controls the resulting IPA/report directory. These variables
+allow a consumer to keep all generated material outside the checkout.
 """
 
 import os
@@ -1173,7 +1176,8 @@ def main():
 
     print("==> passo 2: copiando para area de trabalho e adaptando")
     # trabalha numa COPIA — o repo original do projeto nunca e editado
-    work = os.path.join("/tmp", "port-" + app)
+    port_root = os.environ.get("ISB_PORT_WORK_ROOT", "/tmp")
+    work = os.path.join(port_root, "port-" + app)
     shutil.rmtree(work, ignore_errors=True)
     os.makedirs(work)
     srcs = []

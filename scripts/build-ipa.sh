@@ -6,7 +6,8 @@
 #   build-ipa.sh --pure <AppName> <BundleID> <main.swift> [--debug]
 #
 # Hybrid mode: Swift logic (@_cdecl exports) + ObjC UIKit shell → real UI app.
-# Pure mode:   a single Swift file (console-style, top-level or @main) → app.
+# Single-file mode: Swift entry compiled with the same iOS UIKit runtime/linker;
+# use build-pure-ui.sh for the recommended pure SwiftUI/UIKit workflow.
 #
 # Output: /var/minis/workspace/<AppName>.ipa
 set -e
@@ -51,7 +52,7 @@ for arg in "$@"; do
  done
 if [ "$DEBUG" -eq 1 ] && [ -z "${ISB_UNSIGNED+x}" ] && [ "$UNSIGNED" = 0 ]; then UNSIGNED=0; fi
 if [ "$DEBUG" -eq 1 ] && [ "$PURE" -eq 1 ]; then
-  echo "--debug requer build-pure-ui.sh para apps com UIKit; build-ipa --pure e' Foundation-only"
+  echo "--debug requer build-pure-ui.sh para o fluxo recomendado de UIKit/SwiftUI" >&2
   exit 2
 fi
 DEBUG_ASSET="$(CDPATH= cd -- "$(dirname "$0")/../assets" && pwd)/DebugSupport.swift"

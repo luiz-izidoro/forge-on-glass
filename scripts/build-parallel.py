@@ -72,7 +72,6 @@ OPT_FLAGS = {"none": "-Onone", "O": "-O", "Osize": "-Osize"}
 if OPT_MODE not in OPT_FLAGS:
     raise SystemExit("ISB_OPT invalido: %s (use none, O ou Osize)" % OPT_MODE)
 
-# arm64e/PAC only; no legacy architecture branch.
 BASE = ["-frontend", "-target", TARGET, "-target-cpu", CPU, "-sdk", SDK,
         "-enable-objc-interop", "-swift-version", "5", OPT_FLAGS[OPT_MODE]]
 if os.environ.get("ISB_SWIFT_DEFINES"):
