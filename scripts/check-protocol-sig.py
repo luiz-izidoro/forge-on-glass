@@ -24,6 +24,7 @@ import sys
 
 SDK = os.environ.get("ISB_SDK", os.environ.get("IOS_SDK", "/opt/isb/sysroot/iPhoneOS26.5.sdk"))
 FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633-arm64e")
+TOOLCHAIN = os.environ.get("ISB_TOOLCHAIN_ROOT", "/opt/ios-toolchain")
 
 
 def interface_files():
@@ -36,8 +37,8 @@ def interface_files():
     for p in pats:
         files += glob.glob(p)
     if not files:
-        # o SDK pode estar noutro prefixo (o de trabalho e' /opt/ios-toolchain)
-        for alt in ("/opt/ios-toolchain/iPhoneOS26.5.sdk",):
+        # O SDK é resolvido pelo perfil configurado; não há fallback pessoal.
+        for alt in (os.path.join(TOOLCHAIN, "iPhoneOS26.5.sdk"),):
             for p in pats:
                 files += glob.glob(p.replace(SDK, alt))
     # NOTA: os interfaces do SDK sao arm64e (nao arm64). Nao filtre por "arm64"
@@ -61,7 +62,7 @@ def find_in_objc_headers(name, member=None):
     nullability/generics do header.
     """
     hdrs = []
-    for base in (SDK, "/opt/ios-toolchain/iPhoneOS26.5.sdk"):
+    for base in (SDK, os.path.join(TOOLCHAIN, "iPhoneOS26.5.sdk")):
         hdrs += glob.glob(base + "/System/Library/Frameworks/*/Headers/*.h")
         if hdrs:
             break

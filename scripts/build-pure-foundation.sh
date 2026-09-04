@@ -47,11 +47,9 @@ done
 [ "$OK" -eq 1 ] || { echo "swift compile failed after retries" >&2; tail -10 "$ERRF" >&2; exit 1; }
 echo "[1/2] Swift OK ($(wc -c <"$OBJ")B)"
 
-# arm64e objects contain authenticated relocations and use the PAC linker
-# selected by profile.sh.
+# arm64e/PAC objects use the canonical linker selected by profile.sh.
 ARCH="$ISB_ARCH"
 PLATFORM_MIN=26.5
-[ "$ARCH" = arm64 ] && PLATFORM_MIN=26.0
 "$ISB_LINKER" -arch "$ARCH" -platform_version ios "$PLATFORM_MIN" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
   -dead_strip -lSystem -lobjc \

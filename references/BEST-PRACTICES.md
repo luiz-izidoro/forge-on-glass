@@ -17,10 +17,10 @@ Nunca use “funciona” sem dizer **onde** foi verificado. Use esta classifica�
 | S3 | IPA nova abriu no device/LiveContainer | runtime validado naquele host/device |
 | S4 | fluxo funcional relevante foi exercitado no device | funcional no cenário testado |
 
-`check-module-cache.py` validates required module names, non-empty files,
-Clang PCM magic, personal-path absence and cache integrity. `neutral_refs` is
-reported for diagnosis; the cache must be generated against the configured
-sysroot and architecture.
+`check-module-cache.py` validates required module names, Swift/Clang file magic,
+non-empty files, personal-path absence and arm64e/iOS 26.5 identity markers.
+`neutral_refs` is reported for diagnosis; the cache must be generated against
+the configured sysroot and architecture.
 
 A validação estrutural prova S2 somente quando todos os guards aplicáveis passam,
 incluindo `validate-ipa.sh`, `check-slice.py`, `check-entry.py`,
@@ -34,11 +34,11 @@ versão do iOS/device, host (se houver), comando executado e resultado.
 
 ## 2. Escolha de arquitetura e caminho de build
 
-`ISB_ARCH=arm64e` is the only operational/release profile. `ISB_ARCH=arm64`
-is retained only as an explicit legacy/LiveContainer compatibility path and
-requires a separate arm64 cache and linker; it fails closed when unavailable.
-
-
+`arm64e.v1/PAC` is the only supported architecture and release profile. The
+former arm64 compatibility path is discontinued and must not be restored or
+used by consumers. LiveContainer, when used, receives an unsigned arm64e guest;
+post-import host transformation is a separate compatibility experiment, not a
+second builder profile.
 
 ### Caminho padrão para um app novo
 
@@ -64,8 +64,10 @@ python3 scripts/check-debug-ipa.py /var/minis/workspace/MeuApp.ipa # somente --d
 
 ### Perfis
 
-- **arm64e.v1/PAC**: único perfil operacional, usado em builds locais,
-  LiveContainer e release.
+The canonical profile is native **arm64e.v1/PAC**, used for all builds and
+release artifacts. A LiveContainer wrapper may produce an unsigned arm64e guest,
+but the host's post-import transformation/re-signing is outside this builder's
+S2 proof and requires separate device evidence.
 
 - **híbrido Swift + ObjC:** plano B maduro quando uma API Swift do SDK
   patchado degrada. Use Swift para a lógica e ObjC/UIKit para a camada que

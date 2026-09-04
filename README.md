@@ -16,9 +16,11 @@ Target arm64e-apple-ios26.5
 Profile arm64e.v1/PAC
 ```
 
-`validate-ipa.sh` requires one app, `LC_MAIN`, chained fixups and (by default)
-a code signature. Use `ISB_REQUIRE_SIGNATURE=0` only for an explicitly unsigned
-guest handoff. `check-livecontainer.py` validates the fixup payload.
+`validate-ipa.sh` additionally requires a thin ARM64 Mach-O with the canonical
+arm64e.v1/PAC subtype, executable filetype, one app bundle, `LC_MAIN`, valid
+chained fixup payload whose segment count matches the Mach-O, and a valid code
+signature unless `ISB_REQUIRE_SIGNATURE=0` is explicitly set for an unsigned
+guest.
 
 ## Quick start
 

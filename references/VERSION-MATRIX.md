@@ -6,6 +6,7 @@
 
 ## Não testado / fora da matriz operacional
 
+- Perfil arm64: **descontinuado**, não é build, fallback ou alvo de aceitação.
 - Outros modelos de iPhone/iPad e iSH em iPad.
 - Outras versões do iOS, SDK ou LiveContainer; a versão exata do LiveContainer
   desta validação não foi registrada.

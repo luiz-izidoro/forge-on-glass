@@ -7,8 +7,11 @@ p=sys.argv[1]; b=open(p,'rb').read()
 if len(b)<32: raise SystemExit('short Mach-O')
 magic,cpu,sub,ft,ncmd,sz,flags,res=struct.unpack_from('<IiiIIIII',b,0)
 if magic != 0xfeedfacf or cpu != 0x0100000c: raise SystemExit('not thin 64-bit ARM Mach-O')
-base=sub & 0x00ffffff
-if base not in (0,1,2): raise SystemExit('unsupported ARM64 subtype 0x%08x'%(sub&0xffffffff))
+base = sub & 0x00ffffff
+if base != 2 or (sub & 0xff000000) not in (0x80000000, 0x81000000):
+    raise SystemExit('not canonical arm64e.v1/PAC Mach-O')
+if ft != 2:
+    raise SystemExit('Mach-O is not an executable')
 p=32; segments=0; fix=None; main=None; cs=None
 for i in range(ncmd):
     if p+8>len(b): raise SystemExit('truncated load command')

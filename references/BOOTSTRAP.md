@@ -1,4 +1,10 @@
-# Bootstrap — rebuild the whole toolchain from zero
+A fresh checkout needs these user-provided arm64e inputs: the Swift 6.3.3
+frontend, iOS SDK 26.5 under `ISB_SYSROOT`, its neutral VFS overlay, glibc
+loader, PAC linker and the validated arm64e module cache. This script only
+installs/checks the base inputs and verifies archives; it does not manufacture
+Apple SDK files, the PAC linker or the module cache on iSH. Stages 4/5 are an
+explicit external Linux/VM handoff, not an automatic rebuild of the whole
+Darwin toolchain.
 
 > **Operação excepcional:** só use se o toolchain/cache em `/opt` estiver
 > ausente ou comprovadamente inválido. Para um projeto normal, comece em
@@ -80,9 +86,11 @@ git clone --filter=blob:none --sparse --depth 1 https://github.com/xybp888/iOS-S
 git sparse-checkout set iPhoneOS26.5.sdk
 mv iPhoneOS26.5.sdk /opt/ios-toolchain/
 ```
-The canonical build consumes the SDK through the neutral sysroot. Step 3 extracts
-into `ISB_TOOLCHAIN_ROOT` and creates `ISB_SYSROOT/iPhoneOS26.5.sdk` as a symlink
-when needed. The same `ISB_SYSROOT` must contain `vfs/overlay.yaml`.
+The canonical build consumes the SDK through `ISB_SYSROOT`; step 3 extracts
+into the configured sysroot directly. `ISB_SDK` may point to another explicit
+SDK directory, but it must resolve to the same iOS 26.5 SDK used by the VFS and
+module cache. The old toolchain-root SDK symlink is not required. The same
+`ISB_SYSROOT` must contain `vfs/overlay.yaml`.
 
 # Optional Mac artifactbundle
 

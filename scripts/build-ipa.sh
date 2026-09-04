@@ -11,9 +11,9 @@
 # Output: /var/minis/workspace/<AppName>.ipa
 set -e
 
-# arm64e/PAC is canonical; arm64 remains an explicit legacy/LiveContainer path.
+# arm64e/PAC is the only supported profile.
 ARCH="${ISB_ARCH:-arm64e}"
-case "$ARCH" in arm64|arm64e) ;; *) echo "ISB_ARCH invalido: $ARCH" >&2; exit 2;; esac
+[ "$ARCH" = arm64e ] || { echo "ISB_ARCH descontinuado: somente arm64e.v1/PAC e suportado" >&2; exit 2; }
 CLANG=/usr/bin/clang
 . "$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)/scripts/profile.sh"
 SW="$ISB_SW"
@@ -23,7 +23,6 @@ CACHE="$ISB_FOUNDATION_BUILD"
 MODS="$CACHE"
 DEPLOY=26.5
 SDKVER=26.5
-[ "$ARCH" = arm64 ] && DEPLOY=26.0
 TARGET="$ISB_TARGET"
 LINKER="$ISB_LINKER"
 PROFILE_MODS=""
@@ -121,11 +120,10 @@ fi
 echo "[3] Linking..."
 FRAMEWORKS="-framework Foundation"
 [ $PURE -eq 0 ] && FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore -lobjc"
-# Canonical arm64e/PAC framework stub comes from the configured toolchain.
+# arm64e/PAC uses the UIKitCore generic stub and client name.
 EXTRAFW="${ISB_TOOLCHAIN_ROOT}/extrafw"
-CLIENT_ARGS=""
-[ "$ARCH" = arm64e ] && CLIENT_ARGS="-client_name UIKit"
-"$LINKER" -arch "$ARCH" -platform_version ios "$DEPLOY" 26.5 \
+CLIENT_ARGS="-client_name UIKit"
+"$ISB_LINKER" -arch "$ARCH" -platform_version ios "$DEPLOY" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
   -F"$EXTRAFW" -framework UIKitCore $CLIENT_ARGS \
   -lSystem -lobjc -framework UIKit -framework Foundation \

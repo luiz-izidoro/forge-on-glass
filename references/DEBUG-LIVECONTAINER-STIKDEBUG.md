@@ -44,6 +44,8 @@ python3 /var/minis/skills/ios-swift-builder/scripts/check-debug-ipa.py \
 For the normal signed debug path, run:
 
 ```sh
+# The normal signed debug path preserves get-task-allow. For an explicitly
+# unsigned guest, pass --unsigned and validate only after the host re-signs it.
 sh scripts/build-pure-ui.sh App com.example.app main.swift --debug
 python3 scripts/check-debug-ipa.py /var/minis/workspace/App.ipa
 ```

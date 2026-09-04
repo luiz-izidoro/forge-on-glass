@@ -1,5 +1,5 @@
 #!/bin/sh
-# Canonical arm64e/PAC acceptance matrix. Legacy arm64 is not part of this suite.
+# arm64e/PAC only; LiveContainer receives an unsigned guest.
 # The one-time linker/module bootstrap may use a VM; this suite never does.
 set -eu
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
