@@ -43,17 +43,13 @@ sh scripts/acceptance-suite.sh
 sh scripts/verify-release.sh
 ```
 
-`scripts/acceptance-suite.sh` is the canonical arm64e suite. It must be run
-from any directory; the suite changes to the skill root before resolving assets.
-The legacy arm64 compatibility path is not included because its separate cache
-is not present in this environment.
-
-PAC/chained fixups, entry point, undefined symbols, weak-link and IPA structure.
+`scripts/check-slice.py` accepts only the canonical `arm64e` slice.
 It must run serially and use a fresh `ISB_ACCEPTANCE_WORK`/`ISB_WORKSPACE`.
 
-`ISB_ARCH=arm64` is a legacy compatibility path only. It requires
-`foundation-build633-arm64` and a matching `ld64.lld`; the current environment
-intentionally does not provide those inputs, so no arm64 PASS is claimed.
+The discontinued arm64 compatibility path has been removed from the builders,
+checks and acceptance matrix. No arm64 PASS is claimed or required. The
+LiveContainer wrapper emits an unsigned arm64e guest; post-import host
+compatibility remains untested and cannot be inferred from S2.
 
 ## Internal projects
 

@@ -493,8 +493,8 @@ def post_process_ipa(app, res_dirs, scene_class, log, debug=False):
     manifest e' OBRIGATORIO para o UIKit instanciar o SceneDelegate — sem ele o
     app abre e fica com tela preta (janela nunca criada).
     """
-    work = os.environ.get("ISB_BUILD_WORK", "/tmp/build-" + app)
-    pay_app = os.path.join(work, "Payload", app + ".app")
+    work_dir = os.environ.get("ISB_BUILD_WORK", os.path.join("/tmp", "port-" + app))
+    pay_app = os.path.join(work_dir, "Payload", app + ".app")
     if not os.path.isdir(pay_app):
         log_append(log, "ipa: Payload nao encontrado — post-process ignorado")
         return
@@ -1016,7 +1016,7 @@ def run_build(app, bundle, srcs, debug=False):
     cmd = ["sh", BUILD_SH, app, bundle] + srcs + shims
     if debug:
         cmd.append("--debug")
-    build_work = os.path.join("/tmp", "build-" + app)
+    build_work = os.environ.get("ISB_BUILD_WORK", os.path.join("/tmp", "build-" + app))
     env = os.environ.copy()
     env["ISB_BUILD_WORK"] = build_work
     r = subprocess.run(cmd, capture_output=True, text=True, env=env)

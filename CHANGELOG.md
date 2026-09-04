@@ -13,9 +13,19 @@
 - User-confirmed S3/S4 evidence applies to iPhone17,1 / iOS 26.6 / LiveContainer;
   other devices, iOS versions and LiveContainer versions remain untested.
 
-## Unreleased
+## Unreleased — 2026-09-03 audit
 
-- Consolidated the repository to the arm64e.v1/PAC profile.
+- Discontinued the arm64 compatibility profile in all builders, guards and
+  consumer wrappers; arm64e.v1/PAC is now the sole operational target.
+- Hardened module-cache validation with required modules, PCM/Swift magic and
+  arm64e/iOS 26.5 identity checks.
+- Hardened IPA validation with executable filetype, canonical arm64e subtype,
+  chained-fixup segment-count and code-signature payload checks.
+- Corrected SDK/sysroot bootstrap documentation and configurable third-party
+  port workdirs.
+- Aligned Radar's native and LiveContainer guest matrices with the same
+  arm64e-only contract; removed obsolete arm64 artifacts and rollback files.
+
 - Removed obsolete compatibility builders, remote-link helpers, fat-slice
   tools, superseded probes and archival handoff/report files from the checkout.
 - Repaired configurable sysroot/toolchain paths, transient scan retries,

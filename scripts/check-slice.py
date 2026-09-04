@@ -5,11 +5,11 @@ import subprocess
 import sys
 
 if len(sys.argv) != 3:
-    print("usage: check-slice.py <mach-o> <arm64|arm64e>")
+    print("usage: check-slice.py <mach-o> <arm64e>")
     raise SystemExit(2)
 binpath, wanted = sys.argv[1:]
-if wanted not in ("arm64", "arm64e"):
-    print("invalid architecture", wanted)
+if wanted != "arm64e":
+    print("architecture discontinued: only arm64e.v1/PAC is supported")
     raise SystemExit(2)
 
 raw = open(binpath, "rb").read(32)

@@ -22,7 +22,7 @@ check(){
   printf 'repo: '; [ -f "$ROOT/SKILL.md" ] && echo OK || { echo MISSING; bad=1; }
   printf 'Swift 6.3.3 frontend: '; [ -x "$SWIFT_ROOT/usr/bin/swift-frontend" ] && echo OK || { echo MISSING; bad=1; }
   printf 'iOS SDK 26.5: '; [ -f "$SDK/usr/lib/libSystem.tbd" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'arm64e cache: '; if [ -d "$CACHE" ] && python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" >/dev/null 2>&1; then echo OK; else echo MISSING/INVALID; bad=1; fi
+  printf 'arm64e cache: '; if [ -d "$CACHE" ] && python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" "$SYSROOT" >/dev/null 2>&1; then echo OK; else echo MISSING/INVALID; bad=1; fi
   printf 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || { echo MISSING; bad=1; }
   printf 'VFS overlay: '; [ -f "$VFS" ] && echo OK || { echo MISSING; bad=1; }
   printf 'PAC linker: '; [ -x "$LINKER" ] && echo OK || { echo MISSING; bad=1; }
@@ -51,15 +51,15 @@ if [ "$STEP" -ge 3 ] && [ "$STEP" -le 99 ]; then
   : "${ISB_SDK_SHA256:?Set ISB_SDK_SHA256 before extracting the SDK}"
   echo "$ISB_SDK_SHA256  $ISB_SDK_ARCHIVE" | sha256sum -c -
   mkdir -p "$TOOLCHAIN" "$SYSROOT"
-  tar xf "$ISB_SDK_ARCHIVE" -C "$TOOLCHAIN"
-  if [ ! -e "$SYSROOT/iPhoneOS26.5.sdk" ]; then
-    [ -d "$TOOLCHAIN/iPhoneOS26.5.sdk" ] || { echo "SDK extracted but not found at $TOOLCHAIN/iPhoneOS26.5.sdk" >&2; exit 1; }
-    ln -s "$TOOLCHAIN/iPhoneOS26.5.sdk" "$SYSROOT/iPhoneOS26.5.sdk"
-  fi
+  tar xf "$ISB_SDK_ARCHIVE" -C "$SYSROOT"
+  [ -d "$SDK" ] || {
+    echo "SDK extraído mas não encontrado em $SDK" >&2; exit 1;
+  }
 fi
 if [ "$STEP" -ge 4 ] && [ "$STEP" -le 99 ]; then
   echo 'Stage 4: stdlib and framework modules are produced with the matching Linux VM orchestrator.'
-  echo 'Use references/linux-vm/orchestrator_vm633.py; do not build an arm64 cache.'
+# The canonical module cache is generated with arm64e; no compatibility cache
+# is produced by this script.
 fi
 if [ "$STEP" -ge 5 ] && [ "$STEP" -le 99 ]; then
   echo 'Stage 5 requires real Linux/VM/Docker: build foundation-build633-arm64e.'

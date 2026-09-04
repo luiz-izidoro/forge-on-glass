@@ -95,16 +95,13 @@ EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
-# UIKitCore generic symbols require the PAC client-name only on arm64e.
-CLIENT_ARGS=""
-[ "$ISB_ARCH" = arm64e ] && CLIENT_ARGS="-client_name UIKit"
-# Canonical arm64e/PAC linker comes from profile.sh.
+# Canonical arm64e/PAC linker and UIKitCore generic stub.
+CLIENT_ARGS="-client_name UIKit"
 
 # arm64e uses the local authenticated LLD installed by the bootstrap step.
 # The production profile is deliberately offline: no SSH/SCP/VM fallback.
 ARCH="$ISB_ARCH"
 PLATFORM_MIN=26.5
-[ "$ARCH" = arm64 ] && PLATFORM_MIN=26.0
 "$ISB_LINKER" -arch "$ARCH" -platform_version ios "$PLATFORM_MIN" 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
   -dead_strip \

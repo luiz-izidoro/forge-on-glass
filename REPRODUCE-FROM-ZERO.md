@@ -12,12 +12,12 @@ cd forge-on-glass
 sh bootstrap.sh --check
 ```
 
-A fresh clone must provide the SDK in `ISB_SYSROOT/iPhoneOS26.5.sdk` (or
-run bootstrap step 3, which extracts under `ISB_TOOLCHAIN_ROOT` and creates the
-sysroot symlink), the matching `vfs/overlay.yaml`, the Swift frontend, glibc
-loader, PAC linker and validated arm64e cache. The bootstrap script reports all
-of these inputs explicitly; stages 4/5 invoke the external Linux/VM generator
-and do not silently manufacture a cache on iSH.
+A fresh clone must provide the SDK in `ISB_SYSROOT/iPhoneOS26.5.sdk`, the
+matching `vfs/overlay.yaml`, the Swift frontend, glibc loader, PAC linker and
+validated arm64e cache. The bootstrap script reports all of these inputs
+explicitly; stages 4/5 invoke the external Linux/VM generator and do not
+silently manufacture a cache or linker on iSH. The former arm64 profile is
+ discontinued and is not part of reproduction.
 
 explicit, user-supplied URLs/archives plus SHA-256 values:
 
@@ -36,13 +36,16 @@ real Linux VM or Docker host using the user's SDK. The existing orchestrator is
 `references/linux-vm/orchestrator_vm633.py`; its output is copied locally to
 `/opt/ios-toolchain/foundation-build633-arm64e` and must not be committed.
 
-## First build
-
+The first build is always native arm64e/PAC:
 ```sh
 sh scripts/check-env.sh
-sh scripts/build-livecontainer.sh Demo com.example.demo assets/PureSwiftDemo.swift
+sh scripts/build-pure-ui.sh Demo com.example.demo assets/PureSwiftDemo.swift
 sh scripts/validate-ipa.sh /var/minis/workspace/Demo.ipa
 ```
+
+For an unsigned LiveContainer handoff, use the same arm64e builder with
+`--unsigned`. The host may transform/re-sign the guest; that post-import result
+is not covered by local structural validation.
 
 For reproducible custom locations:
 

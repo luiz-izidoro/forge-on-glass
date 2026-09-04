@@ -22,14 +22,14 @@ import argparse, hashlib, os, subprocess, sys, time, glob
 
 ROOT = os.environ.get("ISB_SYSROOT", "/opt/isb/sysroot")
 ARCH = os.environ.get("ISB_ARCH", "arm64e")
-if ARCH not in ("arm64", "arm64e"):
-    raise SystemExit("ISB_ARCH invalido: %s (use arm64 ou arm64e)" % ARCH)
-TARGET = os.environ.get("ISB_TARGET", ARCH + ("-apple-ios26.5" if ARCH == "arm64e" else "-apple-ios26.0"))
-CPU = os.environ.get("ISB_CPU", "apple-a12" if ARCH == "arm64e" else "")
+if ARCH != "arm64e":
+    raise SystemExit("ISB_ARCH descontinuado: somente arm64e.v1/PAC e suportado")
+TARGET = os.environ.get("ISB_TARGET", "arm64e-apple-ios26.5")
+CPU = os.environ.get("ISB_CPU", "apple-a12")
 SW = os.environ.get("ISB_SW", "/opt/swift6.3.3")
 SF = SW + "/usr/bin/swift-frontend"
 SDK = os.environ.get("ISB_SDK", ROOT + "/iPhoneOS26.5.sdk")
-FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633-" + ARCH)
+FB = os.environ.get("ISB_FOUNDATION_BUILD", "/opt/ios-toolchain/foundation-build633-arm64e")
 VFS = os.environ.get("ISB_VFS", ROOT + "/vfs/overlay.yaml")
 BIG = os.environ.get("ISB_MODULE_CACHE", "/var/tmp/isb-cache") + "/app-" + ARCH
 
@@ -72,12 +72,9 @@ OPT_FLAGS = {"none": "-Onone", "O": "-O", "Osize": "-Osize"}
 if OPT_MODE not in OPT_FLAGS:
     raise SystemExit("ISB_OPT invalido: %s (use none, O ou Osize)" % OPT_MODE)
 
-if ARCH == "arm64e":
-    BASE = ["-frontend", "-target", TARGET, "-target-cpu", CPU, "-sdk", SDK,
-            "-enable-objc-interop", "-swift-version", "5", OPT_FLAGS[OPT_MODE]]
-else:
-    BASE = ["-frontend", "-target", TARGET, "-sdk", SDK,
-            "-enable-objc-interop", "-swift-version", "5", OPT_FLAGS[OPT_MODE]]
+# arm64e/PAC only; no legacy architecture branch.
+BASE = ["-frontend", "-target", TARGET, "-target-cpu", CPU, "-sdk", SDK,
+        "-enable-objc-interop", "-swift-version", "5", OPT_FLAGS[OPT_MODE]]
 if os.environ.get("ISB_SWIFT_DEFINES"):
     BASE += os.environ["ISB_SWIFT_DEFINES"].split()
 BASE += ["-disable-implicit-swift-modules",

@@ -1,7 +1,7 @@
 #!/bin/sh
 # build-pure-ui.sh — compila e empacota um app iOS 100% Swift (UIKit/SwiftUI).
-# The release/operational profile is arm64e/PAC. The explicit arm64 compatibility
-# profile requires the separate `foundation-build633-arm64` cache and linker.
+# The only supported profile is arm64e/PAC; LiveContainer receives an unsigned
+# arm64e guest and its post-import host compatibility is not implied.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
@@ -107,7 +107,6 @@ OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
 if [ ! -d "$OUT" ] || ! find "$OUT" -maxdepth 1 -name 'swift_*.swiftmodule' -type f | grep -q .; then
   echo "PERFIL $ISB_ARCH sem cache Swift: $OUT" >&2
   [ "$ISB_ARCH" = "arm64e" ] && echo "Rode build-arm64e-modules.sh no Linux/VM e copie o cache arm64e." >&2
-  [ "$ISB_ARCH" = "arm64" ] && echo "Rota legada: forneça um cache arm64 separado em $OUT." >&2
   exit 1
 fi
 rm -rf "$WORK" && mkdir -p "$WORK"
@@ -317,10 +316,9 @@ EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
   EXTRAFLAGS="-F$EXTRAFW -framework UIKitCore"
 fi
-# arm64e/PAC uses the UIKitCore generic stub and client name; legacy arm64 does not.
-CLIENT_ARGS=""
-[ "$ARCH" = arm64e ] && CLIENT_ARGS="-client_name UIKit"
-"$ISB_LINKER" -arch "$ARCH" -platform_version ios "$([ "$ARCH" = arm64e ] && echo 26.5 || echo 26.0)" 26.5 \
+# arm64e/PAC uses the UIKitCore generic stub and client name.
+CLIENT_ARGS="-client_name UIKit"
+"$ISB_LINKER" -arch "$ARCH" -platform_version ios 26.5 26.5 \
   -syslibroot "$SDK" -L"$SDK/usr/lib" -L"$SDK/usr/lib/swift" \
   -lSystem -lobjc $CLIENT_ARGS $EXTRAFLAGS \
   -framework UIKit -framework Foundation $FM_LINK \

@@ -33,7 +33,8 @@ on them.
 
 ## Canonical profile
 
-Release and operational builds use native **arm64e.v1/PAC**:
+Release and operational builds use native **arm64e.v1/PAC**. The former
+arm64 compatibility profile is discontinued and is rejected by every builder.
 
 ```text
 Swift 6.3.3 · iOS SDK 26.5 · arm64e-apple-ios26.5
@@ -41,12 +42,9 @@ module cache: /opt/ios-toolchain/foundation-build633-arm64e
 PAC linker: /opt/ios-toolchain/ld64.lld-arm64e
 ```
 
-All defaults use arm64e/PAC. Do not mix caches, objects or IPAs.
-
-The explicit compatibility profile `ISB_ARCH=arm64` is retained only for
-legacy/LiveContainer consumers. It requires a separately generated
-`foundation-build633-arm64` cache and a native `ld64.lld`; arm64e artifacts are
-never reused for it. If those inputs are absent, the profile fails closed.
+All defaults use arm64e/PAC. Do not mix caches, objects or IPAs. A
+LiveContainer handoff may be unsigned, but host transformation/re-signing is
+outside this builder's structural proof and requires separate runtime evidence.
 
 ## Preconditions and build
 

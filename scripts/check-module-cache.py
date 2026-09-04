@@ -1,43 +1,61 @@
 #!/usr/bin/env python3
-"""Validate a generated Swift/Clang module cache."""
+"""Validate the canonical arm64e Swift/Clang module cache.
+
+The cache is opaque compiler output, so this guard checks stable file-format
+magic, required modules, absence of personal paths and arm64e/iOS 26.5
+identity markers where the format exposes them.
+"""
 import sys
 from pathlib import Path
+
+SWIFT_MAGIC = b"\xe2\x9c\xa8\x0e"
+PCM_MAGIC = b"\xcf\xfa\xed\xfe"
+REQUIRED = {
+    "swift_Swift.swiftmodule", "swift_Foundation.swiftmodule",
+    "clang_Foundation.pcm", "clang_SwiftShims.pcm",
+}
 
 cache = Path(sys.argv[1]) if len(sys.argv) > 1 else None
 prefix = sys.argv[2] if len(sys.argv) > 2 else "/opt/isb/sysroot"
 if not cache or not cache.is_dir():
     raise SystemExit("cache directory missing")
-files = list(cache.glob("*.pcm")) + list(cache.glob("*.swiftmodule"))
+files = sorted(cache.glob("*.pcm")) + sorted(cache.glob("*.swiftmodule"))
 if not files:
     raise SystemExit("cache has no PCM/swiftmodule files")
-required = {"swift_Swift.swiftmodule", "swift_Foundation.swiftmodule",
-            "clang_Foundation.pcm", "clang_SwiftShims.pcm"}
-missing = sorted(n for n in required if not (cache / n).is_file())
-if missing:
-    raise SystemExit("cache missing required modules: " + ", ".join(missing))
+missing = sorted(n for n in REQUIRED if not (cache / n).is_file())
 bad = []
 personal = []
-invalid = []
 neutral = 0
+identity = 0
 for path in files:
     data = path.read_bytes()
     if b"/home/" in data:
         personal.append(str(path))
     if prefix.encode() in data:
         neutral += 1
-    if not data:
+    if path.suffix == ".pcm":
+        valid = data.startswith(PCM_MAGIC)
+    else:
+        valid = data.startswith(SWIFT_MAGIC) and len(data) >= 16
+    if not valid:
         bad.append(str(path))
-        continue
-    if path.suffix == ".pcm" and not data.startswith(b"\xcf\xfa\xed\xfe"):
-        invalid.append(str(path))
-    if path.suffix == ".swiftmodule" and len(data) < 16:
-        invalid.append(str(path))
-print(f"files={len(files)} nonempty={len(files)-len(bad)} neutral_refs={neutral} personal_refs={len(personal)} invalid={len(invalid)}")
+    if b"arm64e-apple-ios26.5" in data:
+        identity += 1
+print(f"files={len(files)} nonempty={sum(bool(p.stat().st_size) for p in files)} "
+      f"neutral_refs={neutral} personal_refs={len(personal)} invalid={len(bad)} "
+      f"arm64e_ios26.5_refs={identity}")
+if missing:
+    print("missing required modules:", *missing, sep="\n")
 if bad:
-    print("empty:", *bad, sep="\n")
+    print("invalid module format:", *bad, sep="\n")
 if personal:
     print("personal paths:", *personal, sep="\n")
-if invalid:
-    print("invalid module format:", *invalid, sep="\n")
-if bad or personal or invalid:
+if missing or bad or personal:
     raise SystemExit(1)
+# Swift module files expose the target triple in this toolchain. Requiring it
+# prevents an arm64/other-SDK cache from being silently consumed as arm64e.
+swift_files = [p for p in files if p.suffix == ".swiftmodule"]
+if not any(b"arm64e-apple-ios26.5" in p.read_bytes() for p in swift_files):
+    raise SystemExit("cache has no arm64e-apple-ios26.5 Swift module identity")
+if identity == 0:
+    raise SystemExit("cache has no arm64e/iOS 26.5 identity markers")
