@@ -15,6 +15,12 @@ rm -rf "$W" && mkdir -p "$W"
 RESULT="$W/result.txt"
 : > "$RESULT"
 
+# Correspondencia em shell puro: `grep` pode nao terminar nesta shell (iSH),
+# e a suite precisa dos seus resultados para ser util como gate de commit.
+contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
+contains_line2(){ while IFS= read -r _l; do case "$_l" in *"$2"*"$3"*) return 0 ;; esac; done < "$1"; return 1; }
+first_errors(){ _n=${2:-2}; while IFS= read -r _l; do case "$_l" in *error:*) printf '%s ' "$_l"; _n=$((_n-1)); [ "$_n" -le 0 ] && break ;; esac; done < "$1"; }
+
 QUICK=0
 [ "$1" = "--quick" ] && QUICK=1
 
@@ -37,7 +43,7 @@ run_case() {
   end=$(date +%s)
   printf '%-22s %-14s %-6s %ss\n' "$name" "$mode" "$rc" "$((end - start))" >> "$RESULT"
   if [ "$rc" = "FALHA" ]; then
-    printf '    %s\n' "$(grep 'error:' "$d/build.log" | head -2 | tr '\n' ' ')" >> "$RESULT"
+    printf '    %s\n' "$(first_errors "$d/build.log" 2)" >> "$RESULT"
   fi
 }
 
@@ -147,7 +153,8 @@ sed 's/func applicationDidFinishLaunching(_ application: UIApplication) {/func a
 if (cd "$W/src-invalid" && sh "$SKILL/scripts/build-pure-ui.sh" RSinvalid ro.izido.rs.invalid main.swift > build.log 2>&1); then
   printf '%-22s %-14s %-6s\n' "invalid-delegate" "warning guard" "FALHA" >> "$RESULT"
 else
-  if grep -q 'nearly matches\|didFinishLaunchingWithOptions' "$W/src-invalid/build.log"; then
+  if contains_file "$W/src-invalid/build.log" 'nearly matches' || \
+     contains_file "$W/src-invalid/build.log" 'didFinishLaunchingWithOptions'; then
     printf '%-22s %-14s %-6s\n' "invalid-delegate" "warning guard" "OK" >> "$RESULT"
   else
     printf '%-22s %-14s %-6s\n' "invalid-delegate" "warning guard" "FALHA" >> "$RESULT"
@@ -180,8 +187,8 @@ if ISB_VM_ROOT="$FAIL_W/root" ISB_VM_SW="$FAIL_W/fake-sw" \
   printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "FALHA" >> "$RESULT"
   MATRIX_FAIL=1
 else
-  if grep -q 'scan-dependencies falhou' "$FAIL_W/result.log" && \
-     ! grep -q 'parameter not set' "$FAIL_W/result.log"; then
+  if contains_file "$FAIL_W/result.log" 'scan-dependencies falhou' && \
+     ! contains_file "$FAIL_W/result.log" 'parameter not set'; then
     printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "OK" >> "$RESULT"
   else
     printf '%-22s %-14s %-6s\n' "generator-failure" "silent scan" "FALHA" >> "$RESULT"
@@ -193,7 +200,9 @@ rm -rf "$FAIL_W"
 echo "logs: $W/<caso>-<modo>/build.log"
 
 # falha o script se algum caso do modo PADRAO quebrou
-if grep -q 'primary-file *FALHA' "$RESULT" || grep -q 'debug *FALHA' "$RESULT" || [ "${MATRIX_FAIL:-0}" -ne 0 ]; then
+if contains_line2 "$RESULT" 'primary-file' 'FALHA' || \
+   contains_line2 "$RESULT" 'debug' 'FALHA' || \
+   [ "${MATRIX_FAIL:-0}" -ne 0 ]; then
   echo ""
   echo "REGRESSAO no modo padrao."
   exit 1
