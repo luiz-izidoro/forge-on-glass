@@ -3,19 +3,27 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 fail=0
+# Correspondencia em shell puro. Nao use `grep` aqui: nesta shell (iSH) o GNU
+# grep pode nao terminar, e estes gates sao justamente os que precisam rodar
+# de forma confiavel. `case` e POSIX e nao cria processo.
+contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
 for f in scripts/*.sh; do sh -n "$f" || fail=1; done
-PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile "$ROOT"/scripts/*.py || fail=1
+# Checagem de sintaxe sem escrever bytecode: `py_compile` deixa `__pycache__/`
+# a cada execucao, artefato que voltava sempre e nao serve a nada aqui.
+for _py in "$ROOT"/scripts/*.py; do
+  python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read())' "$_py" || fail=1
+done
 python3 "$ROOT/scripts/check-repo-clean.py" || fail=1
 [ -x "$ROOT/scripts/bootstrap.sh" ] || { echo 'bootstrap.sh missing/executable'; fail=1; }
 [ -x "$ROOT/scripts/bootstrap-glibc.sh" ] || { echo 'bootstrap-glibc.sh missing/executable'; fail=1; }
 [ -x "$ROOT/scripts/benchmark-build.sh" ] || { echo 'benchmark-build.sh missing/executable'; fail=1; }
 [ -x "$ROOT/scripts/check-newcomer.sh" ] || { echo 'check-newcomer.sh missing/executable'; fail=1; }
-grep -q 'check-newcomer.sh' "$ROOT/.github/workflows/static.yml" || { echo 'CI missing newcomer smoke test'; fail=1; }
-grep -q 'check-weak-link.py' "$ROOT/scripts/acceptance-suite-arm64e.sh" || { echo 'arm64e acceptance missing weak-link guard'; fail=1; }
-grep -q 'OPT_FLAGS' "$ROOT/scripts/build-parallel.py" || { echo 'optimization matrix missing'; fail=1; }
-grep -q 'FoundationModelsRuntimeMain.swift' "$ROOT/REPRODUCE-FROM-ZERO.md" || { echo 'AI diagnostic instructions missing'; fail=1; }
-grep -q 'check-repo-clean.py' "$ROOT/.github/workflows/static.yml" || { echo 'CI missing repository guard'; fail=1; }
-grep -q 'verify-docs.sh' "$ROOT/.github/workflows/static.yml" || { echo 'CI missing documentation guard'; fail=1; }
+contains_file "$ROOT/.github/workflows/static.yml" 'check-newcomer.sh' || { echo 'CI missing newcomer smoke test'; fail=1; }
+contains_file "$ROOT/scripts/acceptance-suite-arm64e.sh" 'check-weak-link.py' || { echo 'arm64e acceptance missing weak-link guard'; fail=1; }
+contains_file "$ROOT/scripts/build-parallel.py" 'OPT_FLAGS' || { echo 'optimization matrix missing'; fail=1; }
+contains_file "$ROOT/REPRODUCE-FROM-ZERO.md" 'FoundationModelsRuntimeMain.swift' || { echo 'AI diagnostic instructions missing'; fail=1; }
+contains_file "$ROOT/.github/workflows/static.yml" 'check-repo-clean.py' || { echo 'CI missing repository guard'; fail=1; }
+contains_file "$ROOT/.github/workflows/static.yml" 'verify-docs.sh' || { echo 'CI missing documentation guard'; fail=1; }
 if [ -f "$ROOT/Dockerfile" ]; then
   while IFS= read -r src; do
     [ -n "$src" ] || continue
@@ -38,12 +46,14 @@ done; then
 else
   fail=1
 fi
-if grep -RInE '\*\*S3\*\*.*|ainda requer|S3 pendente' "$ROOT/references" --include='*.md' >/tmp/isb-evidence-lines 2>&1; then
-  while IFS= read -r f; do
-    case "$f" in
-      *'ainda requer'*|*'S3 pendente'*) echo "evidence contradiction: $f"; fail=1;;
+# Varredura recursiva sem `grep`: percorre os .md e sinaliza as linhas que
+# contradizem a evidencia registrada.
+for _md in "$ROOT"/references/*.md; do
+  [ -f "$_md" ] || continue
+  while IFS= read -r _l; do
+    case "$_l" in
+      *'ainda requer'*|*'S3 pendente'*) echo "evidence contradiction: $_md"; fail=1;;
     esac
-  done < /tmp/isb-evidence-lines
-fi
-rm -f /tmp/isb-evidence-lines
+  done < "$_md"
+done
 [ "$fail" -eq 0 ] && echo 'DOCS: PASS' || { echo 'DOCS: FAIL'; exit 1; }

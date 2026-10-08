@@ -104,7 +104,13 @@ CACHE_DIR="$CACHE_ROOT/$APP-$ISB_ARCH-$OPT_MODE"
 mkdir -p "$CACHE_DIR"
 BIG="$CACHE_DIR/objc-cache"
 OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
-if [ ! -d "$OUT" ] || ! find "$OUT" -maxdepth 1 -name 'swift_*.swiftmodule' -type f | grep -q .; then
+# Contagem por glob em vez de `find | grep`: nesta shell o grep dentro de um
+# pipe pode nao terminar (medido 2026-10-07), e isso travava o build inteiro.
+have_cache=0
+for f in "$OUT"/swift_*.swiftmodule; do
+  [ -f "$f" ] && { have_cache=1; break; }
+done
+if [ ! -d "$OUT" ] || [ "$have_cache" -eq 0 ]; then
   echo "PERFIL $ISB_ARCH sem cache Swift: $OUT" >&2
   [ "$ISB_ARCH" = "arm64e" ] && echo "Rode build-arm64e-modules.sh no Linux/VM e copie o cache arm64e." >&2
   exit 1
@@ -137,10 +143,17 @@ if [ "$nfiles" -gt 1 ]; then
   # main.swift PRIMEIRO na lista: a ordem dos arquivos afeta a resolucao de
   # tipos ObjC do Foundation (FileManager/UUID/Locale somem se o primeiro
   # arquivo que importa UIKit nao for o main — medido em 2026-08-19).
-  SRCLIST="$WORK/src/main.swift $(echo "$SRCLIST" | tr ' ' '\n' | grep -v '/main\.swift$' | tr '\n' ' ')"
+  others=""
+  for f in $SRCLIST; do
+    case "$f" in
+      */main.swift) ;;
+      *) others="$others $f" ;;
+    esac
+  done
+  SRCLIST="$WORK/src/main.swift$others"
   echo "    (entry point: $(basename "$mainsrc") -> main.swift)"
   # Garante que o runtime de debug seja inicializado antes do run loop.
-  if [ "$DEBUG" -eq 1 ] && grep -q "UIApplicationMain(" "$WORK/src/main.swift"; then
+  if [ "$DEBUG" -eq 1 ] && contains_file "$WORK/src/main.swift" 'UIApplicationMain('; then
     sed -i '/UIApplicationMain(/i ISBDebugRuntime.bootstrap()' "$WORK/src/main.swift"
   fi
 else
@@ -236,8 +249,13 @@ done
 WEAK_FRAMEWORK_FLAGS=""
 for fw in $WEAK_FRAMEWORK_ARGS; do WEAK_FRAMEWORK_FLAGS="$WEAK_FRAMEWORK_FLAGS -weak_framework $fw"; done
 FM_LINK=""
-if echo "$FRAMEWORK_ARGS" | grep -qw FoundationModels; then FM_LINK="-framework FoundationModels"; fi
-if echo "$WEAK_FRAMEWORK_ARGS" | grep -qw FoundationModels; then FM_LINK="-weak_framework FoundationModels"; fi
+# Comparacao de palavra em shell puro: `echo | grep -w` pode travar nesta
+# shell e o build ficava parado sem processo filho visivel (2026-10-07).
+has_word(){ case " $1 " in *" $2 "*) return 0 ;; *) return 1 ;; esac; }
+contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
+show_errors(){ _n=${2:-20}; while IFS= read -r _l; do case "$_l" in *error:*) printf '%s\n' "$_l"; _n=$((_n-1)); [ "$_n" -le 0 ] && return 0 ;; esac; done < "$1"; }
+if has_word "$FRAMEWORK_ARGS" FoundationModels; then FM_LINK="-framework FoundationModels"; fi
+if has_word "$WEAK_FRAMEWORK_ARGS" FoundationModels; then FM_LINK="-weak_framework FoundationModels"; fi
 
 # --- monta as flags de modulos explicitos -------------------------------------
 MODS=""
@@ -272,8 +290,8 @@ until [ $n -ge 3 ]; do
       -o "$WORK/app.o" 2> "$WORK/swift.err"; then
     break
   fi
-  if grep -q "error:" "$WORK/swift.err"; then
-    echo "ERRO de compilacao:"; grep "error:" "$WORK/swift.err" | head -20; exit 1
+  if contains_file "$WORK/swift.err" 'error:'; then
+    echo "ERRO de compilacao:"; show_errors "$WORK/swift.err" 20; exit 1
   fi
   n=$((n + 1)); echo "   (race de startup, tentativa $n)"
 done

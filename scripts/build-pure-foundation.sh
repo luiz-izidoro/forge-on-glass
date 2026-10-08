@@ -9,6 +9,11 @@ SRC="${2:?falta main.swift}"
 [ -f "$SRC" ] || { echo "fonte ausente: $SRC" >&2; exit 1; }
 [ -d "$OUT" ] || { echo "cache ausente: $OUT" >&2; exit 1; }
 OBJ="/tmp/${APP}-foundation-$$.o"
+
+# Sem `grep`: nesta shell (iSH) o GNU grep pode nao terminar, e isso travaria
+# o relatorio de erro (ou o proprio laco de retry). `case` nao cria processo.
+contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
+show_errors(){ _n=${2:-10}; while IFS= read -r _l; do case "$_l" in *error:*) printf '%s\n' "$_l"; _n=$((_n-1)); [ "$_n" -le 0 ] && return 0 ;; esac; done < "$1"; }
 ERRF="/tmp/${APP}-foundation-$$.err"
 BIN="${ISB_OUTPUT:-$PWD/$APP}"
 mkdir -p "$ISB_MODULE_CACHE"
@@ -39,8 +44,8 @@ for attempt in 1 2 3 4 5 6; do
     -Xcc "-fmodules-cache-path=$BIG" $MOD_ARGS "$SRC" -o "$OBJ" \
     2>"$ERRF" || true
   if [ -s "$OBJ" ]; then OK=1; break; fi
-  if grep -q 'error:' "$ERRF" 2>/dev/null; then
-    echo "swift compile failed:" >&2; grep 'error:' "$ERRF" | head -10 >&2; exit 1
+  if contains_file "$ERRF" 'error:'; then
+    echo "swift compile failed:" >&2; show_errors "$ERRF" 10 >&2; exit 1
   fi
   echo "swift frontend retry $attempt" >&2
 done

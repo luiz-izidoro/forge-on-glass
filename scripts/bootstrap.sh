@@ -19,14 +19,14 @@ while [ "$#" -gt 0 ]; do case "$1" in
 esac; shift; done
 check(){
   bad=0; echo '== forge-on-glass arm64e bootstrap check =='
-  printf 'repo: '; [ -f "$ROOT/SKILL.md" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'Swift 6.3.3 frontend: '; [ -x "$SWIFT_ROOT/usr/bin/swift-frontend" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'iOS SDK 26.5: '; [ -f "$SDK/usr/lib/libSystem.tbd" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'arm64e cache: '; if [ -d "$CACHE" ] && python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" "$SYSROOT" >/dev/null 2>&1; then echo OK; else echo MISSING/INVALID; bad=1; fi
-  printf 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'VFS overlay: '; [ -f "$VFS" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'PAC linker: '; [ -x "$LINKER" ] && echo OK || { echo MISSING; bad=1; }
-  printf 'glibc loader: '; [ -e "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}/ld-linux-aarch64.so.1" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'repo: '; [ -f "$ROOT/SKILL.md" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'Swift 6.3.3 frontend: '; [ -x "$SWIFT_ROOT/usr/bin/swift-frontend" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'iOS SDK 26.5: '; [ -f "$SDK/usr/lib/libSystem.tbd" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'arm64e cache: '; if [ -d "$CACHE" ] && python3 "$ROOT/scripts/check-module-cache.py" "$CACHE" "$SYSROOT" >/dev/null 2>&1; then echo OK; else echo MISSING/INVALID; bad=1; fi
+  printf '%s' 'neutral sysroot: '; [ -e "$SYSROOT/iPhoneOS26.5.sdk" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'VFS overlay: '; [ -f "$VFS" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'PAC linker: '; [ -x "$LINKER" ] && echo OK || { echo MISSING; bad=1; }
+  printf '%s' 'glibc loader: '; [ -e "${ISB_GLIBC_ROOT:-/opt/xtool-glibc/lib}/ld-linux-aarch64.so.1" ] && echo OK || { echo MISSING; bad=1; }
   [ "$bad" -eq 0 ] && return 0
   echo 'Missing inputs are expected until bootstrap stages are completed.'
   return 1

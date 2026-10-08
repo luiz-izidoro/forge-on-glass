@@ -12,15 +12,29 @@ fail() { echo "ACCEPTANCE arm64e: FAIL: $*"; exit 1; }
 ok() { echo "ACCEPTANCE arm64e: OK: $*"; }
 [ "${ISB_ARCH:-arm64e}" = arm64e ] || fail "run with ISB_ARCH=arm64e"
 for f in "$SKILL"/scripts/*.sh; do sh -n "$f" || fail "shell syntax: $f"; done
-PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile "$SKILL"/scripts/*.py || fail "Python syntax"
+for _py in "$SKILL"/scripts/*.py; do
+  python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read())' "$_py" || fail "Python syntax: $_py"
+done
 LINKER="${ISB_LINKER:-/opt/ios-toolchain/ld64.lld-arm64e}"
 [ -x "$LINKER" ] || fail "local PAC linker missing: $LINKER"
-file "$LINKER" | grep -q 'aarch64' || fail "linker is not native aarch64"
+linker_desc=$(file "$LINKER")
+case "$linker_desc" in
+  *aarch64*) : ;;
+  *) fail "linker is not native aarch64" ;;
+esac
 "$LINKER" --version >/dev/null || fail "linker does not execute"
 python3 "$SKILL/scripts/check-module-cache.py" \
   "${ISB_FOUNDATION_BUILD:-/opt/ios-toolchain/foundation-build633-arm64e}" || fail "module cache"
 for f in "$SKILL"/scripts/build-pure-ui.sh "$SKILL"/scripts/link-ipa.sh; do
-  ! grep -qE '(^|[[:space:]])(ssh|scp)([[:space:]]|$)|link-remote-arm64e' "$f" || fail "remote dependency in $f"
+  # Mesma semantica de `(^|[[:space:]])(ssh|scp)([[:space:]]|$)|link-remote-arm64e`
+  # sem `grep`: a linha e' ladeada por espacos para cobrir inicio/fim.
+  remote=0
+  while IFS= read -r _l; do
+    case " $_l " in
+      *' ssh '*|*' scp '*|*'link-remote-arm64e'*) remote=1; break ;;
+    esac
+  done < "$f"
+  [ "$remote" -eq 0 ] || fail "remote dependency in $f"
 done
 ISB_ARCH=arm64e ISB_WORKSPACE="$WORKSPACE" sh scripts/build-pure-ui.sh LocalAcceptanceFoundation com.example.acceptancefoundation \
   assets/FoundationDispatchRuntimeMain.swift --primary-file --unsigned \

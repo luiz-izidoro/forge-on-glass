@@ -19,14 +19,16 @@ done
 DANGLING=$(git fsck --full --no-reflogs 2>/dev/null | awk '$2 == "commit" {print $3}')
 [ -z "$DANGLING" ] || { echo "RELEASE: dangling commit objects present"; echo "$DANGLING"; exit 1; }
 for commit in $(git rev-list --all); do
-  if git grep -I -nE '/home/[A-Za-z0-9_.-]+' "$commit" -- . ':(exclude)scripts/verify-release.sh' | grep -q .; then
+  if [ -n "$(git grep -I -nE '/home/[A-Za-z0-9_.-]+' "$commit" -- . ':(exclude)scripts/verify-release.sh' 2>/dev/null)" ]; then
     echo "RELEASE: forbidden personal path in history"; exit 1
   fi
-  if git grep -I -nE -- '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----' "$commit" -- . ':(exclude)scripts/verify-release.sh' | grep -q .; then
+  if [ -n "$(git grep -I -nE -- '-----BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY-----' "$commit" -- . ':(exclude)scripts/verify-release.sh' 2>/dev/null)" ]; then
     echo "RELEASE: private key in history"; exit 1
   fi
 done
-grep -q arm64e scripts/profile.sh
-grep -q acceptance-suite-arm64e.sh scripts/acceptance-suite.sh
-grep -q PROJECT-GUIDE.md references/PROJECT-GOVERNANCE.md
+# Sem `grep`: nesta shell o GNU grep pode nao terminar (ver verify-docs.sh).
+contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
+contains_file scripts/profile.sh arm64e
+contains_file scripts/acceptance-suite.sh acceptance-suite-arm64e.sh
+contains_file references/PROJECT-GOVERNANCE.md PROJECT-GUIDE.md
 echo 'RELEASE: PASS — governance, privacy, copyright and docs'
