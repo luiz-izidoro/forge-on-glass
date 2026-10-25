@@ -7,7 +7,7 @@ Those inputs must be obtained by the user under the applicable licenses.
 ## Fresh Alpine/iSH setup
 
 ```sh
-git clone <PUBLIC_REPOSITORY_URL> forge-on-glass
+git clone https://github.com/luiz-izidoro/forge-on-glass.git forge-on-glass
 cd forge-on-glass
 sh bootstrap.sh --check
 ```
