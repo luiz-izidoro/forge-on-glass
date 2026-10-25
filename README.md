@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/luiz-izidoro/forge-on-glass/actions/workflows/static.yml"><img alt="CI" src="https://github.com/luiz-izidoro/forge-on-glass/actions/workflows/static.yml/badge.svg"></a>
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg">
   <img alt="Platform: iSH and Alpine" src="https://img.shields.io/badge/platform-iSH%20%7C%20Alpine-0b0f14">
   <img alt="Swift 6.3.3" src="https://img.shields.io/badge/swift-6.3.3-F05138">
@@ -105,7 +106,7 @@ These inputs are not distributed here. The exact staging steps are in
 ### 1. Clone and inspect
 
 ```sh
-git clone <repository-url> ios-swift-builder
+git clone https://github.com/luiz-izidoro/forge-on-glass.git
 cd ios-swift-builder
 sh bootstrap.sh --check
 ```
