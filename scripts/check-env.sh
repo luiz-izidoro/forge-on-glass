@@ -26,8 +26,12 @@ fi
 [ -d "$SDK/System/Library/SubFrameworks" ] || fail 'SDK SubFrameworks missing'
 [ -f "$VFS" ] || fail "neutral VFS overlay missing: $VFS"
 [ -x "$LINKER" ] || fail "$ARCH linker missing: $LINKER"
-if [ "$ARCH" = arm64e ]; then
-  file "$LINKER" | grep -q aarch64 && note 'OK' 'local arm64e PAC linker' || fail 'PAC linker is not native aarch64'
+if [ "$ARCH" = arm64e ] && [ -x "$LINKER" ]; then
+  if command -v file >/dev/null 2>&1; then
+    file "$LINKER" | grep -q aarch64 && note 'OK' 'local arm64e PAC linker' || fail 'PAC linker is not native aarch64'
+  else
+    note '--' "cannot verify PAC linker architecture: 'file' not installed"
+  fi
 fi
 [ -d "$CACHE" ] || fail "arm64e module cache missing: $CACHE"
 if [ -d "$CACHE" ]; then
@@ -41,8 +45,10 @@ if [ -d "$CACHE" ]; then
   }
   rm -f "$cache_log"
 fi
-for tool in clang ldid llvm-strip zip; do command -v "$tool" >/dev/null 2>&1 && note 'OK' "tool: $tool" || fail "tool missing: $tool"; done
-mkdir -p "$APP_CACHE"
+for tool in clang ldid llvm-strip zip python3; do command -v "$tool" >/dev/null 2>&1 && note 'OK' "tool: $tool" || fail "tool missing: $tool"; done
+if ! mkdir -p "$APP_CACHE" 2>/dev/null; then
+  note '--' "module cache directory not writable: $APP_CACHE"
+fi
 for framework in NaturalLanguage FoundationModels CoreML Vision Accelerate; do
   [ -f "$SDK/System/Library/Frameworks/$framework.framework/$framework.tbd" ] && note 'OK' "$framework framework stub" || fail "$framework framework stub missing";
 done

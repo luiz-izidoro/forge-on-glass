@@ -22,6 +22,19 @@ chained fixup payload whose segment count matches the Mach-O, and a valid code
 signature unless `ISB_REQUIRE_SIGNATURE=0` is explicitly set for an unsigned
 guest.
 
+## Prerequisites
+
+- iSH on iOS, or a Linux VM for the one-time arm64e module-cache build.
+- A legally obtained iOS 26.5 SDK, Swift 6.3.3 toolchain, glibc loader and
+  arm64e/PAC linker.
+- `clang`, `ldid`, `llvm-strip` and `zip` available in the build environment.
+
+These inputs are **not** distributed here. `sh bootstrap.sh --check` intentionally
+exits nonzero on a fresh clone and prints each missing input; that output is the
+staging checklist, not a repository failure. See
+[`REPRODUCE-FROM-ZERO.md`](REPRODUCE-FROM-ZERO.md) and
+[`references/BOOTSTRAP.md`](references/BOOTSTRAP.md).
+
 ## Quick start
 
 ```sh
