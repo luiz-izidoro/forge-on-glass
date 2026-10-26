@@ -346,6 +346,7 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 | [`SECURITY.md`](SECURITY.md) | Security policy. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution rules. |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Community expectations and enforcement. |
+| [`NOTICE.md`](NOTICE.md) | License scope and third-party attribution. |
 | [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | Component licenses, trademarks and non-affiliation. |
 
 ## Contributing
