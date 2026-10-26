@@ -26,8 +26,9 @@
 > signing certificates or provisioning profiles. You must obtain and license those inputs yourself.
 
 > Unofficial project. Not affiliated with, endorsed by, or sponsored by Apple Inc. Apple, Xcode,
-> iOS and Swift are trademarks of their respective owners. The same applies to LiveContainer and
-> OpenMinis — see [Related projects](#related-projects).
+> iOS and Swift are trademarks of their respective owners. The same applies to LiveContainer,
+> OpenMinis and the other projects listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+> See [Related projects](#related-projects).
 
 This is an **on-device build path**: compile inside iSH on iPhone/iPad, then launch the resulting
 IPA on the same device with [LiveContainer](https://github.com/LiveContainer/LiveContainer) (or a
@@ -345,6 +346,7 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 | [`SECURITY.md`](SECURITY.md) | Security policy. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution rules. |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Community expectations and enforcement. |
+| [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) | Component licenses, trademarks and non-affiliation. |
 
 ## Contributing
 
@@ -360,7 +362,7 @@ sh scripts/verify-release.sh
 ## License
 
 MIT. See [`LICENSE`](LICENSE). Third-party material is not licensed by this repository; see
-[`NOTICE.md`](NOTICE.md).
+[`NOTICE.md`](NOTICE.md) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 LiveContainer and OpenMinis are independent third-party projects. This repository has no
 affiliation with, endorsement from, or sponsorship by either project; their names and trademarks
