@@ -2,7 +2,7 @@
   <strong>Build native iOS <code>.ipa</code> files on the device itself — then run them there with LiveContainer.</strong>
 </p>
 
-<h1 align="center">iOS Swift Builder</h1>
+<h1 align="center">Forge on Glass</h1>
 
 <p align="center">
   A reproducible, script-driven toolkit for compiling, linking, signing and validating

@@ -1,5 +1,5 @@
 ---
-name: ios-swift-builder
+name: forge-on-glass
 version: 0.2.0
 description: >-
   Build native iOS IPA apps with Swift inside iSH using arm64e.v1/PAC. Use for
@@ -9,7 +9,7 @@ description: >-
   OpenMinis or other compatible on-device harnesses.
 ---
 
-# iOS Swift Builder
+# Forge on Glass
 
 Use this skill to build and validate native iOS IPAs on-device in iSH. The
 repository contains only original scripts, documentation and sample sources.

@@ -113,7 +113,7 @@ UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, nil,
 EOF
 
 echo "==> compilando app que exercita TODOS os workarounds..."
-/var/minis/skills/ios-swift-builder/scripts/build-pure-ui.sh \
+/var/minis/skills/forge-on-glass/scripts/build-pure-ui.sh \
   VerifyPSKit ro.izido.verify "$W/uses.swift $A/PureSwiftKit.swift $W/main.swift"
 
 echo ""
