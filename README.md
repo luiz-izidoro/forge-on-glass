@@ -362,9 +362,16 @@ sh scripts/verify-release.sh
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE). Third-party material is not licensed by this repository; see
-[`NOTICE.md`](NOTICE.md) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Forge on Glass is released under the **MIT License**. The MIT grant applies only to the original
+scripts, documentation and sample sources in this repository. It does **not** cover the Apple iOS
+SDK, Apple frameworks, Swift/LLVM toolchains, glibc, host applications, third-party code, IPAs or
+trademarks. See [`LICENSE`](LICENSE) for the full text.
 
-LiveContainer and OpenMinis are independent third-party projects. This repository has no
-affiliation with, endorsement from, or sponsorship by either project; their names and trademarks
-remain with their owners.
+Third-party components, licenses and attribution are documented in [`NOTICE.md`](NOTICE.md) and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). No third-party source code or Apple/toolchain
+artifact is vendored here.
+
+This project is independent and is **not affiliated with, endorsed by, sponsored by, or maintained
+by** Apple Inc., iSH, Alpine Linux, LiveContainer, SideStore, StikDebug, OpenMinis, LLVM, the Python
+Software Foundation, Docker, Canonical or GitHub. Their names and trademarks remain with their
+respective owners and are used descriptively only.
