@@ -1,7 +1,10 @@
 version: 2
+# Routine version updates are disabled to avoid notification noise.
+# Security updates remain enabled in repository settings and have their own
+# fixed limit (10 open PRs), independent of this option.
 updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 0
