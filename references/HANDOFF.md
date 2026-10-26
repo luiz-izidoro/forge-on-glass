@@ -1,4 +1,4 @@
-# Current handoff — ios-swift-builder
+# Current handoff — forge-on-glass
 
 **Date:** 2026-09-02
 **Baseline:** `cb456b5` — complete arm64e runtime validation

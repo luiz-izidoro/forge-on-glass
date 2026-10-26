@@ -33,16 +33,16 @@ syslog apropriado.
 
 ```sh
 # Swift/UIKit puro
-sh /var/minis/skills/ios-swift-builder/scripts/build-pure-ui.sh \
+sh /var/minis/skills/forge-on-glass/scripts/build-pure-ui.sh \
   MeuApp com.example.meuapp main.swift Views.swift --debug
 
 # Projeto de terceiro dentro do LiveContainer
-python3 /var/minis/skills/ios-swift-builder/scripts/port-third-party.py \
+python3 /var/minis/skills/forge-on-glass/scripts/port-third-party.py \
   /tmp/projeto MeuApp com.example.meuapp \
   --debug --stikdebug-bundle-id com.kdt.livecontainer.A4658DGR7V
 
 # Validar antes de instalar
-python3 /var/minis/skills/ios-swift-builder/scripts/check-debug-ipa.py \
+python3 /var/minis/skills/forge-on-glass/scripts/check-debug-ipa.py \
   /var/minis/workspace/MeuApp.ipa
 ```
 
