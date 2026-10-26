@@ -3,7 +3,7 @@
 # arm64e.v1/PAC is the only supported profile.
 set -eu
 ISB_ARCH="${ISB_ARCH:-arm64e}"
-[ "$ISB_ARCH" = arm64e ] || { echo "ISB_ARCH descontinuado: somente arm64e.v1/PAC e suportado" >&2; exit 2; }
+[ "$ISB_ARCH" = arm64e ] || { echo "ISB_ARCH unsupported: only arm64e.v1/PAC is supported" >&2; exit 2; }
 ISB_SYSROOT="${ISB_SYSROOT:-/opt/isb/sysroot}"
 ISB_MODULE_CACHE_ROOT="${ISB_MODULE_CACHE_ROOT:-/var/tmp/isb-cache}"
 ISB_SW="${ISB_SW:-/opt/swift6.3.3}"

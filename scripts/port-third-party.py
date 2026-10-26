@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""port-third-party.py — builda apps iOS de terceiros (SwiftUI/UIKit puros) SEM edicao manual.
+"""port-third-party.py — builds third-party iOS apps (pure SwiftUI/UIKit) WITHOUT manual editing.
 
-Uso:
-  port-third-party.py <dir-do-projeto> <AppName> <BundleID>
+Usage:
+  port-third-party.py <project-dir> <AppName> <BundleID>
 
-Fluxo:
-  1. Coleta os .swift do target iOS (pula pastas mac/tests/preview, import AppKit).
-  2. Adapta automaticamente: entry point (@UIApplicationMain -> main.swift com a
-     chamada UIApplicationMain(...)) e reordena os imports na ordem canonica
+Flow:
+  1. Collects the .swift files from the iOS target (skips mac/tests/preview folders, import AppKit).
+  2. Adapts automatically: entry point (@UIApplicationMain -> main.swift with the
+     UIApplicationMain(...) call) and reorders imports into canonical order
      (Foundation -> SwiftUI -> UIKit -> CoreText -> Dispatch).
-  3. Roda build-pure-ui.sh (com PureSwiftKit sempre incluido) num loop REATIVO:
-     cada erro de compilacao conhecido (CGRect members, UIEdgeInsetsMake,
-     TimeInterval, imports faltando, init CGRect...) e corrigido na linha exata
-     e o build e repetido — ate passar ou sobrarem erros desconhecidos.
-  4. Valida o IPA e escreve <AppName>-port.md (relatorio) no workspace.
+  3. Runs build-pure-ui.sh (with PureSwiftKit always included) in a REACTIVE loop:
+     each known compilation error (CGRect members, UIEdgeInsetsMake,
+     TimeInterval, missing imports, CGRect init...) is fixed at the exact line
+     and the build is repeated — until it passes or unknown errors remain.
+  4. Validates the IPA and writes <AppName>-port.md (report) in the workspace.
 
 `ISB_PORT_WORK_ROOT` controls the isolated source-copy directory (default
 `/tmp`). `ISB_BUILD_WORK` controls the builder's intermediate directory and
@@ -37,16 +37,16 @@ MAX_ITER = 10
 # Import order is defined by references/BEST-PRACTICES.md.
 CANON = {"Foundation": 1, "CoreFoundation": 2, "SwiftUI": 3,
          "UIKit": 4, "CoreText": 5, "Dispatch": 6, "Combine": 7, "Darwin": 8}
-# NOTA (2026-08-22): Dispatch DEPOIS de UIKit e' obrigatorio. Medido com 4
-# ordens diferentes: so `Foundation UIKit Dispatch <Modulo>` resolve o overlay
-# Swift do DispatchQueue (conformance a Scheduler, DispatchQueue.main,
-# init(label:qos:)). Com Dispatch antes do UIKit o DispatchQueue vira a classe
-# ObjC crua e os erros aparecem LONGE da causa ("does not conform to protocol
+# NOTE (2026-08-22): Dispatch AFTER UIKit is mandatory. Measured with 4
+# different orders: only `Foundation UIKit Dispatch <Module>` resolves Dispatch's
+# Swift overlay of DispatchQueue (Scheduler conformance, DispatchQueue.main,
+# init(label:qos:)). With Dispatch before UIKit, DispatchQueue becomes the raw
+# ObjC class and errors appear FAR from the cause ("does not conform to protocol
 # 'Scheduler'", "extra argument 'qos' in call").
 
-# Membros de CGRect/CGAffineTransform/CGPoint/CGSize que nao existem no SDK
-# exposto pelo toolchain (extensions @_alwaysEmitIntoClient invisiveis).
-# Fix: usar os helpers do PureSwiftKit (cg*).
+# CGRect/CGAffineTransform/CGPoint/CGSize members that do not exist in the SDK
+# exposed by the toolchain (invisible @_alwaysEmitIntoClient extensions).
+# Fix: use the PureSwiftKit helpers (cg*).
 MEMBER_FIX = {
     "CGRect": {
         "width": "cgWidth", "height": "cgHeight",
@@ -81,7 +81,7 @@ def log_append(log, entry):
     print("   - " + entry)
 
 
-# ---------------------------------------------------------------- passo 1: coleta
+# ---------------------------------------------------------------- step 1: collect
 def skip_dir(d):
     b = os.path.basename(d).lower()
     return any(k in b for k in ("-mac", "macos", "preview content", "tests",
@@ -104,9 +104,9 @@ def collect(src_dir):
     return out
 
 
-# ------------------------------------------------------- passo 2: pre-adaptacao
+# ------------------------------------------------------- step 2: pre-adaptation
 def reorder_imports(s):
-    """Reordena o bloco contiguo de imports do topo para a ordem canonica."""
+    """Reorders the contiguous block of imports at the top into canonical order."""
     lines = s.split("\n")
     i = 0
     while i < len(lines):
@@ -133,22 +133,22 @@ def reorder_imports(s):
 
 
 def ensure_import(s, module):
-    """Adiciona `import <module>` no topo (na posicao canonica) se faltar."""
+    """Adds `import <module>` at the top (canonical position) if missing."""
     if re.search(r"^\s*import\s+" + module + r"\b", s, re.M):
         return s, False
     lines = s.split("\n")
-    # CASO ESPECIAL Dispatch: precisa vir DEPOIS do Foundation (a ordem
-    # Foundation->Dispatch e obrigatoria; Foundation depois de Dispatch faz o
-    # DispatchQueue resolver para Foundation.DispatchQueue sem as extensions).
-    # O Foundation pode estar dentro de #if (ex: CombineSchedulers) — inserir
-    # logo apos a linha do Foundation, com a mesma indentacao.
+    # SPECIAL CASE Dispatch: must come AFTER Foundation (the order
+    # Foundation->Dispatch is mandatory; Foundation after Dispatch makes
+    # DispatchQueue resolve to Foundation.DispatchQueue without the extensions).
+    # Foundation may be inside #if (e.g. CombineSchedulers) — insert
+    # right after the Foundation line, with the same indentation.
     if module == "Dispatch":
         for idx, ln in enumerate(lines):
             m = re.match(r"^(\s*)import\s+Foundation\b", ln)
             if m:
                 lines.insert(idx + 1, m.group(1) + "import Dispatch")
                 return "\n".join(lines), True
-    # acha o fim do bloco de imports atual (posicao de insercao)
+    # find the end of the current import block (insertion position)
     i = 0
     while i < len(lines):
         t = lines[i].lstrip()
@@ -160,7 +160,7 @@ def ensure_import(s, module):
     while j < len(lines) and re.match(r"\s*import\s+\w+", lines[j]):
         j += 1
     ins = j
-    # insere antes do primeiro import com prioridade maior
+    # insert before the first import with higher priority
     while ins > i and CANON.get(mod_name(lines[ins - 1]), 99) > CANON.get(module, 99):
         ins -= 1
     lines.insert(ins, "import " + module)
@@ -173,19 +173,19 @@ def mod_name(line):
 
 
 def fix_delegate_signature(path, log):
-    """Troca `application(_:didFinishLaunchingWithOptions:)` por
+    """Replaces `application(_:didFinishLaunchingWithOptions:)` with
     `applicationDidFinishLaunching(_:)`.
 
-    MOTIVO (2026-08-22): no SDK patchado o launchOptions e'
-    NSDictionary<NSString, AnyObject>?, nao [LaunchOptionsKey: Any]?. Como o
-    requisito do protocolo e' OPCIONAL, a assinatura da Apple compila com
-    apenas um WARNING e o UIKit NUNCA chama o metodo -> app abre com TELA
-    PRETA. Ver references/WARNINGS-FATAIS.md.
+    REASON (2026-08-22): in the patched SDK launchOptions is
+    NSDictionary<NSString, AnyObject>?, not [LaunchOptionsKey: Any]?. Since the
+    protocol requirement is OPTIONAL, Apple's signature compiles with
+    only a WARNING and UIKit NEVER calls the method -> app opens with a BLACK
+    SCREEN. See references/WARNINGS-FATAIS.md.
     """
     s = read(path)
     if "didFinishLaunchingWithOptions" not in s:
         return False
-    # assinatura (pode estar quebrada em varias linhas)
+    # signature (may be broken across multiple lines)
     pat = re.compile(
         r"func\s+application\s*\(\s*_\s+(\w+)\s*:\s*UIApplication\s*,\s*"
         r"didFinishLaunchingWithOptions\s+(\w+)\s*:\s*[^)]*\)\s*->\s*Bool\s*\{",
@@ -197,37 +197,37 @@ def fix_delegate_signature(path, log):
     s2 = s[:m.start()] + \
         "func applicationDidFinishLaunching(_ %s: UIApplication) {" % appvar + \
         s[m.end():]
-    # remove o `return true` do fim do metodo (agora e' Void)
+    # remove the trailing `return true` from the method (it is now Void)
     s2 = re.sub(r"\n(\s*)return\s+true\s*\n(\s*)\}", r"\n\2}", s2, count=1)
     write(path, s2)
     log_append(log, "entry: application(_:didFinishLaunchingWithOptions:) -> "
                     "applicationDidFinishLaunching(_:) "
-                    "(assinatura da Apple nao casa com o SDK patchado = tela preta)")
+                    "(Apple signature does not match the patched SDK = black screen)")
     return True
 
 
 def convert_swiftui_app(s, path, log):
-    """Converte `@main struct X: App { var body: some Scene { WindowGroup { V() } } }`
-    em AppDelegate + UIApplicationMain + UIHostingController.
+    """Converts `@main struct X: App { var body: some Scene { WindowGroup { V() } } }`
+    into AppDelegate + UIApplicationMain + UIHostingController.
 
-    POR QUE: o ciclo de vida SwiftUI (`App`/`Scene`) depende de macros e
-    metadata que nao sobrevivem ao interface-compile deste toolchain; alem
-    disso `@main` + arquivo `main.swift` (top-level) e' erro do compilador.
-    A UI continua 100% SwiftUI — so o ciclo de vida vira UIKit.
+    WHY: the SwiftUI lifecycle (`App`/`Scene`) depends on macros and
+    metadata that do not survive this toolchain's interface-compile; besides,
+    `@main` + a `main.swift` file (top-level) is a compiler error.
+    The UI remains 100% SwiftUI — only the lifecycle becomes UIKit.
 
-    Extrai o conteudo do WindowGroup para usar como rootView. Se nao conseguir
-    identificar, cai para a primeira `View` do arquivo.
+    Extracts the WindowGroup content to use as rootView. If it cannot
+    identify it, falls back to the first `View` in the file.
     """
-    # 1. nome da struct @main e corpo
+    # 1. @main struct name and body
     m = re.search(r"@main\s+(?:public\s+)?struct\s+(\w+)\s*:\s*App\b", s)
     if not m:
-        # @main em outra coisa (ex.: enum com main()): so remove o atributo
+        # @main on something else (e.g. enum with main()): just remove the attribute
         s2 = re.sub(r"^\s*@main\s*$", "", s, flags=re.M)
-        log_append(log, "entry: @main removido (nao era `struct: App`)")
+        log_append(log, "entry: @main removed (it was not `struct: App`)")
         return reorder_imports(s2)
     app_name = m.group(1)
 
-    # 2. conteudo do WindowGroup { ... } (primeira ocorrencia, balanceado)
+    # 2. WindowGroup { ... } content (first occurrence, balanced)
     root_expr = None
     wg = re.search(r"WindowGroup\s*(?:\([^)]*\))?\s*\{", s)
     if wg:
@@ -244,9 +244,9 @@ def convert_swiftui_app(s, path, log):
     if not root_expr:
         vm = re.search(r"struct\s+(\w+)\s*:\s*(?:\w+\s*,\s*)*View\b", s)
         root_expr = (vm.group(1) + "()") if vm else "Text(\"App\")"
-        log_append(log, "entry: WindowGroup nao encontrado; rootView = " + root_expr)
+        log_append(log, "entry: WindowGroup not found; rootView = " + root_expr)
 
-    # 3. remove a struct @main inteira (ela nao pode coexistir com top-level code)
+    # 3. remove the entire @main struct (it cannot coexist with top-level code)
     start = s.rindex("@main", 0, m.end())
     i = s.index("{", m.end() - 1)
     depth = 0
@@ -269,16 +269,16 @@ def convert_swiftui_app(s, path, log):
     delegate = '''
 
 // ---------------------------------------------------------------------------
-// Entry point convertido automaticamente de `@main struct %s: App`.
-// O ciclo de vida SwiftUI (App/Scene) depende de macros que nao sobrevivem ao
-// interface-compile deste toolchain. A UI continua 100%% SwiftUI; so o ciclo
-// de vida e' UIKit.
+// Entry point automatically converted from `@main struct %s: App`.
+// The SwiftUI lifecycle (App/Scene) depends on macros that do not survive this
+// toolchain's interface-compile. The UI remains 100%% SwiftUI; only the
+// lifecycle is UIKit.
 //
-// ATENCAO: use `applicationDidFinishLaunching(_:)`. A assinatura
-// `application(_:didFinishLaunchingWithOptions:)` NAO casa com o
-// .swiftinterface patchado (launchOptions e' NSDictionary aqui) -> o Swift so
-// avisa, nao gera o thunk ObjC, o UIKit nunca chama o metodo e o app abre com
-// TELA PRETA. Ver references/WARNINGS-FATAIS.md
+// WARNING: use `applicationDidFinishLaunching(_:)`. The signature
+// `application(_:didFinishLaunchingWithOptions:)` does NOT match the
+// patched .swiftinterface (launchOptions is NSDictionary here) -> Swift only
+// warns, does not generate the ObjC thunk, UIKit never calls the method and the app opens with
+// a BLACK SCREEN. See references/WARNINGS-FATAIS.md
 // ---------------------------------------------------------------------------
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
@@ -301,8 +301,8 @@ UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, nil,
 
 
 def adapt_entry(files, log):
-    """Acha o entry point e o adapta: @UIApplicationMain -> main.swift com a chamada."""
-    # SEMPRE corrigir a assinatura do delegate, em qualquer arquivo
+    """Finds the entry point and adapts it: @UIApplicationMain -> main.swift with the call."""
+    # ALWAYS fix the delegate signature, in any file
     for p in files:
         try:
             fix_delegate_signature(p, log)
@@ -310,14 +310,14 @@ def adapt_entry(files, log):
             pass
     mains = [p for p in files if os.path.basename(p) == "main.swift"]
     if mains:
-        log_append(log, "entry: main.swift ja existe (top-level), mantido")
+        log_append(log, "entry: main.swift already exists (top-level), kept")
         return mains[0]
     for p in files:
         s = read(p)
         if re.search(r"\bUIApplicationMain\s*\(", s):
-            # ja e um entry AppDelegate-style (top-level UIApplicationMain) —
-            # o build-pure-ui.sh o reconhece pelo nome *Main.swift
-            log_append(log, "entry: UIApplicationMain(...) ja presente no top-level, mantido")
+            # it is already an AppDelegate-style entry (top-level UIApplicationMain) —
+            # build-pure-ui.sh recognizes it by the *Main.swift name
+            log_append(log, "entry: UIApplicationMain(...) already present at top-level, kept")
             return p
         if "@UIApplicationMain" in s:
             s2 = re.sub(r"^\s*@UIApplicationMain\s*$", "", s, flags=re.M)
@@ -332,8 +332,8 @@ def adapt_entry(files, log):
                              "CommandLine.unsafeArgv, nil, NSStringFromClass(" \
                              + cls + ".self))\n"
             write(p, s2)
-            log_append(log, "entry: @UIApplicationMain removido; chamada "
-                            "UIApplicationMain(...) adicionada (classe " + cls + ")")
+            log_append(log, "entry: @UIApplicationMain removed; "
+                            "UIApplicationMain(...) call added (class " + cls + ")")
             nb = os.path.splitext(os.path.basename(p))[0] + "Main.swift"
             np_ = os.path.join(os.path.dirname(p), nb)
             if np_ != p:
@@ -342,12 +342,12 @@ def adapt_entry(files, log):
                 log_append(log, "entry: " + os.path.basename(p) + " -> " + nb)
             return np_
         if re.search(r"^\s*@main\b", s, re.M):
-            # `@main class X: UIResponder, UIApplicationDelegate` — UIKit
-            # classico (com ou sem lifecycle de cena). O @main em classe
-            # depende de UIApplicationDelegate.main() (metadata que nao
-            # sobrevive ao interface-compile) — mesmo tratamento do
-            # @UIApplicationMain: remove o atributo e anexa a chamada
-            # UIApplicationMain(...) no top-level do arquivo *Main.swift.
+            # `@main class X: UIResponder, UIApplicationDelegate` — classic UIKit
+            # (with or without scene lifecycle). @main on a class
+            # depends on UIApplicationDelegate.main() (metadata that does not
+            # survive interface-compile) — same treatment as
+            # @UIApplicationMain: remove the attribute and append the
+            # UIApplicationMain(...) call at the top-level of the *Main.swift file.
             mcls = re.search(r"class\s+(\w+)\s*:\s*(?:NSObject\s*,\s*)?UIResponder\b", s)
             if mcls:
                 cls = mcls.group(1)
@@ -360,19 +360,19 @@ def adapt_entry(files, log):
                                  + cls + ".self))\n"
                 write(p, s2)
                 log_append(log, "entry: @main class %s (UIApplicationDelegate) -> "
-                                "UIApplicationMain(...) anexada no top-level" % cls)
+                                "UIApplicationMain(...) appended at top-level" % cls)
                 nb = os.path.splitext(os.path.basename(p))[0] + "Main.swift"
                 np_ = os.path.join(os.path.dirname(p), nb)
                 if np_ != p:
                     os.rename(p, np_)
                     files[files.index(p)] = np_
                 return np_
-            # `@main struct X: App` (SwiftUI App lifecycle) NAO funciona aqui:
-            # depende de macros/metadata que nao sobrevivem ao interface-compile,
-            # e o arquivo vira main.swift (top-level) => erro
+            # `@main struct X: App` (SwiftUI App lifecycle) does NOT work here:
+            # it depends on macros/metadata that do not survive interface-compile,
+            # and the file becomes main.swift (top-level) => error
             #   "'main' attribute cannot be used in a module that contains
             #    top-level code".
-            # Convertemos para o padrao validado em runtime:
+            # We convert it to the runtime-validated pattern:
             #   AppDelegate + UIApplicationMain + UIHostingController.
             s2 = convert_swiftui_app(s, p, log)
             write(p, s2)
@@ -382,18 +382,18 @@ def adapt_entry(files, log):
                 os.rename(p, np_)
                 files[files.index(p)] = np_
             return np_
-    log_append(log, "entry: NENHUM entry point reconhecido "
-                    "(@UIApplicationMain/@main/main.swift) — o build pode falhar")
+    log_append(log, "entry: NO entry point recognized "
+                    "(@UIApplicationMain/@main/main.swift) — the build may fail")
     return None
 
 
-# ------------------------------------------------------- lifecycle de cena
+# ------------------------------------------------------- scene lifecycle
 def parse_storyboard_root(story_path):
-    """Extrai (classe_do_rootVC, tem_navigationController) do storyboard.
+    """Extracts (rootVC_class, has_navigationController) from the storyboard.
 
-    Storyboards nao compilam sem ibtool — o port precisa recriar a arvore de
-    views em codigo. Segue o initialViewController; se for um
-    navigationController, segue a segue relationship rootViewController.
+    Storyboards do not compile without ibtool — the port must recreate the view
+    tree in code. Follows initialViewController; if it is a
+    navigationController, follows the rootViewController relationship segue.
     """
     if not story_path or not os.path.exists(story_path):
         return None, False
@@ -410,10 +410,10 @@ def parse_storyboard_root(story_path):
     def find_vc(scene_id):
         if not scene_id:
             return None, False
-        # `initialViewController` e `segue.destination` apontam para o id do
-        # objeto (navigationController/viewController), nao para sceneID.
-        # O parser antigo comparava sceneID e nunca encontrava a Navigation
-        # Controller — por isso o Load ROM ficava sem navigationController.
+        # `initialViewController` and `segue.destination` point to the object id
+        # (navigationController/viewController), not to sceneID.
+        # The old parser compared sceneID and never found the Navigation
+        # Controller — that is why Load ROM ended up without navigationController.
         for scene in doc.iter("scene"):
             for obj in scene.iter():
                 if obj.get("id") != scene_id:
@@ -433,17 +433,17 @@ def parse_storyboard_root(story_path):
 
 
 def convert_scene_delegate(path, story_path, log, debug=False):
-    """Converte o willConnectTo de um SceneDelegate para criar a UIWindow em
-    codigo (o storyboard que o app esperava nao existe no IPA). A classe do
-    root VC e' lida do Main.storyboard; o root original ficava num
-    UINavigationController, entao o wrapper e' recriado."""
+    """Converts a SceneDelegate's willConnectTo to create the UIWindow in
+    code (the storyboard the app expected does not exist in the IPA). The root VC
+    class is read from Main.storyboard; the original root was in a
+    UINavigationController, so the wrapper is recreated."""
     s = read(path)
     if "UIWindowSceneDelegate" not in s:
         return False
     root_cls, is_nav = parse_storyboard_root(story_path)
     if not root_cls:
         root_cls = "ViewController"
-        log_append(log, "scene: storyboard nao parseado — root VC padrao "
+        log_append(log, "scene: storyboard not parsed — default root VC "
                         "'ViewController'")
     if is_nav:
         root_expr = "UINavigationController(rootViewController: %s())" % root_cls
@@ -483,23 +483,23 @@ def convert_scene_delegate(path, story_path, log, debug=False):
             s2 = s
         s2 = s2.rstrip() + "\n\n" + body
     write(path, s2)
-    log_append(log, "scene: willConnectTo reescrito p/ criar a janela em codigo "
+    log_append(log, "scene: willConnectTo rewritten to create the window in code "
                     "(root: %s)" % root_expr)
     return True
 
 
 def post_process_ipa(app, res_dirs, scene_class, log, debug=False):
-    """Depois do build: adiciona recursos (--resources) e o UIApplicationSceneManifest
-    no Info.plist (app com lifecycle de cena), e recompacta o IPA.
+    """After the build: adds resources (--resources) and the UIApplicationSceneManifest
+    to Info.plist (app with scene lifecycle), and re-zips the IPA.
 
-    O build-pure-ui.sh gera um Info.plist fixo sem manifest e sem recursos; o
-    manifest e' OBRIGATORIO para o UIKit instanciar o SceneDelegate — sem ele o
-    app abre e fica com tela preta (janela nunca criada).
+    build-pure-ui.sh generates a fixed Info.plist without a manifest and without resources;
+    the manifest is MANDATORY for UIKit to instantiate the SceneDelegate — without it the
+    app opens and stays with a black screen (window never created).
     """
     work_dir = os.environ.get("ISB_BUILD_WORK", os.path.join("/tmp", "port-" + app))
     pay_app = os.path.join(work_dir, "Payload", app + ".app")
     if not os.path.isdir(pay_app):
-        log_append(log, "ipa: Payload nao encontrado — post-process ignorado")
+        log_append(log, "ipa: Payload not found — post-process skipped")
         return
     if scene_class:
         info = os.path.join(pay_app, "Info.plist")
@@ -518,14 +518,14 @@ def post_process_ipa(app, res_dirs, scene_class, log, debug=False):
             }
             with open(info, "wb") as f:
                 plistlib.dump(pl, f, sort_keys=False)
-            log_append(log, "info: UIApplicationSceneManifest adicionado "
+            log_append(log, "info: UIApplicationSceneManifest added "
                             "(UISceneDelegateClassName = %s)" % scene_class)
         except Exception as e:
-            log_append(log, "info: FALHA ao adicionar scene manifest: %s" % e)
+            log_append(log, "info: FAILED to add scene manifest: %s" % e)
     if res_dirs:
         for d in res_dirs:
             if not os.path.isdir(d):
-                log_append(log, "resource: dir nao encontrado: " + d)
+                log_append(log, "resource: dir not found: " + d)
                 continue
             for root, _, files in os.walk(d):
                 for fn in sorted(files):
@@ -534,34 +534,34 @@ def post_process_ipa(app, res_dirs, scene_class, log, debug=False):
                     log_append(log, "resource: %s -> Payload/%s.app/%s"
                                % (os.path.relpath(os.path.join(root, fn), d),
                                   app, fn))
-    # O build-pure-ui assina antes deste pos-processamento. Alterar o
-    # Info.plist depois invalida o CodeDirectory; recursos novos tambem devem
-    # entrar antes da assinatura final. Reassina sempre, mesmo sem recursos.
+    # build-pure-ui signs before this post-processing. Changing the
+    # Info.plist afterwards invalidates the CodeDirectory; new resources must also
+    # enter before final signing. Always re-sign, even without resources.
     exe = os.path.join(pay_app, app)
     if debug:
         ent = os.path.join(work, "debug-entitlements.plist")
         subprocess.run(["ldid", "-S" + ent, exe], check=True)
-        log_append(log, "ipa: bundle reassinado preservando get-task-allow")
+        log_append(log, "ipa: bundle re-signed preserving get-task-allow")
     else:
         subprocess.run(["ldid", "-S", exe], check=True)
-    log_append(log, "ipa: bundle reassinado apos manifest/recursos")
+    log_append(log, "ipa: bundle re-signed after manifest/resources")
     ipa = os.path.join(WORKSPACE, app + ".ipa")
     if os.path.exists(ipa):
         os.remove(ipa)
     subprocess.run(["zip", "-qr", ipa, "Payload"], cwd=work, check=True)
-    log_append(log, "ipa: recompactado (recursos/manifest)")
+    log_append(log, "ipa: re-zipped (resources/manifest)")
 
 
 def write_minimal_kit(srcs, work, log):
-    """Gera Shims_MinimalKit.swift com SO os helpers do PureSwiftKit que o app
-    usa.
+    """Generates Shims_MinimalKit.swift with ONLY the PureSwiftKit helpers the app
+    uses.
 
-    MOTIVO (2026-08-22, Chip8Emu): o kit inteiro (~260 linhas, ~55 declaracoes
-    publicas) empurra o modulo alem de um limiar em que o overlay Foundation
-    DEGRADA deterministicamente para arquivos irmaos — ex.: `Timer` some de
-    arquivos que importam Foundation, mesmo com cache limpo. Remover o kit e
-    manter so os helpers usados (aqui: cgRectZero) resolve. E a mesma classe
-    do "modulo grande", agora com limite medido.
+    REASON (2026-08-22, Chip8Emu): the whole kit (~260 lines, ~55 public
+    declarations) pushes the module past a threshold where the Foundation overlay
+    DEGRADES deterministically for sibling files — e.g.: `Timer` disappears from
+    files that import Foundation, even with a clean cache. Removing the kit and
+    keeping only the used helpers (here: cgRectZero) fixes it. It is the same class
+    of "large module", now with a measured limit.
     """
     kit = read(KIT)
     used = set()
@@ -570,7 +570,7 @@ def write_minimal_kit(srcs, work, log):
             continue
         used |= set(re.findall(r"\bcg[A-Z]\w*", read(f)))
         used |= set(re.findall(r"\bedgeInsets\b", read(f)))
-    # so o que o kit REALMENTE define (cgColor/cgImage/cgPath sao do SDK)
+    # only what the kit REALLY defines (cgColor/cgImage/cgPath belong to the SDK)
     defs = []
     for name in sorted(used):
         m = re.search(r"^public (?:let|func) " + name + r"\b.*$", kit, re.M)
@@ -589,7 +589,7 @@ def write_minimal_kit(srcs, work, log):
             defs.append(kit[start:i])
         else:
             defs.append(m.group(0))
-    # membros de extension (cgWidth, cgMinX...): inclui a extension inteira
+    # extension members (cgWidth, cgMinX...): include the whole extension
     for m in re.finditer(r"^extension (\w+) \{", kit, re.M):
         start = m.start()
         open_i = kit.index("{", start)
@@ -603,21 +603,21 @@ def write_minimal_kit(srcs, work, log):
         block = kit[start:i]
         if set(re.findall(r"\bcg[A-Z]\w*", block)) & used:
             defs.append(block)
-    out = ("// Shims_MinimalKit.swift — helpers do PureSwiftKit gerados "
-           "automaticamente\n"
-           "// (o kit inteiro quebra tipos Foundation no modulo — ver "
+    out = ("// Shims_MinimalKit.swift — PureSwiftKit helpers generated "
+           "automatically\n"
+           "// (the whole kit breaks Foundation types in the module — see "
            "PORTING-TERCEROS.md)\n"
            "import Foundation\nimport UIKit\n\n"
            + "\n\n".join(dict.fromkeys(defs)) + "\n")
     p = os.path.join(work, "Shims_MinimalKit.swift")
     write(p, out)
-    log_append(log, "kit: PureSwiftKit removido (limiar de declaracoes quebrou "
-                    "tipos Foundation no modulo) -> helpers minimos locais: "
+    log_append(log, "kit: PureSwiftKit removed (the declaration threshold broke "
+                    "Foundation types in the module) -> local minimal helpers: "
                     + ", ".join(sorted(used)))
     return p
 
 
-# ------------------------------------------------- passo 3: fixes reativos (loop)
+# --------------------------------------------------- step 3: reactive fixes (loop)
 ERR_RE = re.compile(r"([^\s:]+\.swift):(\d+):(\d+):\s*(?:error|warning):\s*(.*)")
 
 
@@ -655,19 +655,19 @@ def apply_member_fix(line, typename, member):
     if not repl:
         return line
     if member in ("zero", "null", "infinite", "identity"):
-        # estaticos: CGRect.zero -> cgRectZero (e .zero solto na linha do erro)
+        # statics: CGRect.zero -> cgRectZero (and a bare .zero on the error line)
         line = re.sub(r"\b" + typename + r"\." + member + r"\b", repl, line)
         line = re.sub(r"(?<![\w.])\.zero\b(?![\w])", repl, line)
     else:
-        # membro: rect.width -> rect.cgWidth (todas as ocorrencias na linha)
+        # member: rect.width -> rect.cgWidth (all occurrences on the line)
         line = re.sub(r"\." + member + r"\b(?![\w])", "." + repl, line)
     return line
 
 
-# --- fixes reativos: cada erro conhecido -> transformacao no arquivo fonte -----
-# Módulos donos de tipos que "somem" (erros fantasma do swift-frontend no iSH:
-# o mesmo build ora compila, ora reporta tipos ausentes). Se o import já existe
-# no arquivo, é fantasma -> retry do build (não aplicar fix).
+# --- reactive fixes: each known error -> transformation in the source file -----
+# Modules that own types that "disappear" (ghost errors from swift-frontend on iSH:
+# the same build sometimes compiles, sometimes reports missing types). If the import already
+# exists in the file, it is a ghost -> retry the build (do not apply a fix).
 TYPE_MODULE = {
     "DispatchQueue": "Dispatch", "DispatchTime": "Dispatch",
     "DispatchWorkItem": "Dispatch", "DispatchGroup": "Dispatch",
@@ -676,7 +676,7 @@ TYPE_MODULE = {
     "Locale": "Foundation", "Formatter": "Foundation", "URL": "Foundation",
     "NSLocalizedString": "Foundation", "TimeInterval": "Foundation",
     "NSNumber": "Foundation", "NSString": "Foundation", "NSIndexPath": "Foundation",
-    # tipos-valor do Foundation que somem quando o arquivo so importa UIKit
+    # Foundation value types that disappear when the file only imports UIKit
     "IndexPath": "Foundation", "IndexSet": "Foundation", "Data": "Foundation",
     "Date": "Foundation", "DateFormatter": "Foundation", "Calendar": "Foundation",
     "NumberFormatter": "Foundation", "UserDefaults": "Foundation",
@@ -697,16 +697,16 @@ TYPE_MODULE = {
 
 
 def is_ghost_error(src, msg):
-    """True se o erro 'cannot find X' ocorre num arquivo que JA importa o modulo."""
-    # ATENCAO (2026-08-22): erros de INFERENCIA nao sao fantasmas nem tem fix
-    # automatico — sao codigo que o type-checker do iSH nao fecha. Ver
-    # PORTING-TERCEROS.md §11 (reescrever com tipos nominais explicitos).
+    """True if the 'cannot find X' error occurs in a file that ALREADY imports the module."""
+    # WARNING (2026-08-22): INFERENCE errors are not ghosts and have no
+    # automatic fix — they are code the iSH type-checker cannot close. See
+    # PORTING-TERCEROS.md §11 (rewrite with explicit nominal types).
     m = re.search(r"cannot find(?: type)? '(\w+)' in scope", msg)
     if not m:
         return False
     name = m.group(1)
-    # TimeInterval NAO e fantasma: e a degradacao documentada (some com UIKit
-    # MESMO com Foundation importado) — o fix (c) substitui por Double.
+    # TimeInterval is NOT a ghost: it is the documented degradation (it disappears with UIKit
+    # EVEN with Foundation imported) — fix (c) replaces it with Double.
     if name == "TimeInterval":
         return False
     mod = TYPE_MODULE.get(name)
@@ -717,23 +717,23 @@ def is_ghost_error(src, msg):
 
 
 def fix_known_errors(work_dir, build_out, log):
-    """Retorna (aplicou_fix, tem_fantasma)."""
+    """Returns (applied_fix, has_ghost)."""
     fixed = False
     ghost = False
     for m in ERR_RE.finditer(build_out):
-        base = os.path.basename(m.group(1))  # path completo -> so o nome
+        base = os.path.basename(m.group(1))  # full path -> just the name
         ln, col, msg = int(m.group(2)), int(m.group(3)), m.group(4)
         src = find_src(work_dir, base)
         if not src:
             continue
 
-        # erro fantasma: o tipo "some" mas o import do modulo ja existe —
-        # e um bug transiente do swift-frontend (retry resolve, fix nao)
+        # ghost error: the type "disappears" but the module import already exists —
+        # it is a transient swift-frontend bug (retry fixes it, a fix does not)
         if is_ghost_error(src, msg):
             ghost = True
             continue
 
-        # (a) CGRect/CGAffineTransform/CGPoint/CGSize: membro inexistente
+        # (a) CGRect/CGAffineTransform/CGPoint/CGSize: nonexistent member
         tm = re.match(r"value of type '(\w+)' has no member '(\w+)'", msg)
         if tm and tm.group(1) in MEMBER_FIX:
             typename, member = tm.group(1), tm.group(2)
@@ -751,7 +751,7 @@ def fix_known_errors(work_dir, build_out, log):
                                   log)
                 continue
 
-        # (b) UIEdgeInsetsMake nao existe -> init com labels
+        # (b) UIEdgeInsetsMake does not exist -> init with labels
         if "UIEdgeInsetsMake" in msg:
             s = read(src)
             s2 = re.sub(r"UIEdgeInsetsMake\(\s*([^,()]+?)\s*,\s*([^,()]+?)\s*,\s*"
@@ -763,8 +763,8 @@ def fix_known_errors(work_dir, build_out, log):
                 fixed = True
             continue
 
-        # (c) TimeInterval some com UIKit -> Double (typealias). Se o import
-        # Foundation ja existe, o import nao resolve — substituir o tipo.
+        # (c) TimeInterval disappears with UIKit -> Double (typealias). If the
+        # Foundation import already exists, importing does not help — replace the type.
         if re.search(r"cannot find(?: type)? 'TimeInterval' in scope", msg):
             s = read(src)
             if re.search(r"^\s*import\s+Foundation\b", s, re.M):
@@ -775,7 +775,7 @@ def fix_known_errors(work_dir, build_out, log):
                 s, a = ensure_import(s, "Foundation")
                 if a:
                     write(src, s)
-                    log_append(log, "import Foundation adicionado (TimeInterval)")
+                    log_append(log, "import Foundation added (TimeInterval)")
                     fixed = True
             continue
 
@@ -784,59 +784,59 @@ def fix_known_errors(work_dir, build_out, log):
             s, a = ensure_import(read(src), "CoreText")
             if a:
                 write(src, s)
-                log_append(log, "import CoreText adicionado (NSAttributedString.Key)")
+                log_append(log, "import CoreText added (NSAttributedString.Key)")
                 fixed = True
             continue
 
-        # (d2) IndexPath <-> NSIndexPath: neste toolchain os protocolos ObjC
-        # (UITableViewDataSource, UICollectionViewDataSource, ...) expoem
-        # NSIndexPath, nao IndexPath. Erros tipicos:
+        # (d2) IndexPath <-> NSIndexPath: in this toolchain the ObjC protocols
+        # (UITableViewDataSource, UICollectionViewDataSource, ...) expose
+        # NSIndexPath, not IndexPath. Typical errors:
         #   "cannot convert value of type 'IndexPath' to expected argument type 'NSIndexPath'"
         #   "type 'X' does not conform to protocol 'UITableViewDataSource'"
-        # Fix generico: na ASSINATURA use NSIndexPath; no corpo, converta.
-        # Confirme a assinatura real com:
-        #   python3 scripts/check-protocol-sig.py <Protocolo> <membro>
+        # Generic fix: use NSIndexPath in the SIGNATURE; convert inside the body.
+        # Confirm the real signature with:
+        #   python3 scripts/check-protocol-sig.py <Protocol> <member>
         if re.search(r"cannot convert value of type 'IndexPath' to expected "
                      r"argument type 'NSIndexPath'", msg):
             def _to_nsindexpath(l):
-                # IDEMPOTENTE: nao mexe se ja converteu (senao o loop reativo
-                # aplica o fix em cima do proprio fix)
+                # IDEMPOTENT: do not touch it if already converted (otherwise the reactive
+                # loop applies the fix on top of its own fix)
                 if "NSIndexPath(item:" in l:
                     return l
-                # ⚠️ `\w*[iI]ndexPath` (nao `[A-Za-z_]\w*[iI]ndexPath`): o antigo
-                # exigia 1 char antes de 'indexPath' e nunca casava nomes de
-                # 9 chars como `indexPath` (bug latente, achado 2026-08-22).
+                # ⚠️ `\w*[iI]ndexPath` (not `[A-Za-z_]\w*[iI]ndexPath`): the old one
+                # required 1 char before 'indexPath' and never matched names of
+                # 9 chars like `indexPath` (latent bug, found 2026-08-22).
                 return re.sub(
                     r"\b(for|at)\s*:\s*(?!NSIndexPath\b)(\w*[iI]ndexPath)\b",
                     r"\1: NSIndexPath(item: \2.item, section: \2.section)", l)
             fixed |= fix_line(src, ln, _to_nsindexpath, log)
             continue
 
-        # (d2b) RunLoop.Mode.common degradado -> RunLoop.Mode("kCFRunLoopCommonModes")
-        # (CADisplayLink.add(to:forMode:)). No SDK patchado o membro `.common`
-        # de NSRunLoopMode some; o init por rawValue funciona (probe 2026-08-22).
+        # (d2b) degraded RunLoop.Mode.common -> RunLoop.Mode("kCFRunLoopCommonModes")
+        # (CADisplayLink.add(to:forMode:)). In the patched SDK the `.common` member
+        # of NSRunLoopMode disappears; the rawValue init works (probe 2026-08-22).
         if "NSRunLoopMode" in msg and "has no member 'common'" in msg:
             fixed |= fix_line(src, ln, lambda l: re.sub(
                 r"forMode:\s*\.common\b",
                 'forMode: RunLoop.Mode("kCFRunLoopCommonModes")', l), log)
             continue
 
-        # (d2c) CGColorRenderingIntent: o prefix-stripping do C enum quebrou —
-        # o case vira `RenderingIntentDefault` (nao `.default`/`.defaultIntent`).
+        # (d2c) CGColorRenderingIntent: the C enum prefix-stripping broke —
+        # the case becomes `RenderingIntentDefault` (not `.default`/`.defaultIntent`).
         if "CGColorRenderingIntent" in msg and "defaultIntent" in msg:
             fixed |= fix_line(src, ln, lambda l: re.sub(
                 r"\.defaultIntent\b", ".renderingIntentDefault", l), log)
             continue
 
-        # (d3) warnings fatais: requisitos opcionais ObjC com IndexPath. O
-        # UICollectionViewDelegate expoe NSIndexPath neste SDK; como o requisito
-        # e' opcional, um IndexPath apenas gera warning e o UIKit nao chama o
-        # metodo (mesma falha classica do AppDelegate). Corrige as assinaturas
-        # de metodos collectionView, nao closures de data source.
+        # (d3) fatal warnings: optional ObjC requirements with IndexPath. The
+        # UICollectionViewDelegate exposes NSIndexPath in this SDK; since the
+        # requirement is optional, an IndexPath only produces a warning and UIKit does not call
+        # the method (same classic AppDelegate failure). Fixes the signatures of
+        # collectionView methods, not data source closures.
         if "nearly matches optional requirement" in msg:
             s = read(src)
-            # O texto da warning nao inclui `IndexPath`; a linha da funcao
-            # (que temos pelo path/linha) e' a fonte de verdade.
+            # The warning text does not include `IndexPath`; the function line
+            # (which we have from path/line) is the source of truth.
             line = s.split("\n")[ln - 1] if 0 < ln <= len(s.split("\n")) else ""
             if "indexPath:" not in line or "IndexPath" not in line:
                 continue
@@ -844,38 +844,38 @@ def fix_known_errors(work_dir, build_out, log):
                         r"\1NSIndexPath", s)
             if s2 != s:
                 write(src, s2)
-                log_append(log, "%s: IndexPath -> NSIndexPath nas assinaturas "
-                                "UICollectionViewDelegate (warning fatal de thunk ObjC)"
+                log_append(log, "%s: IndexPath -> NSIndexPath in the "
+                                "UICollectionViewDelegate signatures (fatal ObjC thunk warning)"
                            % os.path.basename(src))
                 fixed = True
             continue
 
         # (d3) "does not conform to protocol 'UITableViewDataSource'" etc.
-        # Neste toolchain os protocolos ObjC do UIKit expoem NSIndexPath (e
-        # outros tipos ObjC crus) nas assinaturas. Um metodo declarado com
-        # `IndexPath` NAO satisfaz o requisito.
+        # In this toolchain UIKit's ObjC protocols expose NSIndexPath (and
+        # other raw ObjC types) in the signatures. A method declared with
+        # `IndexPath` does NOT satisfy the requirement.
         #
-        # ⚠️ MESMA CLASSE DE BUG DA TELA PRETA: se o requisito fosse OPCIONAL,
-        # isto nem seria erro — so um warning, e o metodo nunca seria chamado.
-        # Aqui e' erro porque o protocolo tem requisitos obrigatorios.
+        # ⚠️ SAME CLASS OF BLACK-SCREEN BUG: if the requirement were OPTIONAL,
+        # this would not even be an error — just a warning, and the method would never be called.
+        # Here it is an error because the protocol has required requirements.
         cm = re.search(r"type '(\w+)' does not conform to protocol '(\w+)'", msg)
         if cm and "IndexPath" in read(src):
             s = read(src)
-            # troca IndexPath -> NSIndexPath SO nas assinaturas de metodos de
-            # delegate/dataSource (parametros `indexPath: IndexPath`)
+            # change IndexPath -> NSIndexPath ONLY in the delegate/dataSource
+            # method signatures (parameters `indexPath: IndexPath`)
             s2 = re.sub(r"(\b\w*[iI]ndexPath\s*:\s*)IndexPath\b", r"\1NSIndexPath", s)
-            # e nos usos `indexPath.row/.item/.section` o NSIndexPath tem os
-            # mesmos membros, entao o corpo continua valido.
+            # and in the uses `indexPath.row/.item/.section` NSIndexPath has the
+            # same members, so the body remains valid.
             if s2 != s:
                 write(src, s2)
-                log_append(log, "%s: IndexPath -> NSIndexPath nas assinaturas "
-                                "(protocolo '%s' do SDK usa NSIndexPath). "
-                                "Confira com check-protocol-sig.py"
+                log_append(log, "%s: IndexPath -> NSIndexPath in the signatures "
+                                "(SDK protocol '%s' uses NSIndexPath). "
+                                "Check with check-protocol-sig.py"
                            % (os.path.basename(src), cm.group(2)))
                 fixed = True
                 continue
 
-        # (e0) o compilador DIZ qual modulo falta — regra generica, cobre
+        # (e0) the compiler SAYS which module is missing — generic rule, covers
         # "@objc attribute used without importing module 'Foundation'",
         # "... requires importing module 'X'", etc.
         mm = re.search(r"without importing module '(\w+)'", msg) or \
@@ -885,13 +885,13 @@ def fix_known_errors(work_dir, build_out, log):
             s, a = ensure_import(read(src), mm.group(1))
             if a:
                 write(src, s)
-                log_append(log, "import %s adicionado (o compilador pediu)" % mm.group(1))
+                log_append(log, "import %s added (the compiler asked for it)" % mm.group(1))
                 fixed = True
                 continue
 
-        # (e) import Dispatch. O overlay Swift do Dispatch some quando o arquivo
-        # importa Foundation/UIKit mas nao Dispatch — e o DispatchQueue vira a
-        # classe ObjC crua. Os erros resultantes NAO mencionam "Dispatch":
+        # (e) import Dispatch. Dispatch's Swift overlay disappears when the file
+        # imports Foundation/UIKit but not Dispatch — and DispatchQueue becomes the
+        # raw ObjC class. The resulting errors do NOT mention "Dispatch":
         #   "type 'DispatchQueue' has no member 'main'"
         #   "value of type 'DispatchQueue' has no member 'async'"
         #   "does not conform to protocol 'Scheduler'"
@@ -907,33 +907,33 @@ def fix_known_errors(work_dir, build_out, log):
             s, a = ensure_import(read(src), "Dispatch")
             if a:
                 write(src, s)
-                log_append(log, "import Dispatch adicionado (DispatchQueue/Scheduler)")
+                log_append(log, "import Dispatch added (DispatchQueue/Scheduler)")
                 fixed = True
                 continue
-            # ja tem o import: entao a ORDEM esta errada (Dispatch antes de UIKit)
+            # the import is already there: so the ORDER is wrong (Dispatch before UIKit)
             s2 = reorder_imports(read(src))
             if s2 != read(src):
                 write(src, s2)
-                log_append(log, "imports reordenados (Dispatch precisa vir DEPOIS de UIKit)")
+                log_append(log, "imports reordered (Dispatch must come AFTER UIKit)")
                 fixed = True
             continue
 
-        # (f) funcoes de math sem Foundation (log2, pow, ...)
+        # (f) math functions without Foundation (log2, pow, ...)
         fm = re.search(r"cannot find '(\w+)' in scope", msg)
         if fm and fm.group(1) in MATH_FUNCS:
             s, a = ensure_import(read(src), "Foundation")
             if a:
                 write(src, s)
-                log_append(log, "import Foundation adicionado (math: " + fm.group(1) + ")")
+                log_append(log, "import Foundation added (math: " + fm.group(1) + ")")
                 fixed = True
             continue
 
-        # (h) 'sync' ambiguo: TCA e cs definem sync no NSRecursiveLock —
-        # trailing closures ficam ambiguos. Fix: renomear a definicao do CS
-        # (rotulo operation:) para csSync + chamadas com rotulo; os trailing
-        # `lock.sync {` passam a resolver para o sync do TCA (unico restante
-        # no NSRecursiveLock). O sync do TCA em os_unfair_lock_t (Create) NAO
-        # e tocado (nao conflita com ninguem).
+        # (h) ambiguous 'sync': TCA and cs define sync on NSRecursiveLock —
+        # trailing closures become ambiguous. Fix: rename the CS definition
+        # (operation: label) to csSync + labeled calls; the trailing
+        # `lock.sync {` then resolve to TCA's sync (the only one left
+        # on NSRecursiveLock). TCA's sync on os_unfair_lock_t (Create) is NOT
+        # touched (it conflicts with no one).
         if "ambiguous use of 'sync'" in msg:
             for f in sorted(os.listdir(work_dir)):
                 if not f.endswith(".swift"):
@@ -944,18 +944,18 @@ def fix_known_errors(work_dir, build_out, log):
                 s2 = re.sub(r"\.sync\(operation:", ".csSync(operation:", s2)
                 if s2 != s:
                     write(p, s2)
-                    log_append(log, "sync do CombineSchedulers -> csSync (" + f + ")")
+                    log_append(log, "CombineSchedulers sync -> csSync (" + f + ")")
                     fixed = True
             continue
 
-        # (i) 'CasePaths' em scope: compilado no mesmo modulo, o namespace do
-        # modulo nao existe mais — recriar um shim com o static extract
-        # (o codigo original `CasePaths.extract(...)` continua intacto)
+        # (i) 'CasePaths' in scope: compiled in the same module, the module
+        # namespace no longer exists — recreate a shim with the static extract
+        # (the original `CasePaths.extract(...)` code is untouched)
         if "cannot find 'CasePaths' in scope" in msg:
             shim = os.path.join(work_dir, "Shims_CasePaths.swift")
             if not os.path.exists(shim):
                 with open(shim, "w", encoding="utf-8") as f:
-                    f.write("// shim: namespace CasePaths para modulo unico\n"
+                    f.write("// shim: CasePaths namespace for a single module\n"
                             "enum CasePaths {\n"
                             "    static func extract<Root, Value>(\n"
                             "        _ embed: @escaping (Value) -> Root\n"
@@ -963,33 +963,33 @@ def fix_known_errors(work_dir, build_out, log):
                             "        extract(embed)\n"
                             "    }\n"
                             "}\n")
-                log_append(log, "shim enum CasePaths.extract criado")
+                log_append(log, "shim enum CasePaths.extract created")
                 fixed = True
             continue
 
-        # (j) macro TaskLocal nao existe no toolchain (sem plugin de macros) —
-        # remover o atributo (o flag vira uma var estatica comum)
+        # (j) the TaskLocal macro does not exist in the toolchain (no macro plugin) —
+        # remove the attribute (the flag becomes an ordinary static var)
         if "macro implementation type" in msg and "TaskLocal" in msg:
             fixed |= fix_line(src, ln,
                               lambda l: re.sub(r"@TaskLocal\s+", "", l),
                               log)
             continue
 
-        # (k) tipos Foundation/UIKit ObjC somem (FileManager/UUID/Locale/Bundle/
-        # Formatter/NSLocalizedString/TimeInterval/UIFont...) -> import do
-        # MODULO DONO (Foundation ou UIKit)
+        # (k) Foundation/UIKit ObjC types disappear (FileManager/UUID/Locale/Bundle/
+        # Formatter/NSLocalizedString/TimeInterval/UIFont...) -> import the
+        # OWNING MODULE (Foundation or UIKit)
         fm = re.search(r"cannot find(?: type)? '(\w+)' in scope", msg)
         if fm and fm.group(1) in TYPE_MODULE:
             mod = TYPE_MODULE[fm.group(1)]
             s, a = ensure_import(read(src), mod)
             if a:
                 write(src, s)
-                log_append(log, "import " + mod + " adicionado (" + fm.group(1) + ")")
+                log_append(log, "import " + mod + " added (" + fm.group(1) + ")")
                 fixed = True
             continue
 
-        # (l) Color("assetName") — assets do catalog nao existem no IPA;
-        # substituir por um cinza neutro (ajuste manual depois se quiser)
+        # (l) Color("assetName") — catalog assets do not exist in the IPA;
+        # replace with a neutral gray (adjust manually later if desired)
         if "no exact matches in call to initializer" in msg:
             lines = read(src).split("\n")
             if 1 <= ln <= len(lines) and 'Color("' in lines[ln - 1]:
@@ -997,9 +997,9 @@ def fix_known_errors(work_dir, build_out, log):
                     r'Color\("([^"]+)"\)', 'Color(red: 0.5, green: 0.5, blue: 0.5)', l), log)
             continue
 
-        # (g) init CGRect(x:y:width:height:) -> helper cgRect do PureSwiftKit.
-        # O erro nao menciona 'CGRect' no texto ("argument passed to call that
-        # takes no arguments") — disparamos pelo padrao e a regex decide.
+        # (g) init CGRect(x:y:width:height:) -> PureSwiftKit's cgRect helper.
+        # The error does not mention 'CGRect' in the text ("argument passed to call that
+        # takes no arguments") — we trigger on the pattern and the regex decides.
         if ("takes no arguments" in msg or "extra argument" in msg
                 or "missing argument" in msg or "no exact matches" in msg):
             fixed |= fix_line(src, ln, lambda l: re.sub(
@@ -1012,7 +1012,7 @@ def fix_known_errors(work_dir, build_out, log):
 
 
 def run_build(app, bundle, srcs, debug=False):
-    # arquivos Shims_*.swift criados pelos fixes entram automaticamente
+    # Shims_*.swift files created by the fixes are added automatically
     import glob
     work_dir = os.path.dirname(srcs[0]) if srcs else "/tmp/port-" + app
     shims = sorted(glob.glob(os.path.join(work_dir, "Shims_*.swift")))
@@ -1035,7 +1035,7 @@ def run_build(app, bundle, srcs, debug=False):
 
 
 def dep_root(path, src_dir):
-    """Raiz de agrupamento do merge: a dependencia (ex: 'tca', 'app')."""
+    """Merge grouping root: the dependency (e.g.: 'tca', 'app')."""
     p = path.replace("\\", "/")
     if p.startswith(src_dir):
         return "app"
@@ -1046,25 +1046,25 @@ def dep_root(path, src_dir):
 
 
 def merge_by_dir(srcs, work_dir, log, entry=None):
-    """Concatena os fontes por diretorio de origem em arquivos unicos.
+    """Concatenates the sources by source directory into single files.
 
-    O swift-frontend no iSH fica instavel com muitos arquivos por compilacao
-    (~45+): os modulos carregam de forma corrompida e tipos somem. Concatenar
-    por modulo reduz 191 arquivos para ~10 e estabiliza o build. Imports de
-    todos os arquivos sobem para o topo do arquivo concatenado (na ordem
-    canonica); corpos seguem na ordem original.
+    swift-frontend on iSH becomes unstable with many files per compilation
+    (~45+): modules load in corrupted form and types disappear. Concatenating
+    per module reduces 191 files to ~10 and stabilizes the build. Imports from
+    all files move to the top of the concatenated file (in canonical
+    order); bodies follow the original order.
     """
-    # basename -> raiz de origem (registrado na copia): o diretorio da
-    # dependencia (ex: 'tca', 'app', 'OrderedCollections') para agrupar o merge
+    # basename -> source root (recorded on copy): the dependency
+    # directory (e.g.: 'tca', 'app', 'OrderedCollections') to group the merge
     if not hasattr(merge_by_dir, "orig_dirs"):
-        return srcs  # sem mapeamento: nao mergear
+        return srcs  # no mapping: do not merge
     mode = getattr(merge_by_dir, "mode", "dep")
     orig = merge_by_dir.orig_dirs if mode == "dep" else merge_by_dir.orig_subdirs
     groups = {}
     for s in srcs:
         b = os.path.basename(s)
         if b in ("main.swift", "PureSwiftKit.swift"):
-            continue  # entry (top-level) e kit ficam separados
+            continue  # entry (top-level) and kit stay separate
         if entry and s == entry:
             continue
         d = orig.get(b, "misc")
@@ -1088,7 +1088,7 @@ def merge_by_dir(srcs, work_dir, log, entry=None):
                 imports.append(lines[k].strip())
                 k += 1
             bodies.append("\n".join(lines[k:]))
-        # imports unicos preservando ordem canonica
+        # unique imports preserving canonical order
         seen, uniq = set(), []
         for im in imports:
             if im not in seen:
@@ -1097,11 +1097,11 @@ def merge_by_dir(srcs, work_dir, log, entry=None):
         uniq.sort(key=lambda l: CANON.get(re.search(r"import\s+(\w+)", l).group(1), 99))
         out = os.path.join(work_dir, "merged_%02d_%s.swift" % (i, d.replace("/", "_")[:40]))
         with open(out, "w", encoding="utf-8") as f:
-            f.write("// merged: " + d + " (" + str(len(fs)) + " arquivos)\n")
+            f.write("// merged: " + d + " (" + str(len(fs)) + " files)\n")
             f.write("\n".join(uniq) + "\n\n")
             f.write("\n\n".join(b for b in bodies if b.strip()))
         merged.append(out)
-        log_append(log, "merged %d arquivos de %s -> %s"
+        log_append(log, "merged %d files from %s -> %s"
                    % (len(fs), d, os.path.basename(out)))
     return merged + [s for s in srcs
                      if os.path.basename(s) in ("main.swift", "PureSwiftKit.swift")
@@ -1152,20 +1152,20 @@ def main():
         sys.exit(1)
     src_dir, app, bundle = pos[0], pos[1], pos[2]
     if not os.path.isdir(src_dir):
-        print("ERRO: diretorio nao encontrado:", src_dir)
+        print("ERROR: directory not found:", src_dir)
         sys.exit(1)
 
     log = []
-    print(f"==> portando {os.path.basename(src_dir)} -> {app} ({bundle})")
-    print("==> passo 1: coletando fontes Swift (iOS target)")
+    print(f"==> porting {os.path.basename(src_dir)} -> {app} ({bundle})")
+    print("==> step 1: collecting Swift sources (iOS target)")
     files = collect(src_dir)
     for d in extra_dirs:
         if not os.path.isdir(d):
-            print("ERRO: --extra dir nao encontrado:", d)
+            print("ERROR: --extra dir not found:", d)
             sys.exit(1)
         files += collect(d)
     if not files:
-        print("ERRO: nenhum .swift encontrado em", src_dir)
+        print("ERROR: no .swift found in", src_dir)
         sys.exit(1)
     if exclude:
         files = [f for f in files if os.path.basename(f) not in exclude]
@@ -1174,8 +1174,8 @@ def main():
         print("   + " + os.path.relpath(f, src_dir) if f.startswith(src_dir)
               else "   + " + f)
 
-    print("==> passo 2: copiando para area de trabalho e adaptando")
-    # trabalha numa COPIA — o repo original do projeto nunca e editado
+    print("==> step 2: copying to the work area and adapting")
+    # work on a COPY — the project's original repo is never edited
     port_root = os.environ.get("ISB_PORT_WORK_ROOT", "/tmp")
     work = os.path.join(port_root, "port-" + app)
     shutil.rmtree(work, ignore_errors=True)
@@ -1188,32 +1188,32 @@ def main():
         base = os.path.basename(f)
         if " " in base:
             base = base.replace(" ", "_")
-            log_append(log, "espaco no nome renomeado: " + base)
+            log_append(log, "space in name renamed: " + base)
         dest = os.path.join(work, base)
         if base in seen:
-            # colisao de basename (build-pure-ui.sh achata os paths):
-            # prefixa com o nome do diretorio pai
+            # basename collision (build-pure-ui.sh flattens the paths):
+            # prefix with the parent directory name
             base = os.path.basename(os.path.dirname(f)) + "_" + base
             dest = os.path.join(work, base)
-            log_append(log, "basename duplicado renomeado: " + base)
+            log_append(log, "duplicate basename renamed: " + base)
         seen[base] = f
         merge_by_dir.orig_dirs[base] = dep_root(f, src_dir)
         merge_by_dir.orig_subdirs[base] = os.path.basename(os.path.dirname(f))
         shutil.copy(f, dest)
         srcs.append(dest)
 
-    # PureSwiftKit entra no build (a menos que --no-kit: o kit importa UIKit e
-    # pode quebrar com tipos Foundation em modulos grandes — usar --no-kit
-    # quando o app nao usa os helpers cg*/FS do kit)
+    # PureSwiftKit enters the build (unless --no-kit: the kit imports UIKit and
+    # can break with Foundation types in large modules — use --no-kit
+    # when the app does not use the kit's cg*/FS helpers)
     if not no_kit:
         kit = os.path.join(work, "PureSwiftKit.swift")
         shutil.copy(KIT, kit)
         srcs.append(kit)
-        print("   + PureSwiftKit.swift incluido (helpers de degradacoes)")
+        print("   + PureSwiftKit.swift included (helpers for degradations)")
     else:
-        print("   + --no-kit: PureSwiftKit NAO incluido")
+        print("   + --no-kit: PureSwiftKit NOT included")
 
-    # strip de imports de modulos que serao compilados juntos (1 modulo unico)
+    # strip imports of modules that will be compiled together (1 single module)
     if strip_mods:
         n_stripped = 0
         for f in srcs:
@@ -1225,10 +1225,10 @@ def main():
             if s2 != s:
                 write(f, s2)
                 n_stripped += 1
-        print(f"   + imports de {len(strip_mods)} modulos unificados removidos "
-              f"em {n_stripped} arquivos")
+        print(f"   + imports of {len(strip_mods)} unified modules removed "
+              f"in {n_stripped} files")
 
-    # adaptacoes na copia
+    # adaptations on the copy
     for f in srcs:
         if os.path.basename(f) == "PureSwiftKit.swift":
             continue
@@ -1243,12 +1243,12 @@ def main():
                 "ISBDebugRuntime.returnBundleID = \"%s\"\n\nUIApplicationMain(CommandLine.argc," % stikdebug_bundle_id,
                 1)
             write(entry, es)
-            log_append(log, "debug: bundle ID de retorno StikDebug configurado como "
+            log_append(log, "debug: StikDebug return bundle ID set to "
                             + stikdebug_bundle_id)
 
-    # lifecycle de cena: o storyboard nao compila (sem ibtool) — o willConnectTo
-    # precisa criar a janela em codigo. Detecta SceneDelegate e guarda a classe
-    # para o UIApplicationSceneManifest (Info.plist, passo 3.5).
+    # scene lifecycle: the storyboard does not compile (no ibtool) — willConnectTo
+    # must create the window in code. Detects SceneDelegate and stores the class
+    # for UIApplicationSceneManifest (Info.plist, step 3.5).
     scene_class = None
     for f in srcs:
         if os.path.basename(f) in ("PureSwiftKit.swift", "main.swift"):
@@ -1266,9 +1266,9 @@ def main():
             ]
             story = next((p for p in story_candidates if os.path.exists(p)), None)
             if story is None:
-                # Alguns repos mantem o target Swift numa subpasta, mas os
-                # recursos/storyboards na raiz do projeto. Procurar apenas
-                # nessa raiz e no pai evita varrer o filesystem inteiro.
+                # Some repos keep the Swift target in a subfolder, but the
+                # resources/storyboards at the project root. Searching only
+                # that root and its parent avoids scanning the entire filesystem.
                 for search_root in (src_dir, os.path.dirname(src_dir)):
                     if not os.path.isdir(search_root):
                         continue
@@ -1279,60 +1279,60 @@ def main():
                     if story:
                         break
             if story:
-                log_append(log, "scene: storyboard encontrado em " + story)
+                log_append(log, "scene: storyboard found at " + story)
             convert_scene_delegate(f, story, log, debug=debug)
             if debug:
-                log_append(log, "debug: overlay instalado explicitamente apos makeKeyAndVisible")
+                log_append(log, "debug: overlay explicitly installed after makeKeyAndVisible")
             scene_class = app + "." + m.group(1)
 
-    # estabilidade: swift-frontend no iSH quebra com ~45+ arquivos por
-    # compilacao (modulos corrompidos -> tipos somem). Merge por modulo.
+    # stability: swift-frontend on iSH breaks with ~45+ files per
+    # compilation (corrupted modules -> types disappear). Merge per module.
     if merge_mode != "none" and (len(srcs) > 45 or merge_mode == "subdir"):
         merge_by_dir.mode = merge_mode
         srcs = merge_by_dir(srcs, work, log, entry)
-        print(f"   + {len(files) + 1} fontes mergeados em {len(srcs)} arquivos "
-              f"(modo {merge_mode})")
+        print(f"   + {len(files) + 1} sources merged into {len(srcs)} files "
+              f"(mode {merge_mode})")
 
-    print("==> passo 3: loop de build reativo (max " + str(MAX_ITER) + " iteracoes)")
+    print("==> step 3: reactive build loop (max " + str(MAX_ITER) + " iterations)")
     rc = None
     ghost_retries = 0
     kit_used = not no_kit
     for it in range(1, MAX_ITER + 1):
-        print(f"   --- iteracao {it} ---")
+        print(f"   --- iteration {it} ---")
         rc, out = run_build(app, bundle, srcs, debug=debug)
         if rc == 0:
             print("   BUILD OK")
             break
         if rc < 0:
-            # morto por sinal (OOM do iOS / crash do frontend): retry
+            # killed by signal (iOS OOM / frontend crash): retry
             ghost_retries += 1
-            print(f"   compilador morto (rc={rc}, provavel OOM), retry "
+            print(f"   compiler killed (rc={rc}, probably OOM), retry "
                   f"{ghost_retries}/8...")
             if ghost_retries >= 8:
-                print("   muitos retries de OOM — abortando")
+                print("   too many OOM retries — aborting")
                 sys.exit(1)
             continue
         fixed, ghost = fix_known_errors(work, out, log)
         if fixed:
-            print("   fixes aplicados, rebuildando...")
+            print("   fixes applied, rebuilding...")
             continue
         if ghost and ghost_retries < 5:
-            # erros fantasma (tipo some com import presente): retry do build
+            # ghost errors (type disappears with the import present): retry the build
             ghost_retries += 1
-            print(f"   erros fantasma (modulos carregados de forma instavel), "
+            print(f"   ghost errors (modules loaded unstably), "
                   f"retry {ghost_retries}/5...")
             continue
         if ghost and kit_used:
-            # o fantasma PERSISTE apos os retries: nao e transiente — o
-            # PureSwiftKit (limiar de declaracoes) quebrou tipos Foundation
-            # no modulo de forma DETERMINISTICA (medido 2026-08-22).
+            # the ghost PERSISTS after the retries: it is not transient — the
+            # PureSwiftKit (declaration threshold) broke Foundation types
+            # in the module DETERMINISTICALLY (measured 2026-08-22).
             kit_used = False
             srcs = [f for f in srcs if os.path.basename(f) != "PureSwiftKit.swift"]
             srcs.append(write_minimal_kit(srcs, work, log))
             ghost_retries = 0
-            print("   kit removido -> helpers minimos locais; rebuildando...")
+            print("   kit removed -> local minimal helpers; rebuilding...")
             continue
-        print("   ERROS NAO AUTOMATIZAVEIS:")
+        print("   NON-AUTOMATABLE ERRORS:")
         for line in out.splitlines():
             if "error:" in line:
                 print("     " + line.strip())
@@ -1341,10 +1341,10 @@ def main():
     if rc != 0:
         sys.exit(1)
 
-    print("==> passo 3.5: recursos + manifest no IPA")
+    print("==> step 3.5: resources + manifest in the IPA")
     post_process_ipa(app, resources, scene_class, log, debug=debug)
 
-    print("==> passo 4: validando IPA")
+    print("==> step 4: validating IPA")
     r = subprocess.run(["sh", VALIDATE_SH, os.path.join(WORKSPACE, app + ".ipa")],
                        capture_output=True, text=True)
     out = r.stdout
@@ -1357,17 +1357,17 @@ def main():
     report = os.path.join(WORKSPACE, app + "-port.md")
     with open(report, "w", encoding="utf-8") as f:
         f.write("# Porting report: " + app + "\n\n")
-        f.write("- Fonte: `" + src_dir + "`\n")
+        f.write("- Source: `" + src_dir + "`\n")
         f.write("- IPA: `" + os.path.join(WORKSPACE, app + ".ipa") + "`\n")
-        f.write("- Validacao: " + ("OK" if ok else "FALHOU") + "\n\n")
-        f.write("## Adaptacoes automaticas\n\n")
+        f.write("- Validation: " + ("OK" if ok else "FAILED") + "\n\n")
+        f.write("## Automatic adaptations\n\n")
         for e in log:
             f.write("- " + e + "\n")
-    print("==> relatorio: " + report)
+    print("==> report: " + report)
     if not ok:
-        print("!!! validacao falhou — veja " + report)
+        print("!!! validation failed — see " + report)
         sys.exit(1)
-    print("==> PRONTO")
+    print("==> DONE")
 
 
 if __name__ == "__main__":

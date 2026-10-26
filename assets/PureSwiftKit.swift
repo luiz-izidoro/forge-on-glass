@@ -1,31 +1,31 @@
-// PureSwiftKit.swift — camada de compatibilidade para apps 100% Swift no iSH.
+// PureSwiftKit.swift — compatibility layer for 100% Swift apps on iSH.
 //
-// Reúne workarounds mantidos pelo perfil arm64e/PAC.
+// Collects workarounds maintained by the arm64e/PAC profile.
 //
-// USO: adicione este arquivo ao build junto dos seus fontes:
+// USAGE: add this file to the build along with your sources:
 //   build-pure-ui.sh MeuApp com.x.y "Views.swift PureSwiftKit.swift main.swift"
 //
-// ORDEM DOS IMPORTS (regra nº 0 — vale para TODOS os seus arquivos):
-//   import Foundation      // sempre 1º
-//   import SwiftUI         // se usar
+// IMPORT ORDER (rule #0 — applies to ALL your files):
+//   import Foundation      // always 1st
+//   import SwiftUI         // if used
 //   import UIKit
-//   import CoreText        // p/ NSAttributedString.Key
-//   import Dispatch        // sempre DEPOIS de UIKit
+//   import CoreText        // for NSAttributedString.Key
+//   import Dispatch        // always AFTER UIKit
 import Foundation
 import UIKit
 import CoreText
 import Dispatch
 
 // ============================================================== BUG 3 =======
-// `TimeInterval` sai de escopo quando UIKit está importado. `Double` é o
-// mesmo tipo — use este alias para manter a intenção legível.
+// `TimeInterval` goes out of scope when UIKit is imported. `Double` is the
+// same type — use this alias to keep the intent readable.
 public typealias Seconds = Double
 
-// ======================================================== BUGS 5 e CGRect ===
-// Os membros de conveniência de CGRect/CGPoint/CGSize vivem numa
-// `extension CoreFoundation.CGRect` marcada @_alwaysEmitIntoClient e ficam
-// invisíveis. As funções C equivalentes funcionam — é o que usamos aqui.
-// VALIDADO EM RUNTIME: TortureTest 37/37 no device.
+// ======================================================== BUGS 5 and CGRect ===
+// The convenience members of CGRect/CGPoint/CGSize live in an
+// `extension CoreFoundation.CGRect` marked @_alwaysEmitIntoClient and remain
+// invisible. The equivalent C functions work — that is what we use here.
+// VALIDATED AT RUNTIME: TortureTest 37/37 on device.
 
 @inline(__always)
 public func cgRect(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> CGRect {
@@ -37,12 +37,12 @@ public func cgRect(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> CGRect
 
 @inline(__always)
 public func cgPoint(_ x: Double, _ y: Double) -> CGPoint {
-    return CGPoint(x: CGFloat(x), y: CGFloat(y))   // este init funciona
+    return CGPoint(x: CGFloat(x), y: CGFloat(y))   // this init works
 }
 
 @inline(__always)
 public func cgSize(_ w: Double, _ h: Double) -> CGSize {
-    return CGSize(width: CGFloat(w), height: CGFloat(h))  // idem
+    return CGSize(width: CGFloat(w), height: CGFloat(h))  // same
 }
 
 public let cgRectZero = CGRectZero
@@ -59,7 +59,7 @@ extension CGRect {
     public var cgMinY: CGFloat { CGRectGetMinY(self) }
     public var cgMidY: CGFloat { CGRectGetMidY(self) }
     public var cgMaxY: CGFloat { CGRectGetMaxY(self) }
-    /// BUG 5: `.width`/`.height` também não existem.
+    /// BUG 5: `.width`/`.height` do not exist either.
     public var cgWidth: CGFloat { CGRectGetWidth(self) }
     public var cgHeight: CGFloat { CGRectGetHeight(self) }
     public var cgIsEmpty: Bool { CGRectIsEmpty(self) }
@@ -105,9 +105,9 @@ public func cgAffineRotate(_ radians: Double) -> CGAffineTransform {
 }
 
 // ============================================================== BUG 2 =======
-// CGContext usa a API de instância moderna neste SDK patchado. As funções C
-// equivalentes são marcadas unavailable e não devem ser usadas aqui.
-// (Funcionam no overlay: setFillColor, fill, setStrokeColor, setLineWidth,
+// CGContext uses the modern instance API in this patched SDK. The equivalent
+// C functions are marked unavailable and must not be used here.
+// (They work in the overlay: setFillColor, fill, setStrokeColor, setLineWidth,
 //  setLineCap, strokePath, beginPath, fillEllipse.)
 
 extension CGContext {
@@ -119,7 +119,7 @@ extension CGContext {
         addArc(center: c, radius: CGFloat(r), startAngle: CGFloat(a0),
                endAngle: CGFloat(a1), clockwise: clockwise)
     }
-    /// Linha tracejada. `lengths` vazio = volta ao traço sólido.
+    /// Dashed line. Empty `lengths` = back to a solid stroke.
     public func cgSetLineDash(phase: Double = 0, lengths: [Double]) {
         setLineDash(phase: CGFloat(phase), lengths: lengths.map { CGFloat($0) })
     }
@@ -131,7 +131,7 @@ extension CGContext {
 }
 
 // ============================================================== BUG 6 =======
-// UIEdgeInsetsMake não existe; o init funciona. Helper por simetria.
+// UIEdgeInsetsMake does not exist; the init works. Helper for symmetry.
 @inline(__always)
 public func edgeInsets(_ top: Double, _ left: Double,
                        _ bottom: Double, _ right: Double) -> UIEdgeInsets {
@@ -140,17 +140,17 @@ public func edgeInsets(_ top: Double, _ left: Double,
 }
 
 // ============================================================== BUG 7 =======
-// O closure do DiffableDataSource entrega `IndexPath`, mas
-// `dequeueReusableCell(withReuseIdentifier:for:)` espera `NSIndexPath`.
-// VALIDADO EM RUNTIME (TortureTest: "numberOfItems via UIKit = 2").
+// The DiffableDataSource closure delivers `IndexPath`, but
+// `dequeueReusableCell(withReuseIdentifier:for:)` expects `NSIndexPath`.
+// VALIDATED AT RUNTIME (TortureTest: "numberOfItems via UIKit = 2").
 //
-// ⚠️ SUTILEZA MEDIDA: a forma correta MUDA conforme o contexto —
-//   • dentro de `extension`/método .......... SEM  `as IndexPath`
-//   • em closure inline no corpo de função .. COM  `as IndexPath`
-// Use os helpers abaixo e não pense mais nisso.
+// ⚠️ MEASURED SUBTLETY: the correct form CHANGES with context —
+//   • inside `extension`/method .......... WITHOUT `as IndexPath`
+//   • in an inline closure in a function body .. WITH `as IndexPath`
+// Use the helpers below and stop thinking about it.
 
 extension UICollectionView {
-    /// Dequeue seguro a partir do IndexPath entregue pelo cellProvider.
+    /// Safe dequeue from the IndexPath delivered by the cellProvider.
     public func cgDequeueCell(_ identifier: String,
                               _ ip: IndexPath) -> UICollectionViewCell {
         return dequeueReusableCell(
@@ -169,9 +169,9 @@ extension UITableView {
 }
 
 // ============================================================== BUG 4 =======
-// FileManager fica instável com UIKit no escopo (o Accessibility reexporta
-// NSFileManager de forma diferente) e a overload URL-based do enumerator some.
-// Estes helpers usam SEMPRE as APIs baseadas em path, que são confiáveis.
+// FileManager becomes unstable with UIKit in scope (Accessibility reexports
+// NSFileManager differently) and the URL-based overload of the enumerator disappears.
+// These helpers ALWAYS use the path-based APIs, which are reliable.
 
 public enum FS {
     public static var documentsPath: String {
@@ -199,8 +199,8 @@ public enum FS {
         } catch { return false }
     }
 
-    /// Lista recursiva. Usa `enumerator(atPath:)` — a versão URL-based some
-    /// quando UIKit está importado (BUG 4).
+    /// Recursive listing. Uses `enumerator(atPath:)` — the URL-based version
+    /// disappears when UIKit is imported (BUG 4).
     public static func listRecursive(_ path: String,
                                      suffix: String? = nil) -> [String] {
         guard let e = FileManager.default.enumerator(atPath: path) else { return [] }

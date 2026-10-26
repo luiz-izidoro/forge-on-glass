@@ -1,23 +1,23 @@
-// PlatformVersionShim.swift — fornece `__isPlatformVersionAtLeast`.
+// PlatformVersionShim.swift — provides `__isPlatformVersionAtLeast`.
 //
-// POR QUE (medido 2026-08-22): qualquer `if #available(iOS X, *)` no codigo
-// (ou vindo de uma dependencia) gera uma chamada a
-// `_$ss31_stdlib_isOSVersionAtLeast...` que por sua vez chama o builtin do
-// compiler-rt `___isPlatformVersionAtLeast`. Esse simbolo vive em
-// `libclang_rt.ios.a`, que so existe no toolchain da Apple — o toolchain
-// swift.org para Linux nao traz a variante iOS. Resultado no link:
+// WHY (measured 2026-08-22): any `if #available(iOS X, *)` in the code
+// (or coming from a dependency) generates a call to
+// `_$ss31_stdlib_isOSVersionAtLeast...` which in turn calls the compiler-rt
+// builtin `___isPlatformVersionAtLeast`. That symbol lives in
+// `libclang_rt.ios.a`, which only exists in Apple's toolchain — the
+// swift.org toolchain for Linux does not ship the iOS variant. Result at link time:
 //
 //   ld64.lld: error: undefined symbol: ___isPlatformVersionAtLeast
 //
-// Este shim implementa o builtin em Swift puro consultando o proprio sistema
-// via ProcessInfo, o que da o comportamento CORRETO em runtime (nao e' um
-// stub que sempre diz "sim").
+// This shim implements the builtin in pure Swift by querying the system
+// itself via ProcessInfo, which gives the CORRECT runtime behavior (it is not
+// a stub that always says "yes").
 //
-// Assinatura C (compiler-rt):
+// C signature (compiler-rt):
 //   int32_t __isPlatformVersionAtLeast(uint32_t Platform, uint32_t Major,
 //                                      uint32_t Minor, uint32_t Subminor)
 //
-// Inclua este arquivo no build sempre que o link reclamar do simbolo.
+// Include this file in the build whenever the link complains about the symbol.
 import Foundation
 
 @_cdecl("__isPlatformVersionAtLeast")
@@ -37,7 +37,7 @@ public func __isPlatformVersionAtLeast(_ platform: UInt32,
     return curPatch >= wantPatch ? 1 : 0
 }
 
-// Variante com "device version" usada por alguns alvos (mesma semantica).
+// Variant with "device version" used by some targets (same semantics).
 @_cdecl("__isOSVersionAtLeast")
 public func __isOSVersionAtLeast(_ major: Int32, _ minor: Int32, _ subminor: Int32) -> Int32 {
     return __isPlatformVersionAtLeast(2, UInt32(max(0, major)),

@@ -1,24 +1,24 @@
 #!/bin/sh
-# link-ipa.sh — linka, assina e empacota objetos Swift.
+# link-ipa.sh — links, signs and packages Swift objects.
 # Canonical arm64e.v1/PAC linker comes from profile.sh.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
-# POR QUE ISSO EXISTE:
-#   build-parallel.py compila arquivo-a-arquivo (-primary-file) e entrega .o,
-#   mas nao linkava nada: a documentacao mandava montar o ld64.lld a mao.
-#   Este script fecha esse caminho e e' usado por build-pure-ui.sh --primary-file.
+# WHY THIS EXISTS:
+#   build-parallel.py compiles file-by-file (-primary-file) and emits .o,
+#   but it did not link anything: the documentation said to assemble ld64.lld
+#   by hand. This script closes that gap and is used by build-pure-ui.sh --primary-file.
 #
-# Uso:
+# Usage:
 #   ./link-ipa.sh <AppName> <BundleID> <objdir> [--debug]
 #                 [--resources DIR] [--main-obj NAME] [--plist-extra XML]
 #
-# Saida: /var/minis/workspace/<AppName>.ipa
+# Output: /var/minis/workspace/<AppName>.ipa
 set -e
 ISB_WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
-APP="${1:?uso: $0 <AppName> <BundleID> <objdir> [--debug] [--resources DIR]}"
-BUNDLE="${2:?falta o bundle id}"
-OBJDIR="${3:?falta o diretorio com os .o}"
+APP="${1:?usage: $0 <AppName> <BundleID> <objdir> [--debug] [--resources DIR]}"
+BUNDLE="${2:?missing the bundle id}"
+OBJDIR="${3:?missing the directory with the .o files}"
 shift 3
 
 DEBUG=0
@@ -45,7 +45,7 @@ while [ "$#" -gt 0 ]; do
       if [ "$EXTRA_MODE" = "obj" ]; then EXTRA_OBJ_LIST="$EXTRA_OBJ_LIST $1"
       elif [ "$EXTRA_MODE" = "framework" ]; then EXTRA_FRAMEWORK_LIST="$EXTRA_FRAMEWORK_LIST $1"
       elif [ "$EXTRA_MODE" = "weakframework" ]; then WEAK_FRAMEWORK_LIST="$WEAK_FRAMEWORK_LIST $1"
-      else echo "argumento desconhecido: $1"; exit 1
+      else echo "unknown argument: $1"; exit 1
       fi
       ;;
   esac
@@ -75,10 +75,10 @@ WORK=/tmp/link-$APP-$ISB_ARCH-$$
 OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
 rm -rf "$WORK" && mkdir -p "$WORK"
 
-# ORDEM DOS OBJETOS: o que contem o codigo top-level (UIApplicationMain) precisa
-# vir primeiro, senao o _main resultante pode ficar vazio.
+# OBJECT ORDER: the object containing top-level code (UIApplicationMain) must
+# come first, otherwise the resulting _main may be empty.
 MAINO="$OBJDIR/$MAINOBJ.o"
-[ -f "$MAINO" ] || { echo "objeto de entrada ausente: $MAINO"; exit 1; }
+[ -f "$MAINO" ] || { echo "entry object missing: $MAINO"; exit 1; }
 OBJS="$MAINO"
 for f in "$OBJDIR"/*.o; do
   [ "$f" = "$MAINO" ] && continue
@@ -86,10 +86,10 @@ for f in "$OBJDIR"/*.o; do
 done
 for f in $EXTRA_OBJ_LIST; do OBJS="$OBJS $f"; done
 nobj=$(echo $OBJS | wc -w)
-echo "==> linkando ($nobj objeto(s), entrada: $(basename "$MAINO"))"
+echo "==> linking ($nobj object(s), entry: $(basename "$MAINO"))"
 
-# UIKitCore: os simbolos Swift das classes GENERICAS do UIKit sao exportados
-# pelo documento do UIKitCore dentro do UIKit.tbd, que o lld nao percorre.
+# UIKitCore: the Swift symbols of GENERIC UIKit classes are exported
+# by the UIKitCore document inside UIKit.tbd, which lld does not traverse.
 EXTRAFW="${ISB_TOOLCHAIN_ROOT:-/opt/ios-toolchain}/extrafw"
 EXTRAFLAGS=""
 if [ "${ISB_USE_UIKITCORE:-1}" = "1" ] && [ -f "$EXTRAFW/UIKitCore.framework/UIKitCore.tbd" ]; then
@@ -118,7 +118,7 @@ PLATFORM_MIN=26.5
   -e _main \
   $OBJS -o "$WORK/$APP"
 
-echo "==> empacotando"
+echo "==> packaging"
 PAY="$WORK/Payload/$APP.app"
 mkdir -p "$PAY"
 cp "$WORK/$APP" "$PAY/$APP"
@@ -130,7 +130,7 @@ if [ -n "$RESDIR" ] && [ -d "$RESDIR" ]; then
     [ -f "$resource" ] || continue
     cat "$resource" > "$PAY/$(basename "$resource")"
   done
-  echo "    recursos copiados de $RESDIR"
+  echo "    resources copied from $RESDIR"
 fi
 
 STIK_QUERY=""
@@ -162,13 +162,13 @@ EOF
 # Optional post-link symbol stripping. It runs before signing and guards.
 if [ "${ISB_STRIP:-0}" = "1" ]; then
   llvm-strip -x "$PAY/$APP"
-  echo "    llvm-strip -x aplicado"
+  echo "    llvm-strip -x applied"
 elif [ "${ISB_STRIP:-0}" != "0" ]; then
-  echo "ISB_STRIP inválido: use 0 ou 1" >&2; exit 2
+  echo "ISB_STRIP invalid: use 0 or 1" >&2; exit 2
 fi
 
 if [ "$UNSIGNED" -eq 1 ]; then
-  echo "    (unsigned: LiveContainer/SideStore fara a assinatura)"
+  echo "    (unsigned: LiveContainer/SideStore will do the signing)"
 elif [ "$DEBUG" -eq 1 ]; then
   cat > "$WORK/debug-entitlements.plist" <<EOT
 <?xml version="1.0" encoding="UTF-8"?>
@@ -185,16 +185,16 @@ fi
 
 mkdir -p "$(dirname "$OUTPUT")" "$ISB_WORKSPACE"
 
-# GUARDA FINAL: o binario realmente inicia? (thunk ObjC do delegate + _main)
+# FINAL GUARD: does the binary actually start? (ObjC delegate thunk + _main)
 CE="$SKILL/scripts/check-entry.py"
 if [ -f "$CE" ]; then
   python3 "$CE" "$PAY/$APP" || {
     echo ""
-    echo "BUILD ABORTADO: o IPA seria gerado, mas o app nao iniciaria."
+    echo "BUILD ABORTED: the IPA would be generated, but the app would not start."
     exit 1
   }
 fi
 
 (cd "$WORK" && zip -qr "$OUTPUT" Payload)
-echo "==> pronto: $OUTPUT"
+echo "==> ready: $OUTPUT"
 ls -lh "$OUTPUT"

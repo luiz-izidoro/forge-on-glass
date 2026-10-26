@@ -3,13 +3,13 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 fail=0
-# Correspondencia em shell puro. Nao use `grep` aqui: nesta shell (iSH) o GNU
-# grep pode nao terminar, e estes gates sao justamente os que precisam rodar
-# de forma confiavel. `case` e POSIX e nao cria processo.
+# Pure-shell matching. Do not use `grep` here: in this shell (iSH) GNU
+# grep may not terminate, and these gates are exactly the ones that must run
+# reliably. `case` is POSIX and creates no process.
 contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
 for f in scripts/*.sh; do sh -n "$f" || fail=1; done
-# Checagem de sintaxe sem escrever bytecode: `py_compile` deixa `__pycache__/`
-# a cada execucao, artefato que voltava sempre e nao serve a nada aqui.
+# Syntax check without writing bytecode: `py_compile` leaves `__pycache__/`
+# after every run, an artifact that kept coming back and serves no purpose here.
 for _py in "$ROOT"/scripts/*.py; do
   python3 -c 'import ast,sys; ast.parse(open(sys.argv[1]).read())' "$_py" || fail=1
 done
@@ -46,13 +46,13 @@ done; then
 else
   fail=1
 fi
-# Varredura recursiva sem `grep`: percorre os .md e sinaliza as linhas que
-# contradizem a evidencia registrada.
+# Recursive scan without `grep`: walks the .md files and flags the lines that
+# contradict the recorded evidence.
 for _md in "$ROOT"/references/*.md; do
   [ -f "$_md" ] || continue
   while IFS= read -r _l; do
     case "$_l" in
-      *'ainda requer'*|*'S3 pendente'*) echo "evidence contradiction: $_md"; fail=1;;
+      *'still requires'*|*'S3 pending'*) echo "evidence contradiction: $_md"; fail=1;;
     esac
   done < "$_md"
 done

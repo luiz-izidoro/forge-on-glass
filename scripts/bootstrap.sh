@@ -53,7 +53,7 @@ if [ "$STEP" -ge 3 ] && [ "$STEP" -le 99 ]; then
   mkdir -p "$TOOLCHAIN" "$SYSROOT"
   tar xf "$ISB_SDK_ARCHIVE" -C "$SYSROOT"
   [ -d "$SDK" ] || {
-    echo "SDK extraído mas não encontrado em $SDK" >&2; exit 1;
+    echo "SDK extracted but not found at $SDK" >&2; exit 1;
   }
 fi
 if [ "$STEP" -ge 4 ] && [ "$STEP" -le 99 ]; then

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""build-parallel.py — compila um modulo Swift arquivo-a-arquivo com
-`-primary-file` e um limite de jobs simultaneos, depois entrega os .o.
+"""build-parallel.py — compiles a Swift module file-by-file with
+`-primary-file` and a limit of concurrent jobs, then delivers the .o files.
 
-POR QUE ISSO EXISTE (medido no iSH em 2026-08-22):
-  - whole-module (todos os arquivos num processo) TRAVA o type-checker em
-    modulos com genericos pesados (TCA): processo vivo, 0% CPU, sem .o apos
-    60+ min. O MESMO conjunto compila em ~2 min por arquivo com -primary-file.
-  - paralelismo alto -> OOM ("module file ... not found: Cannot allocate
-    memory"). Cada swift-frontend carrega ~90 pcm/swiftmodule. Limite seguro
-    medido: 3 jobs.
-  - erros de OOM sao FALSOS erros de compilacao: se a mensagem contiver
-    "Cannot allocate memory" o arquivo e' reenfileirado, nao reportado.
+WHY THIS EXISTS (measured on iSH on 2026-08-22):
+  - whole-module (all files in one process) HANGS the type-checker on
+    modules with heavy generics (TCA): process alive, 0% CPU, no .o after
+    60+ min. The SAME set compiles in ~2 min per file with -primary-file.
+  - high parallelism -> OOM ("module file ... not found: Cannot allocate
+    memory"). Each swift-frontend loads ~90 pcm/swiftmodule. Safe limit
+    measured: 3 jobs.
+  - OOM errors are FALSE compilation errors: if the message contains
+    "Cannot allocate memory" the file is requeued, not reported.
 
-Uso:
+Usage:
   python3 build-parallel.py --module NAME --src DIR --out OBJDIR
                             [--dep-module NAME=path] [--jobs 3]
                             [--parse-as-library] [--emit-module PATH]
@@ -23,7 +23,7 @@ import argparse, hashlib, os, subprocess, sys, time, glob
 ROOT = os.environ.get("ISB_SYSROOT", "/opt/isb/sysroot")
 ARCH = os.environ.get("ISB_ARCH", "arm64e")
 if ARCH != "arm64e":
-    raise SystemExit("ISB_ARCH descontinuado: somente arm64e.v1/PAC e suportado")
+    raise SystemExit("ISB_ARCH unsupported: only arm64e.v1/PAC is supported")
 TARGET = os.environ.get("ISB_TARGET", "arm64e-apple-ios26.5")
 CPU = os.environ.get("ISB_CPU", "apple-a12")
 SW = os.environ.get("ISB_SW", "/opt/swift6.3.3")
@@ -35,12 +35,12 @@ BIG = os.environ.get("ISB_MODULE_CACHE", "/var/tmp/isb-cache") + "/app-" + ARCH
 
 OOM_MARKERS = ("Cannot allocate memory", "out of memory", "Killed")
 
-# "Erros fantasma": o swift-frontend carrega os modulos de forma corrompida em
-# algumas execucoes (determinstico POR EXECUCAO, varia entre execucoes). O
-# sintoma e' um tipo/membro que existe deixar de resolver — tipicamente do
-# Dispatch (DispatchQueue vira Foundation.DispatchQueue sem os inits) ou de
-# membros estaticos declarados noutro arquivo do MESMO modulo.
-# Retry resolve; aplicar "fix" nesses erros so estraga o fonte.
+# "Ghost errors": swift-frontend loads the modules in corrupted form on
+# some runs (deterministic PER RUN, varies between runs). The
+# symptom is an existing type/member failing to resolve — typically from
+# Dispatch (DispatchQueue becomes Foundation.DispatchQueue without the inits) or from
+# static members declared in another file of the SAME module.
+# Retry fixes it; applying a "fix" to these errors only damages the source.
 GHOST_MARKERS = (
     "cannot infer contextual base in reference to member 'userInitiated'",
     "cannot infer contextual base in reference to member 'live'",
@@ -58,7 +58,7 @@ def module_flags():
     f = []
     for p in sorted(glob.glob(FB + "/swift_*.swiftmodule")):
         n = os.path.basename(p)[len("swift_"):-len(".swiftmodule")]
-        if n == "XPC":      # overlay Swift do XPC cria ciclo os<->XPC
+        if n == "XPC":      # the XPC Swift overlay creates an os<->XPC cycle
             continue
         f.append("-swift-module-file=%s=%s" % (n, p))
     for p in sorted(glob.glob(FB + "/clang_*.pcm")):
@@ -70,7 +70,7 @@ def module_flags():
 OPT_MODE = os.environ.get("ISB_OPT", "O")
 OPT_FLAGS = {"none": "-Onone", "O": "-O", "Osize": "-Osize"}
 if OPT_MODE not in OPT_FLAGS:
-    raise SystemExit("ISB_OPT invalido: %s (use none, O ou Osize)" % OPT_MODE)
+    raise SystemExit("ISB_OPT invalid: %s (use none, O or Osize)" % OPT_MODE)
 
 BASE = ["-frontend", "-target", TARGET, "-target-cpu", CPU, "-sdk", SDK,
         "-enable-objc-interop", "-swift-version", "5", OPT_FLAGS[OPT_MODE]]
@@ -86,15 +86,15 @@ BASE += ["-disable-implicit-swift-modules",
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--module", required=True)
-    ap.add_argument("--src", required=True, help="diretorio com os .swift")
-    ap.add_argument("--out", required=True, help="diretorio de saida dos .o")
+    ap.add_argument("--src", required=True, help="directory with the .swift files")
+    ap.add_argument("--out", required=True, help="output directory for the .o files")
     ap.add_argument("--dep-module", action="append", default=[],
-                    help="NAME=path.swiftmodule (repetivel)")
+                    help="NAME=path.swiftmodule (repeatable)")
     ap.add_argument("--extra-src", action="append", default=[])
     ap.add_argument("--jobs", type=int, default=3)
     ap.add_argument("--parse-as-library", action="store_true")
     ap.add_argument("--emit-module", default=None,
-                    help="path do .swiftmodule a emitir (passo extra, 1 processo)")
+                    help="path of the .swiftmodule to emit (extra step, 1 process)")
     ap.add_argument("--timeout", type=int, default=1800)
     ap.add_argument("--incremental", action="store_true",
                     help="reuse valid objects from --out using a content manifest")
@@ -104,9 +104,9 @@ def main():
     os.makedirs(BIG, exist_ok=True)
     srcs = sorted(glob.glob(os.path.join(a.src, "*.swift"))) + a.extra_src
     if not srcs:
-        print("nenhum .swift em", a.src); return 2
+        print("no .swift in", a.src); return 2
 
-    # main.swift PRIMEIRO (ordem afeta resolucao de tipos ObjC do Foundation)
+    # main.swift FIRST (order affects resolution of Foundation's ObjC types)
     mains = [s for s in srcs if os.path.basename(s) == "main.swift"]
     srcs = mains + [s for s in srcs if s not in mains]
 
@@ -145,7 +145,7 @@ def main():
                       if os.path.exists(os.path.join(a.out,
                                       os.path.splitext(os.path.basename(s))[0] + ".o"))}
             if cached:
-                print("incremental: reutilizando %d objeto(s)" % len(cached), flush=True)
+                print("incremental: reusing %d object(s)" % len(cached), flush=True)
         else:
             for old in glob.glob(os.path.join(a.out, "*.o")) + glob.glob(os.path.join(a.out, "*.err")):
                 os.unlink(old)
@@ -202,24 +202,24 @@ def main():
                 print("  [oom/race] %s -> retry %d" % (b, n), flush=True)
                 pending.append(s)
             elif ghost and n <= 6:
-                # modulo carregado corrompido nesta execucao -> so retry
-                print("  [fantasma] %s -> retry %d" % (b, n), flush=True)
+                # module loaded corrupted in this run -> retry only
+                print("  [ghost] %s -> retry %d" % (b, n), flush=True)
                 pending.append(s)
             elif "error:" in err:
                 msgs = sorted({l.split("error: ", 1)[1][:110]
                                for l in err.split("\n") if " error: " in l})
                 failed.append((b, "; ".join(msgs[:4])))
-                print("  [ERRO] %s: %s" % (b, msgs[0] if msgs else "?"), flush=True)
+                print("  [ERROR] %s: %s" % (b, msgs[0] if msgs else "?"), flush=True)
             elif n <= 4:
                 pending.append(s)
-                print("  [rc=%s sem erro] %s -> retry %d" % (rc, b, n), flush=True)
+                print("  [rc=%s without error] %s -> retry %d" % (rc, b, n), flush=True)
             else:
-                failed.append((b, "rc=%s sem diagnostico" % rc))
+                failed.append((b, "rc=%s without diagnostics" % rc))
 
-    print("\n== %d ok, %d falhas (%.0fs) ==" % (len(done), len(failed),
+    print("\n== %d ok, %d failures (%.0fs) ==" % (len(done), len(failed),
                                                 time.time() - t_start))
     for b, m in failed:
-        print("  FALHOU %s: %s" % (b, m))
+        print("  FAILED %s: %s" % (b, m))
     if failed:
         return 1
 
@@ -229,18 +229,18 @@ def main():
             f.write(key + "\n")
         os.replace(tmp_manifest, manifest)
 
-    # GUARDA: warnings que produzem um app que compila e NAO funciona.
-    # (assinatura de delegate divergente do .swiftinterface patchado ->
-    #  o framework nunca chama o metodo -> TELA PRETA no device)
+    # GUARD: warnings that produce an app that compiles and does NOT work.
+    # (delegate signature diverging from the patched .swiftinterface ->
+    #  the framework never calls the method -> BLACK SCREEN on device)
     cw = os.path.join(os.path.dirname(os.path.abspath(__file__)), "check-warnings.py")
     if os.path.exists(cw):
         r = subprocess.call([sys.executable, cw, "--dir", a.out])
         if r != 0:
-            print("\nBUILD ABORTADO: warnings fatais (o app abriria com tela preta).")
+            print("\nBUILD ABORTED: fatal warnings (the app would open with a black screen).")
             return 1
 
     if a.emit_module:
-        print("== emitindo %s ==" % a.emit_module)
+        print("== emitting %s ==" % a.emit_module)
         c = [SF] + BASE + ["-emit-module", "-module-name", a.module]
         if a.parse_as_library:
             c.append("-parse-as-library")

@@ -4,17 +4,17 @@
 set -eu
 MODE=dry-run
 OLDER=1
-usage(){ echo "uso: $0 [--dry-run|--apply] [--older-than N]" >&2; exit 2; }
+usage(){ echo "usage: $0 [--dry-run|--apply] [--older-than N]" >&2; exit 2; }
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --dry-run) MODE=dry-run ;;
     --apply) MODE=apply ;;
-    --older-than) shift; OLDER=${1:?falta N} ;;
+    --older-than) shift; OLDER=${1:?missing N} ;;
     *) usage ;;
   esac
   shift
 done
-case "$OLDER" in ''|*[!0-9]*) echo '--older-than exige inteiro >= 0' >&2; exit 2;; esac
+case "$OLDER" in ''|*[!0-9]*) echo '--older-than requires an integer >= 0' >&2; exit 2;; esac
 MINUTES=$((OLDER * 1440))
 # A worker can have an open file without its path appearing in argv. Be
 # conservative: while any known builder worker exists, skip every target.

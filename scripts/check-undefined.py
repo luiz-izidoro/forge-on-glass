@@ -35,7 +35,7 @@ def sdk_exports():
         files += glob.glob(p, recursive=True)
     toolchain = os.environ.get("ISB_TOOLCHAIN_ROOT", "/opt/ios-toolchain")
     files += glob.glob(os.path.join(toolchain, "extrafw", "**", "*.tbd"), recursive=True)
-    print("lendo %d .tbd ..." % len(files), flush=True)
+    print("reading %d .tbd ..." % len(files), flush=True)
     sym_re = re.compile(r"[A-Za-z_$][A-Za-z0-9_$.]+")
     for path in files:
         try:
@@ -57,9 +57,9 @@ def main():
         return 2
     binary = sys.argv[1]
     und = undefined_symbols(binary)
-    print("simbolos indefinidos: %d" % len(und))
+    print("undefined symbols: %d" % len(und))
     exp = sdk_exports()
-    print("simbolos exportados pelo SDK: %d" % len(exp))
+    print("symbols exported by the SDK: %d" % len(exp))
 
     def known(s):
         if s in exp:
@@ -72,11 +72,11 @@ def main():
         return s in ("dyld_stub_binder", "__mh_execute_header")
 
     missing = sorted(s for s in und if not known(s))
-    print("\n=== FALTANDO NO SDK: %d ===" % len(missing))
+    print("\n=== MISSING FROM SDK: %d ===" % len(missing))
     for s in missing[:200]:
         print("  " + s)
     if len(missing) > 200:
-        print("  ... e mais %d" % (len(missing) - 200))
+        print("  ... and %d more" % (len(missing) - 200))
     return 1 if missing else 0
 
 

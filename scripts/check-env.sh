@@ -3,7 +3,7 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 ARCH="${ISB_ARCH:-arm64e}"
-[ "$ARCH" = arm64e ] || { echo "ISB_ARCH descontinuado: somente arm64e.v1/PAC e suportado" >&2; exit 2; }
+[ "$ARCH" = arm64e ] || { echo "ISB_ARCH unsupported: only arm64e.v1/PAC is supported" >&2; exit 2; }
 SYSROOT=${ISB_SYSROOT:-/opt/isb/sysroot}
 SWROOT=${ISB_SW_ROOT:-${ISB_SW:-/opt/swift6.3.3}}
 TOOLCHAIN=${ISB_TOOLCHAIN_ROOT:-/opt/ios-toolchain}

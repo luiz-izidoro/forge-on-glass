@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/luiz-izidoro/forge-on-glass/actions/workflows/static.yml"><img alt="CI" src="https://github.com/luiz-izidoro/forge-on-glass/actions/workflows/static.yml/badge.svg"></a>
+  <a href="https://github.com/luiz-izidoro/forge-on-glass/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/luiz-izidoro/forge-on-glass/actions/workflows/codeql.yml/badge.svg"></a>
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg">
   <img alt="Platform: iSH and Alpine" src="https://img.shields.io/badge/platform-iSH%20%7C%20Alpine-0b0f14">
   <img alt="Swift 6.3.3" src="https://img.shields.io/badge/swift-6.3.3-F05138">
@@ -326,6 +327,8 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 | Document | Contents |
 |---|---|
 | [`REPRODUCE-FROM-ZERO.md`](REPRODUCE-FROM-ZERO.md) | Full clean-environment path. |
+| [`references/README.md`](references/README.md) | Reference index and reading order. |
+| [`scripts/README.md`](scripts/README.md) | Script index grouped by task. |
 | [`references/BOOTSTRAP.md`](references/BOOTSTRAP.md) | SDK, Swift and glibc staging details. |
 | [`references/PROJECT-GUIDE.md`](references/PROJECT-GUIDE.md) | Internal and external project workflows. |
 | [`references/BEST-PRACTICES.md`](references/BEST-PRACTICES.md) | Build and validation practice. |
@@ -341,10 +344,12 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 | [`references/PUBLISHING.md`](references/PUBLISHING.md) | Copyright and publication analysis. |
 | [`SECURITY.md`](SECURITY.md) | Security policy. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution rules. |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Community expectations and enforcement. |
 
 ## Contributing
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md),
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) and
 [`references/PROJECT-GOVERNANCE.md`](references/PROJECT-GOVERNANCE.md) before changing build logic.
 Run the release gate before opening a pull request:
 

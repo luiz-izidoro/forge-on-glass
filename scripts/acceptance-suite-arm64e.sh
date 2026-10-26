@@ -26,8 +26,8 @@ esac
 python3 "$SKILL/scripts/check-module-cache.py" \
   "${ISB_FOUNDATION_BUILD:-/opt/ios-toolchain/foundation-build633-arm64e}" || fail "module cache"
 for f in "$SKILL"/scripts/build-pure-ui.sh "$SKILL"/scripts/link-ipa.sh; do
-  # Mesma semantica de `(^|[[:space:]])(ssh|scp)([[:space:]]|$)|link-remote-arm64e`
-  # sem `grep`: a linha e' ladeada por espacos para cobrir inicio/fim.
+  # Same semantics as `(^|[[:space:]])(ssh|scp)([[:space:]]|$)|link-remote-arm64e`
+  # without `grep`: the line is padded with spaces to cover start/end.
   remote=0
   while IFS= read -r _l; do
     case " $_l " in

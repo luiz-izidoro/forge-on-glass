@@ -6,11 +6,11 @@ Apple SDK files, the PAC linker or the module cache on iSH. Stages 4/5 are an
 explicit external Linux/VM handoff, not an automatic rebuild of the whole
 Darwin toolchain.
 
-> **Operação excepcional:** só use se o toolchain/cache em `/opt` estiver
-> ausente ou comprovadamente inválido. Para um projeto normal, comece em
-> [`BEST-PRACTICES.md`](BEST-PRACTICES.md), rode `check-env.sh` e não recompile
-> módulos que já estão válidos. Registre versões, hashes e origem de cada
-> artefato; nunca misture caches de compiladores/triplas.
+> **Exceptional operation:** use this only if the toolchain/cache under `/opt` is
+> absent or demonstrably invalid. For a normal project, start at
+> [`BEST-PRACTICES.md`](BEST-PRACTICES.md), run `check-env.sh`, and do not
+> recompile modules that are already valid. Record versions, hashes, and the
+> origin of each artifact; never mix caches from different compilers/triples.
 
 Use this only if the toolchain under `/opt` is gone. Ordered, with the Mac step
 that must happen once. Every download URL/version was verified working in the

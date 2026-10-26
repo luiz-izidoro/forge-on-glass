@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""check-debug-ipa.py — valida o pacote produzido com --debug.
+"""check-debug-ipa.py — validates the package produced with --debug.
 
-Confere as três propriedades que StikDebug/LiveContainer precisam:
-get-task-allow, consulta ao esquema stikdebug e instrumentacao do builder.
-Não tenta anexar ao processo: isso é responsabilidade do StikDebug no device.
+Checks the three properties StikDebug/LiveContainer need:
+get-task-allow, a query to the stikdebug scheme, and builder instrumentation.
+It does not try to attach to the process: that is StikDebug's responsibility on the device.
 """
 import plistlib, re, subprocess, sys, tempfile, zipfile
 from pathlib import Path
 
 if len(sys.argv) != 2:
-    print("uso: check-debug-ipa.py <App.ipa>"); raise SystemExit(2)
+    print("usage: check-debug-ipa.py <App.ipa>"); raise SystemExit(2)
 ipa = Path(sys.argv[1])
 td = Path(tempfile.mkdtemp(prefix="isb-debug-check-"))
 try:
     with zipfile.ZipFile(ipa) as z: z.extractall(td)
     apps = list((td / "Payload").glob("*.app"))
-    if not apps: raise RuntimeError("Payload/*.app ausente")
+    if not apps: raise RuntimeError("Payload/*.app missing")
     app = apps[0]
     exe = app / app.name.removesuffix(".app")
     pl = plistlib.loads((app / "Info.plist").read_bytes())

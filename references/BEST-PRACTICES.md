@@ -1,38 +1,38 @@
-# Melhores práticas normativas — forge-on-glass
+# Normative best practices — forge-on-glass
 
-> **Fonte normativa.** Este documento consolida as decisões que devem orientar
-> novos projetos e novas sessões. Um documento histórico pode explicar como uma
-> descoberta foi feita, mas não pode substituir estas regras. Estado consolidado
-> em 2026-08-29.
+> **Normative source.** This document consolidates the decisions that should guide
+> new projects and new sessions. A historical document may explain how a
+> discovery was made, but it cannot replace these rules. State consolidated
+> on 2026-08-29.
 
-## 1. Regra principal: declarar o nível de evidência
+## 1. Main rule: declare the evidence level
 
-Nunca use “funciona” sem dizer **onde** foi verificado. Use esta classificação:
+Never use “it works” without saying **where** it was verified. Use this classification:
 
-| Nível | Significado | Pode ser anunciado como |
+| Level | Meaning | Can be announced as |
 |---|---|---|
-| S0 | não compilado ou apenas hipótese | planejado/hipótese |
-| S1 | compilou | compilado |
-| S2 | IPA passou validações Mach-O, SDK, símbolos e assinatura | estruturalmente válido |
-| S3 | IPA nova abriu no device/LiveContainer | runtime validado naquele host/device |
-| S4 | fluxo funcional relevante foi exercitado no device | funcional no cenário testado |
+| S0 | not compiled or hypothesis only | planned/hypothesis |
+| S1 | compiled | compiled |
+| S2 | IPA passed Mach-O, SDK, symbol and signature validations | structurally valid |
+| S3 | new IPA opened on the device/LiveContainer | runtime validated on that host/device |
+| S4 | relevant functional flow was exercised on the device | functional in the tested scenario |
 
 `check-module-cache.py` validates required module names, Swift/Clang file magic,
 non-empty files, personal-path absence and arm64e/iOS 26.5 identity markers.
 `neutral_refs` is reported for diagnosis; the cache must be generated against
 the configured sysroot and architecture.
 
-A validação estrutural prova S2 somente quando todos os guards aplicáveis passam,
-incluindo `validate-ipa.sh`, `check-slice.py`, `check-entry.py`,
-`check-undefined.py`, weak-link e chained fixups. A assinatura é exigida por
-padrão; um guest unsigned precisa declarar `ISB_REQUIRE_SIGNATURE=0`. Um host
-LiveContainer transforma e reassina o Mach-O, portanto a validação antes da
-importação não observa o arquivo efetivamente carregado depois.
+Structural validation proves S2 only when all applicable guards pass,
+including `validate-ipa.sh`, `check-slice.py`, `check-entry.py`,
+`check-undefined.py`, weak-linking and chained fixups. The signature is required
+by default; an unsigned guest must declare `ISB_REQUIRE_SIGNATURE=0`. A
+LiveContainer host transforms and re-signs the Mach-O, so validation before
+import does not observe the file actually loaded afterwards.
 
-Ao atualizar documentação, registre sempre: data, commit, arquitetura, SDK,
-versão do iOS/device, host (se houver), comando executado e resultado.
+When updating documentation, always record: date, commit, architecture, SDK,
+iOS/device version, host (if any), command executed and result.
 
-## 2. Escolha de arquitetura e caminho de build
+## 2. Architecture choice and build path
 
 `arm64e.v1/PAC` is the only supported architecture and release profile. The
 former arm64 compatibility path is discontinued and must not be restored or
@@ -40,236 +40,239 @@ used by consumers. LiveContainer, when used, receives an unsigned arm64e guest;
 post-import host transformation is a separate compatibility experiment, not a
 second builder profile.
 
-### Caminho padrão para um app novo
+### Default path for a new app
 
-1. Use um **módulo Swift único**.
-2. Com dois ou mais arquivos, use `build-pure-ui.sh`, que usa
-   `-primary-file` por padrão.
-3. Comece pelo template `assets/AppEntry.swift` e confirme a assinatura real do
-   protocolo no SDK patchado.
-4. Use `PlatformVersionShim.swift` quando houver `#available`.
-5. Compile um app mínimo visível antes de adicionar rede, persistência, IA ou
-   dependências.
-6. Rode as guardas e uma validação de runtime antes de chamar o caminho de
-   produção.
+1. Use a **single Swift module**.
+2. With two or more files, use `build-pure-ui.sh`, which uses `-primary-file` by
+   default.
+3. Start from the `assets/AppEntry.swift` template and confirm the real signature
+   of the protocol in the patched SDK.
+4. Use `PlatformVersionShim.swift` when `#available` is present.
+5. Compile a minimal visible app before adding networking, persistence, AI or
+   dependencies.
+6. Run the guards and a runtime validation before calling it the production
+   path.
 
-Comando-base:
+Base command:
 
 ```sh
 sh scripts/check-env.sh
 sh scripts/build-pure-ui.sh MeuApp com.exemplo.meuapp main.swift Views.swift
 sh scripts/validate-ipa.sh /var/minis/workspace/MeuApp.ipa
-python3 scripts/check-debug-ipa.py /var/minis/workspace/MeuApp.ipa # somente --debug
+python3 scripts/check-debug-ipa.py /var/minis/workspace/MeuApp.ipa # --debug only
 ```
 
-### Perfis
+### Profiles
 
 The canonical profile is native **arm64e.v1/PAC**, used for all builds and
 release artifacts. A LiveContainer wrapper may produce an unsigned arm64e guest,
 but the host's post-import transformation/re-signing is outside this builder's
 S2 proof and requires separate device evidence.
 
-- **híbrido Swift + ObjC:** plano B maduro quando uma API Swift do SDK
-  patchado degrada. Use Swift para a lógica e ObjC/UIKit para a camada que
-  realmente precisa dos headers ObjC.
-- **projeto de terceiro:** use `port-third-party.py`, mas preserve o projeto
-  original e registre cada adaptação. Não converta um port bem-sucedido em
-  prova de que todos os projetos SPM são compatíveis.
+- **Swift + ObjC hybrid:** mature plan B when a Swift API of the patched SDK
+  degrades. Use Swift for the logic and ObjC/UIKit for the layer that actually
+  needs the ObjC headers.
+- **third-party project:** use `port-third-party.py`, but preserve the original
+  project and record every adaptation. Do not turn a successful port into proof
+  that all SPM projects are compatible.
 
-### Nunca misture artefatos
+### Never mix artifacts
 
-Separe, no mínimo, o cache arm64e, o diretório temporário de compilação,
-IPAs de saída, logs e bundle IDs de teste.
+Separate, at minimum, the arm64e cache, the temporary compilation directory,
+output IPAs, logs and test bundle IDs.
 
-Use `ISB_OUTPUT` para nomes estáveis e únicos. Não deixe builds concorrentes
-escreverem `MeuApp.ipa`, nem reutilize objetos de outra arquitetura. PCMs e
-`.swiftmodule` carregam a identidade do compilador/tripla; misturá-los pode
-produzir erro explícito ou, pior, um diagnóstico enganoso.
+Use `ISB_OUTPUT` for stable and unique names. Do not let concurrent builds
+write `MeuApp.ipa`, and do not reuse objects from another architecture. PCMs and
+`.swiftmodule` files carry the compiler/triple identity; mixing them can produce
+an explicit error or, worse, a misleading diagnostic.
 
-## 3. Regras do Swift e do SDK patchado
+## 3. Swift and patched SDK rules
 
-### Entry point e delegates
+### Entry point and delegates
 
-Antes de implementar qualquer protocolo Apple:
+Before implementing any Apple protocol:
 
 ```sh
 python3 scripts/check-protocol-sig.py UIApplicationDelegate didFinishLaunching
 ```
 
-No SDK usado nesta skill, o entry point validado é o de
-`applicationDidFinishLaunching(_:)`. Não substitua por
-`application(_:didFinishLaunchingWithOptions:)` por memória: a assinatura
-exposta pode usar `NSDictionary`, gerar só warning e impedir o UIKit de chamar
-o método. Resultado típico: app vivo com tela preta.
+In the SDK used in this skill, the validated entry point is
+`applicationDidFinishLaunching(_:)`. Do not replace it with
+`application(_:didFinishLaunchingWithOptions:)` from memory: the exposed
+signature may use `NSDictionary`, produce only a warning and prevent UIKit from
+calling the method. Typical result: app alive with a black screen.
 
-Nunca ignore:
+Never ignore:
 
 - `nearly matches optional requirement`;
-- warning de conformidade de protocolo;
-- warning de bridging em delegate;
-- ausência do thunk ObjC correspondente.
+- protocol conformance warning;
+- bridging warning in a delegate;
+- absence of the corresponding ObjC thunk.
 
-Os builds devem passar `check-warnings.py` e `check-entry.py`. Ausência de
-warning não dispensa a inspeção do binário, pois o warning pode variar conforme
-o contexto de compilação.
+Builds must pass `check-warnings.py` and `check-entry.py`. The absence of a
+warning does not exempt you from inspecting the binary, because the warning may
+vary with the compilation context.
 
-### Imports e helpers
+### Imports and helpers
 
-No caminho puro, mantenha a ordem que foi validada:
+On the pure path, keep the order that was validated:
 
 ```text
 Foundation → SwiftUI → UIKit → CoreText → Dispatch → Combine
 ```
 
-Inclua `assets/PureSwiftKit.swift` em apps pequenos quando ele resolver as
-lacunas conhecidas. Em módulos grandes, prefira helpers locais mínimos se o
-kit introduzir degradações de type-checking ou bridging.
+Include `assets/PureSwiftKit.swift` in small apps when it resolves the known
+gaps. In large modules, prefer minimal local helpers if the kit introduces
+type-checking or bridging degradations.
 
-Regras práticas:
+Practical rules:
 
-- use `CGRect(origin:size:)`; `CGRectMake` pode falhar apenas no link;
-- para APIs CoreGraphics que perderam conveniências, use funções C ou
+- use `CGRect(origin:size:)`; `CGRectMake` may fail only at link time;
+- for CoreGraphics APIs that lost their conveniences, use C functions or
   `UIBezierPath`;
-- seja explícito com tipos em closures, inicializadores e `UserDefaults`;
-- evite inferência profunda (`Self(...)` com membro implícito, `.success(x)` em
-  contextos genéricos e conversões `Data?` ambíguas);
-- mantenha o primeiro arquivo compilado com `Foundation` importado;
-- use `-parse-as-library` para módulos de biblioteca, evitando `_main` duplicado.
+- be explicit with types in closures, initializers and `UserDefaults`;
+- avoid deep inference (`Self(...)` with an implicit member, `.success(x)` in
+  generic contexts and ambiguous `Data?` conversions);
+- keep the first compiled file with `Foundation` imported;
+- use `-parse-as-library` for library modules, avoiding a duplicate `_main`.
 
-### `-primary-file` é o padrão
+### `-primary-file` is the default
 
-O builder usa um único módulo arm64e e `-primary-file` por padrão. O antigo
-experimento de módulos separados não faz parte deste repositório nem do fluxo
-de produção. Mantenha o código cross-file no módulo único e use `link-ipa.sh`
-para o link final.
+The builder uses a single arm64e module and `-primary-file` by default. The
+former separate-modules experiment is not part of this repository nor of the
+production flow. Keep cross-file code in the single module and use `link-ipa.sh`
+for the final link.
 
-### Otimização medida
+### Measured optimization
 
-O padrão recomendado é `ISB_OPT=O`. No toolchain Swift 6.3.3 / SDK iOS 26.5,
-`-Osize` foi medido como pior que `-O` nos dois eixos: compilou em 42 s
-versus 26 s e gerou executável de 77.312 B versus 76.328 B. Essas são
-medições locais de build e tamanho, não desempenho de runtime (S2 estrutural;
-sem inferência de S4).
+The recommended default is `ISB_OPT=O`. In the Swift 6.3.3 / iOS 26.5 SDK
+toolchain, `-Osize` was measured as worse than `-O` on both axes: it compiled in
+42 s versus 26 s and produced a 77,312 B executable versus 76,328 B. These are
+local build and size measurements, not runtime performance (S2 structural; no
+S4 inference).
 
 
-Não gaste 10 minutos compilando um app grande para descobrir um erro de
-entry point. Siga esta sequência:
+Do not spend 10 minutes compiling a large app only to discover an entry point
+error. Follow this sequence:
 
-1. `sh scripts/check-env.sh` — toolchain, cache, espaço e perfil.
-2. `sh -n` nos scripts e `python3 -m py_compile` nos scripts Python alterados.
-3. `sh scripts/regression-suite.sh --quick` — especialmente após mexer em
-   linker, SDK, módulos ou flags.
-4. build novo com `ISB_OUTPUT` exclusivo.
-5. `check-warnings.py`, `check-entry.py`, `check-undefined.py` e
+1. `sh scripts/check-env.sh` — toolchain, cache, space and profile.
+2. `sh -n` on the scripts and `python3 -m py_compile` on the changed Python
+   scripts.
+3. `sh scripts/regression-suite.sh --quick` — especially after changing the
+   linker, SDK, modules or flags.
+4. a new build with a unique `ISB_OUTPUT`.
+5. `check-warnings.py`, `check-entry.py`, `check-undefined.py` and
    `validate-ipa.sh`.
-6. `sh scripts/acceptance-suite.sh` para o perfil arm64e/PAC.
-7. instalação e teste visual no device.
-8. somente então adicione uma dependência ou uma capacidade complexa.
+6. `sh scripts/acceptance-suite.sh` for the arm64e/PAC profile.
+7. installation and visual test on the device.
+8. only then add a dependency or a complex capability.
 
-Se o processo Swift parecer parado, não confie em `/proc`: no iSH `cpu_ticks` e
-`VmRSS` podem ficar em zero. Confie no arquivo de saída e no código de retorno.
-A corrida de inicialização do `swift-frontend` exige retries; os scripts já os
-fazem. Um processo realmente preso no type-checker deve ser reduzido a um caso
-mínimo, não “curado” com espera indefinida.
+If the Swift process appears stalled, do not trust `/proc`: on iSH `cpu_ticks`
+and `VmRSS` can stay at zero. Trust the output file and the return code. The
+`swift-frontend` startup race requires retries; the scripts already perform
+them. A process that is really stuck in the type-checker must be reduced to a
+minimal case, not “cured” with an indefinite wait.
 
-Mantenha no máximo três jobs paralelos em iSH e preserve espaço livre para
-objetos temporários. Nunca mate processos indiscriminadamente durante um build;
-entre diagnósticos, limpe apenas workers Swift conhecidos e seus workspaces.
+Keep at most three parallel jobs on iSH and preserve free space for temporary
+objects. Never kill processes indiscriminately during a build; between
+diagnostics, clean only known Swift workers and their workspaces.
 
-## 5. Diagnóstico orientado por evidência
+## 5. Evidence-driven diagnosis
 
-| Sintoma | Primeira hipótese/teste |
+| Symptom | First hypothesis/test |
 |---|---|
-| processo morre sem saída | retry; depois classifique OOM/race e leia o `.err` completo |
-| app retorna da main com código 0 | `check-entry.py`; `_main` não chama `UIApplicationMain` |
-| app vivo e tela preta | warning/delegate/thunk; não comece pela lógica |
-| crash no launch | `check-undefined.py`, dependências, crash log e slice |
-| compilação sem fim | reduzir a caso mínimo e mudar para `-primary-file` |
-| falha somente após importar no LiveContainer | investigar transformação/reassinatura do host |
-| sessão StikDebug parada em `Handling signal 1` | não assumir crash; `universal.js` não é logger genérico |
+| process dies without output | retry; then classify OOM/race and read the full `.err` |
+| app returns from main with code 0 | `check-entry.py`; `_main` does not call `UIApplicationMain` |
+| app alive and black screen | warning/delegate/thunk; do not start with the logic |
+| crash at launch | `check-undefined.py`, dependencies, crash log and slice |
+| endless compilation | reduce to a minimal case and switch to `-primary-file` |
+| failure only after importing into LiveContainer | investigate the host's transformation/re-signing |
+| StikDebug session stopped at `Handling signal 1` | do not assume a crash; `universal.js` is not a generic logger |
 
-Para UI, use trace visual síncrono na própria tela. Dê cor de fundo diferente a
-cada probe e registre `viewDidLoad`, callbacks, arquivos e renderização. Só
-use attach/StikDebug depois de provar que a view e o evento existem.
+For UI, use a synchronous visual trace on the screen itself. Give each probe a
+different background color and record `viewDidLoad`, callbacks, files and
+rendering. Only use attach/StikDebug after proving that the view and the event
+exist.
 
-## 6. IA nativa e frameworks do sistema
+## 6. Native AI and system frameworks
 
-`NaturalLanguage`/`NLEmbedding` pode ser usado por bridge ObjC independente do
-módulo Swift, desde que o framework seja declarado e o binário seja auditado.
-`FoundationModels` é capability-gated: linkar o framework não garante que o
-modelo esteja disponível; no device é necessário verificar disponibilidade,
-Apple Intelligence e estado de preparação do modelo.
+`NaturalLanguage`/`NLEmbedding` can be used through an ObjC bridge independent
+of the Swift module, as long as the framework is declared and the binary is
+audited. `FoundationModels` is capability-gated: linking the framework does not
+guarantee that the model is available; on the device you must check
+availability, Apple Intelligence and the model's preparation state.
 
-Para arm64e, todos os módulos, PCMs, stdlib, SDK e linker devem corresponder à
-mesma tripla e versão do compilador. Não misture cache arm64 com código PAC.
-Não transforme uma validação de símbolos em “geração real validada”: exercite
-`LanguageModelSession.respond` em device e registre o resultado.
+For arm64e, all modules, PCMs, stdlib, SDK and linker must match the same triple
+and compiler version. Do not mix arm64 cache with PAC code. Do not turn a symbol
+validation into “validated real generation”: exercise
+`LanguageModelSession.respond` on the device and record the result.
 
-`BGAppRefreshTask` é oportunidade controlada pelo sistema, não daemon nem
-cron. Em LiveContainer, o lifecycle e o registro podem não representar o
-aplicativo instalado normalmente. Faça o código tolerar no-op e persista cada
-resultado incrementalmente.
+`BGAppRefreshTask` is an opportunity controlled by the system, not a daemon nor
+a cron. In LiveContainer, the lifecycle and the registration may not represent
+the normally installed application. Make the code tolerate a no-op and persist
+each result incrementally.
 
-## 7. Debug, assinatura e distribuição
+## 7. Debug, signing and distribution
 
-- `--debug` é opt-in e deve ser validado por `check-debug-ipa.py` na IPA final;
-- `get-task-allow` pode ser removido por instalador/reassinatura;
-- convidado e host LiveContainer têm bundle IDs diferentes; o retorno do
-  StikDebug usa o ID do host;
-- `ldid -S` é assinatura ad-hoc, não certificado Apple;
-- não prometa push, iCloud ou outras capabilities sem provisioning e assinatura
-  compatíveis;
-- nunca comite SDK Apple, módulos binários, toolchain, credenciais ou IPAs
-  geradas. Use `.gitignore` e diretórios de artefatos locais.
+- `--debug` is opt-in and must be validated by `check-debug-ipa.py` on the final
+  IPA;
+- `get-task-allow` may be removed by the installer/re-signing;
+- the LiveContainer guest and host have different bundle IDs; the StikDebug
+  return uses the host ID;
+- `ldid -S` is ad-hoc signing, not an Apple certificate;
+- do not promise push, iCloud or other capabilities without compatible
+  provisioning and signing;
+- never commit the Apple SDK, binary modules, toolchain, credentials or
+  generated IPAs. Use `.gitignore` and local artifact directories.
 
-## 8. O que evitar — lista curta
+## 8. What to avoid — short list
 
-- tentar combinações de CPU subtype sem log pós-importação;
-- corrigir “tela preta” reescrevendo a lógica antes de checar o delegate;
-- usar documentação antiga como estado atual;
-- compilar o app inteiro para cada hipótese;
-- não misturar caches, objetos ou IPAs de perfis diferentes;
-- adicionar framework “por garantia” sem declarar a razão e validar o link;
-- usar `UserDefaults` para segredo, token ou API key;
-- chamar `BGTaskScheduler` como se fosse execução garantida;
-- alterar o linker de produção por um backport experimental sem a suíte e
-  runtime de aceitação;
-- reportar “PASS” sem registrar exatamente qual nível S0–S4 foi obtido.
+- trying CPU subtype combinations without a post-import log;
+- fixing a “black screen” by rewriting the logic before checking the delegate;
+- using old documentation as the current state;
+- compiling the entire app for every hypothesis;
+- do not mix caches, objects or IPAs from different profiles;
+- adding a framework “just in case” without declaring the reason and validating
+  the link;
+- using `UserDefaults` for a secret, token or API key;
+- calling `BGTaskScheduler` as if execution were guaranteed;
+- changing the production linker for an experimental backport without the
+  acceptance suite and runtime;
+- reporting “PASS” without recording exactly which S0–S4 level was obtained.
 
-## 9. Checklist de encerramento
+## 9. Closing checklist
 
-Antes de entregar uma IPA ou declarar uma etapa concluída:
+Before delivering an IPA or declaring a stage complete:
 
-- [ ] commit/árvore e origem dos artefatos identificados;
-- [ ] perfil, slice, SDK, minOS e bundle ID registrados;
-- [ ] caches e workspaces isolados;
-- [ ] warnings, entry point e undefined symbols verificados;
-- [ ] regressão e acceptance adequadas executadas;
-- [ ] IPA final auditada, não uma cópia antiga;
-- [ ] runtime separado de validação estática;
-- [ ] limitações e host/device explicitamente registrados;
-- [ ] nenhum segredo ou artefato proibido no Git;
-- [ ] próximos passos definidos por evidência, não por tentativa.
+- [ ] commit/tree and origin of the artifacts identified;
+- [ ] profile, slice, SDK, minOS and bundle ID recorded;
+- [ ] caches and workspaces isolated;
+- [ ] warnings, entry point and undefined symbols verified;
+- [ ] appropriate regression and acceptance suites executed;
+- [ ] final IPA audited, not an old copy;
+- [ ] runtime kept separate from static validation;
+- [ ] limitations and host/device explicitly recorded;
+- [ ] no secret or forbidden artifact in Git;
+- [ ] next steps defined by evidence, not by trial and error.
 
 Only `references/HANDOFF.md` and `references/WARNINGS-FATAIS.md` are current
 operational guidance.
 
 
-## 13. Manutenção desta documentação
+## 13. Maintenance of this documentation
 
-Quando uma investigação descobrir uma regra nova:
+When an investigation discovers a new rule:
 
-1. reproduza-a em um caso mínimo ou teste automatizado;
-2. registre causa, sintoma, correção e limite;
-3. atualize primeiro `references/BEST-PRACTICES.md`;
-4. atualize o documento técnico detalhado e marque snapshots antigos;
-5. rode a suíte relevante e registre o nível S0–S4;
-6. só então faça commit com uma mensagem que descreva a evidência.
-7. mantenha um único ponto de retomada corrente em
-   `references/HANDOFF.md`; documentos datados são histórico e permanecem sob
-   `references/`, nunca na raiz.
-8. registre fatos de runtime com artefato, host/device e versão que os
-   produziram.
+1. reproduce it in a minimal case or automated test;
+2. record the cause, symptom, fix and limit;
+3. update `references/BEST-PRACTICES.md` first;
+4. update the detailed technical document and mark old snapshots;
+5. run the relevant suite and record the S0–S4 level;
+6. only then commit with a message that describes the evidence.
+7. keep a single current resumption point in `references/HANDOFF.md`; dated
+   documents are history and remain under `references/`, never at the root.
+8. record runtime facts with the artifact, host/device and version that
+   produced them.
 
-Não acumule “estado atual” em handoffs históricos. Um fato de runtime deve
-sempre mencionar o artefato, host/device e versão que o produziram.
+Do not accumulate “current state” in historical handoffs. A runtime fact must
+always mention the artifact, host/device and version that produced it.

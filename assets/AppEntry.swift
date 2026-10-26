@@ -1,37 +1,37 @@
-// AppEntry.swift — TEMPLATE do entry point. COPIE ESTE PADRAO.
+// AppEntry.swift — entry point TEMPLATE. COPY THIS PATTERN.
 //
-// ⚠️ A REGRA MAIS CARA DESTE PROJETO (uma sessao inteira perdida, 2026-08-22):
+// ⚠️ THE MOST EXPENSIVE RULE OF THIS PROJECT (an entire session lost, 2026-08-22):
 //
 // Use `applicationDidFinishLaunching(_:)`.
-// NAO use `application(_:didFinishLaunchingWithOptions:)`.
+// Do NOT use `application(_:didFinishLaunchingWithOptions:)`.
 //
-// PORQUE: os `.swiftinterface` do SDK foram patchados para compilar com o
-// toolchain swift.org, e nesse processo o tipo de `launchOptions` degradou:
+// WHY: the SDK `.swiftinterface` files were patched to compile with the
+// swift.org toolchain, and in that process the type of `launchOptions` degraded:
 //
 //     Apple:      [UIApplication.LaunchOptionsKey: Any]?
-//     nosso SDK:  NSDictionary<NSString, AnyObject>?
+//     our SDK:    NSDictionary<NSString, AnyObject>?
 //
-// Como o requisito do protocolo e' OPCIONAL (`optional func`, herdado do ObjC),
-// escrever a assinatura da Apple NAO da erro. Da apenas:
+// Since the protocol requirement is OPTIONAL (`optional func`, inherited from
+// ObjC), writing Apple's signature does NOT produce an error. It only gives:
 //
 //     warning: instance method 'application(_:didFinishLaunchingWithOptions:)'
 //     nearly matches optional requirement ... of protocol 'UIApplicationDelegate'
 //
-// O metodo vira um metodo COMUM da classe. O UIKit nunca o chama. A janela
-// nunca e' criada. O app ABRE, fica VIVO, e mostra TELA PRETA para sempre —
-// sem crash, sem log, sem nada que aponte para a causa.
+// The method becomes a PLAIN method of the class. UIKit never calls it. The
+// window is never created. The app LAUNCHES, stays ALIVE, and shows a BLACK
+// SCREEN forever — no crash, no log, nothing that points to the cause.
 //
-// `applicationDidFinishLaunching(_ application: UIApplication)` nao tem
-// parametros degradados, casa exatamente, e e' o que todos os apps validados
-// em runtime usam (PureSwiftDemo, SwiftUIDemo, ResumoFit, TortureTest,
+// `applicationDidFinishLaunching(_ application: UIApplication)` has no
+// degraded parameters, matches exactly, and is what all the runtime-validated
+// apps use (PureSwiftDemo, SwiftUIDemo, ResumoFit, TortureTest,
 // Minesweeper).
 //
-// Se precisar MESMO de launchOptions, consulte a assinatura real primeiro:
+// If you REALLY need launchOptions, check the real signature first:
 //     python3 scripts/check-protocol-sig.py UIApplicationDelegate didFinishLaunching
 //
-// O arquivo do entry point deve se chamar `main.swift` (ou `*Main.swift`, que
-// o build renomeia) e a chamada `UIApplicationMain(...)` DEVE ser a ultima
-// linha — sem ela o `_main` sai vazio e o app "returns from main with code 0".
+// The entry point file must be named `main.swift` (or `*Main.swift`, which the
+// build renames) and the `UIApplicationMain(...)` call MUST be the last
+// line — without it `_main` comes out empty and the app "returns from main with code 0".
 
 import Foundation
 import SwiftUI
@@ -40,14 +40,14 @@ import UIKit
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
-    // ✅ assinatura que CASA com o protocolo do SDK patchado
+    // ✅ signature that MATCHES the patched SDK protocol
     func applicationDidFinishLaunching(_ application: UIApplication) {
         let w = UIWindow(frame: UIScreen.main.bounds)
 
-        // --- UIKit puro:
+        // --- Pure UIKit:
         // w.rootViewController = MeuViewController()
 
-        // --- SwiftUI (o ciclo de vida fica em UIKit; a UI e' 100% SwiftUI):
+        // --- SwiftUI (lifecycle stays in UIKit; the UI is 100% SwiftUI):
         w.rootViewController = UIHostingController(rootView: ContentView())
 
         w.makeKeyAndVisible()
@@ -58,14 +58,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 struct ContentView: View {
     var body: some View {
         VStack(spacing: 16) {
-            Text("Funcionando")
+            Text("Working")
                 .font(.largeTitle)
-            Text("entry point correto")
+            Text("correct entry point")
                 .foregroundColor(.secondary)
         }
     }
 }
 
-// A CHAMADA ABAIXO E' OBRIGATORIA E DEVE SER A ULTIMA LINHA DO ARQUIVO.
+// THE CALL BELOW IS MANDATORY AND MUST BE THE LAST LINE OF THE FILE.
 UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, nil,
                   NSStringFromClass(AppDelegate.self))
