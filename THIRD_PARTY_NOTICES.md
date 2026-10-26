@@ -5,6 +5,8 @@
 Forge on Glass is distributed under the MIT License (see [`LICENSE`](LICENSE)). It depends on
 third-party software and platform components that remain under their own licenses and terms.
 
+## No vendored third-party material
+
 **No third-party source code, Apple SDK, toolchain binary, host application, IPA or generated
 module is vendored in this repository.** Build inputs are supplied by the user; optional host and
 debug applications are installed separately by the user. The tables below describe the projects
@@ -72,5 +74,5 @@ OpenMinis, LLVM, the Python Software Foundation, Docker, Canonical or GitHub.
 
 ## Legal notice
 
-This notice is informational, not legal advice. Verify the current upstream license before
+This notice is informational, not legal advice. Verify upstream licenses and terms before
 redistributing any third-party component.
