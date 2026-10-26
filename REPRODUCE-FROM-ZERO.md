@@ -45,7 +45,9 @@ sh scripts/validate-ipa.sh /var/minis/workspace/Demo.ipa
 
 For an unsigned LiveContainer handoff, use the same arm64e builder with
 `--unsigned`. The host may transform/re-sign the guest; that post-import result
-is not covered by local structural validation.
+is not covered by local structural validation. LiveContainer is an independent
+third-party project: <https://github.com/LiveContainer/LiveContainer> (no
+affiliation or endorsement).
 
 For reproducible custom locations:
 
