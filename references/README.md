@@ -7,6 +7,7 @@ then open only the guide relevant to the task.
 | --- | --- |
 | [`BEST-PRACTICES.md`](BEST-PRACTICES.md) | Normative build, evidence and safety policy. |
 | [`HANDOFF.md`](HANDOFF.md) | Current state, required checks and maintenance. |
+| [`COMPLIANCE.md`](COMPLIANCE.md) | Licensing, language, security, dependency and CI compliance. |
 | [`PROJECT-GOVERNANCE.md`](PROJECT-GOVERNANCE.md) | Ownership, evidence, privacy and Git policy. |
 | [`PROJECT-GUIDE.md`](PROJECT-GUIDE.md) | Internal and external project workflows. |
 | [`BOOTSTRAP.md`](BOOTSTRAP.md) | SDK, Swift, glibc and toolchain staging. |

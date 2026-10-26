@@ -329,6 +329,7 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 |---|---|
 | [`REPRODUCE-FROM-ZERO.md`](REPRODUCE-FROM-ZERO.md) | Full clean-environment path. |
 | [`references/README.md`](references/README.md) | Reference index and reading order. |
+| [`references/COMPLIANCE.md`](references/COMPLIANCE.md) | Compliance and repository hygiene. |
 | [`scripts/README.md`](scripts/README.md) | Script index grouped by task. |
 | [`references/BOOTSTRAP.md`](references/BOOTSTRAP.md) | SDK, Swift and glibc staging details. |
 | [`references/PROJECT-GUIDE.md`](references/PROJECT-GUIDE.md) | Internal and external project workflows. |

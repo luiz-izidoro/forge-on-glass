@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added `references/COMPLIANCE.md` with licensing, language, security, dependency and CI status.
 - Added THIRD_PARTY_NOTICES with component licenses, trademarks and non-affiliation notices.
 - Standardized repository documentation and code comments in English.
 - Added CODE_OF_CONDUCT, pull-request template, Dependabot and CodeQL.
