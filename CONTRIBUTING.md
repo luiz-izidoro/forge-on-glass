@@ -10,7 +10,7 @@ Do not commit Apple SDK files, headers, `.swiftinterface`, `.tbd`,
 private keys, or files larger than 1 MiB. Run:
 
 ```sh
-sh scripts/check-repo-clean.sh
+python3 scripts/check-repo-clean.py
 ```
 
 before every commit. The same guard runs in CI. Generated patchsets contain
