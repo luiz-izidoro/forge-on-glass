@@ -81,7 +81,7 @@ report. Structural acceptance is S2; only a successful device flow is S4.
 ## Verification ladder
 
 ```sh
-sh scripts/check-repo-clean.sh
+python3 scripts/check-repo-clean.py
 sh scripts/regression-suite.sh --quick
 sh scripts/acceptance-suite.sh
 ISB_ARCH=arm64e sh scripts/acceptance-suite-arm64e.sh

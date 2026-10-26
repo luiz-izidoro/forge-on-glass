@@ -187,6 +187,14 @@ does not prove the app works by itself: record opening (S3) and a real flow (S4)
 See [LiveContainer](https://github.com/LiveContainer/LiveContainer) for its install and import flow;
 this repository is independent and does not bundle it.
 
+For a one-line unsigned wrapper:
+
+```sh
+sh scripts/build-livecontainer.sh MyApp com.example.myapp main.swift
+```
+
+It sets `ISB_UNSIGNED=1` and delegates to `build-pure-ui.sh --unsigned`.
+
 ## Supported workflows
 
 | Goal | Command |
@@ -321,6 +329,12 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 | [`references/BOOTSTRAP.md`](references/BOOTSTRAP.md) | SDK, Swift and glibc staging details. |
 | [`references/PROJECT-GUIDE.md`](references/PROJECT-GUIDE.md) | Internal and external project workflows. |
 | [`references/BEST-PRACTICES.md`](references/BEST-PRACTICES.md) | Build and validation practice. |
+| [`references/LIMITATIONS.md`](references/LIMITATIONS.md) | Known limitations and solution paths. |
+| [`references/NATIVE-INTELLIGENCE.md`](references/NATIVE-INTELLIGENCE.md) | FoundationModels, NaturalLanguage and NLEmbedding. |
+| [`references/LINUX-MODULE-CACHE.md`](references/LINUX-MODULE-CACHE.md) | Optional Docker runner for the arm64e cache. |
+| [`references/DEBUG-LIVECONTAINER-STIKDEBUG.md`](references/DEBUG-LIVECONTAINER-STIKDEBUG.md) | On-device debug with LiveContainer/StikDebug. |
+| [`references/WARNINGS-FATAIS.md`](references/WARNINGS-FATAIS.md) | Warnings that break the app at runtime. |
+| [`references/PORTING-TERCEROS.md`](references/PORTING-TERCEROS.md) | Third-party project porting guide. |
 | [`references/VERSION-MATRIX.md`](references/VERSION-MATRIX.md) | Validated versions. |
 | [`references/HANDOFF.md`](references/HANDOFF.md) | Maintenance handoff. |
 | [`references/PROJECT-GOVERNANCE.md`](references/PROJECT-GOVERNANCE.md) | Governance and release gates. |
