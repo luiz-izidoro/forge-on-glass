@@ -103,6 +103,12 @@ import Combine       // if used
 Use `assets/PureSwiftKit.swift` for known patched-SDK gaps and validate it with
 `sh scripts/verify-pureswiftkit.sh`.
 
+For a LiveContainer-oriented unsigned guest, use the wrapper:
+
+```sh
+sh scripts/build-livecontainer.sh MyApp com.example.myapp main.swift
+```
+
 ## Supported paths
 
 ```sh

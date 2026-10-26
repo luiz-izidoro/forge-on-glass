@@ -1,7 +1,7 @@
 # Current handoff — forge-on-glass
 
-**Date:** 2026-09-02
-**Baseline:** `cb456b5` — complete arm64e runtime validation
+**Date:** 2026-10-26
+**Baseline:** current `main` after publication (see `git log`)
 **Profile:** arm64e.v1/PAC · Swift 6.3.3 · iOS SDK 26.5
 **Runtime host:** iPhone17,1 · iOS 26.6 · LiveContainer (exact version not recorded)
 
@@ -79,14 +79,12 @@ The repository ships only original scripts, documentation and sample sources.
 Never commit SDKs, headers, modulemaps, Swift modules, PCMs, patchsets with SDK
 context, IPAs, objects, toolchains, signing material, credentials, private keys,
 personal paths, public addresses or user exports. Run `verify-release.sh` before
-committing. Publication still requires the user to provide a Git remote URL;
-never invent one.
+committing. Public repository: <https://github.com/luiz-izidoro/forge-on-glass>;
+`main` is protected and changes go through pull requests.
 
-## Cleanup status — 2026-09-03
+## Cleanup and maintenance
 
-The repository and local generated residue were cleaned. See
-`references/CLEANUP-2026-09-03.md` for the preservation/removal inventory.
-A fresh complete acceptance rerun was completed after the corrections: all 10
-arm64e IPAs plus the negative FoundationModels strong-link fixture passed the
-structural suite. This remains S2; prior device evidence remains documented in
-`references/HANDOFF.md` and is not re-created by this run.
+Tracked artifacts are checked by `check-repo-clean.py`. Orphaned temporary build
+workdirs can be inspected (dry-run) or removed with `gc-workdirs.sh`; deletion
+requires `--apply`. Dated evidence reports are archival and must not override
+`BEST-PRACTICES.md` or this handoff.
