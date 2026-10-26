@@ -1,74 +1,74 @@
-# Porting de apps de terceiros — guia completo (2026-08-19)
+# Porting third-party apps — complete guide (2026-08-19)
 
-> **Entrada obrigatória:** leia [`BEST-PRACTICES.md`](BEST-PRACTICES.md) antes
-> de portar. Este documento contém detalhes de adaptação; o guia normativo
-> define evidência, isolamento, ordem de diagnóstico e o que não prometer.
+> **Required entry point:** read [`BEST-PRACTICES.md`](BEST-PRACTICES.md) before
+> porting. This document contains adaptation details; the normative guide
+> defines evidence, isolation, diagnostic order, and what not to promise.
 
-Este documento consolida TODAS as lições de portar projetos open source do
-GitHub para IPA com o toolchain do iSH. Dois casos reais validados:
+This document consolidates ALL the lessons from porting open source projects from
+GitHub to IPA with the iSH toolchain. Two real validated cases:
 
-| App | Origem | Dependências | Resultado |
+| App | Source | Dependencies | Result |
 |---|---|---|---|
-| Game2048 | unixzii/SwiftUI-2048 (732⭐) | nenhuma (SwiftUI puro) | IPA ✅ 87KB |
-| Minesweeper | RogyMD/TCAminesweeper (137⭐) | TCA 0.39.1 + 6 pacotes SPM | ver HANDOFF |
+| Game2048 | unixzii/SwiftUI-2048 (732⭐) | none (pure SwiftUI) | IPA ✅ 87KB |
+| Minesweeper | RogyMD/TCAminesweeper (137⭐) | TCA 0.39.1 + 6 SPM packages | see HANDOFF |
 
-## Fluxo recomendado (1 comando)
+## Recommended flow (1 command)
 
 ```sh
 git clone <repo> /tmp/projeto
 python3 scripts/port-third-party.py /tmp/projeto AppName com.x.y.bundle
-# flags disponíveis (ver abaixo)
+# available flags (see below)
 ```
 
-O script faz sozinho: coleta → pre-adapta (entry + imports) → strip de imports
-→ merge anti-instabilidade → loop de build reativo com fixes automáticos →
-validação → relatório `<App>-port.md`.
+The script does it on its own: collection → pre-adaptation (entry + imports) →
+import stripping → anti-instability merge → reactive build loop with automatic
+fixes → validation → `<App>-port.md` report.
 
-## As flags
+## The flags
 
 ```sh
---extra DIR            # mais diretórios de fontes (ex: dependências SPM)
---resources DIR        # recursos do bundle (ROMs, JSONs, imagens)
---strip-imports "A B"  # remove `import A`/`import B` (módulos unificados)
---exclude "X.swift"    # exclui arquivos do build (basename)
---no-kit               # NÃO inclui PureSwiftKit.swift no build
---merge-mode dep|subdir  # como agrupar a concatenação de arquivos
---debug                # overlay, get-task-allow e attach StikDebug
---stikdebug-bundle-id ID # bundle ID do host para retorno no LiveContainer
+--extra DIR            # more source directories (e.g. SPM dependencies)
+--resources DIR        # bundle resources (ROMs, JSONs, images)
+--strip-imports "A B"  # removes `import A`/`import B` (unified modules)
+--exclude "X.swift"    # excludes files from the build (basename)
+--no-kit               # does NOT include PureSwiftKit.swift in the build
+--merge-mode dep|subdir  # how to group the file concatenation
+--debug                # overlay, get-task-allow and StikDebug attach
+--stikdebug-bundle-id ID # host bundle ID for return in LiveContainer
 ```
 
-## Debug durante o porting
+## Debugging during porting
 
-Para depurar o app portado no LiveContainer, use as três camadas descritas em
-[`DEBUG-LIVECONTAINER-STIKDEBUG.md`](DEBUG-LIVECONTAINER-STIKDEBUG.md): trace
-visual para callbacks/UI; attach/script para confirmar PID e debugserver; e
-sessão persistente com breakpoints de evento para monitoramento contínuo.
-Exemplo:
+To debug the ported app in LiveContainer, use the three layers described in
+[`DEBUG-LIVECONTAINER-STIKDEBUG.md`](DEBUG-LIVECONTAINER-STIKDEBUG.md): visual
+trace for callbacks/UI; attach/script to confirm the PID and the debugserver;
+and a persistent session with event breakpoints for continuous monitoring.
+Example:
 
 ```sh
 python3 scripts/port-third-party.py /tmp/projeto AppName com.x.y.bundle \
   --debug --stikdebug-bundle-id com.kdt.livecontainer.A4658DGR7V
 ```
 
-Não interprete `debug stop/continue #1` como crash: significa que `c` está
-aguardando uma parada. `universal.js` é específico do JIT e não é logger
-universal. Para bugs de fluxo, prefira um trace dentro do app com eventos como
-`didPick`, carregamento de recursos e `frame: ok lit=N`.
+Do not interpret `debug stop/continue #1` as a crash: it means that `c` is
+waiting for a stop. `universal.js` is JIT-specific and is not a universal
+logger. For flow bugs, prefer a trace inside the app with events such as
+`didPick`, resource loading, and `frame: ok lit=N`.
 
 
 
-O Xcode baixa pacotes; nós clonamos e unificamos TUDO num módulo único:
+Xcode downloads packages; we clone and unify EVERYTHING into a single module:
 
-1. Identifique a versão: `grep -A5 'XCRemoteSwiftPackageReference' *.xcodeproj/project.pbxproj`
-   (ex: TCA 0.39.1 = `kind = exactVersion`).
-2. Clone a árvore de deps na versão certa (o Package.swift de cada pacote lista
-   as suas deps — combine-schedulers → xctest-dynamic-overlay, etc.).
-3. `--extra` cada `Sources/<Target>/` + `--strip-imports` com TODOS os módulos
-   unificados (inclusive os `@_exported import` — o strip os remove).
-4. Targets internos do app (ex: `TCAminesweeperCommon`, `GameCore`) também vão
-   para o strip.
+1. Identify the version: `grep -A5 'XCRemoteSwiftPackageReference' *.xcodeproj/project.pbxproj`
+   (e.g. TCA 0.39.1 = `kind = exactVersion`).
+2. Clone the dependency tree at the right version (each package's Package.swift
+   lists its own deps — combine-schedulers → xctest-dynamic-overlay, etc.).
+3. `--extra` each `Sources/<Target>/` + `--strip-imports` with ALL the unified
+   modules (including the `@_exported import`s — the strip removes them).
+4. The app's internal targets (e.g. `TCAminesweeperCommon`, `GameCore`) also go
+   into the strip.
 
-### Árvore real do TCA 0.39.1 (medida)
+### Actual TCA 0.39.1 tree (measured)
 ```
 ComposableArchitecture 0.39.1
 ├── CombineSchedulers 0.7.4 ──→ XCTestDynamicOverlay 0.4.1
@@ -77,25 +77,25 @@ ComposableArchitecture 0.39.1
 ├── IdentifiedCollections 0.5.0 ──→ swift-collections 1.0.4 (OrderedCollections)
 └── XCTestDynamicOverlay 0.4.1
 ```
-Todas pré-macros (0.x) = Swift puro compilável. TCA 1.x usa macros → NÃO portável.
+All pre-macro (0.x) = compilable pure Swift. TCA 1.x uses macros → NOT portable.
 
-## Casos especiais e suas soluções
+## Special cases and their solutions
 
-### 1. `@main struct X: App` (SwiftUI App) — INCOMPATÍVEL
-O build-pure-ui.sh renomeia o entry para `main.swift`; `@main` + arquivo
-`main.swift` = erro ("main attribute cannot be used in a module that contains
-top-level code"). O `@main` App também degrada tipos Foundation ObjC no mesmo
-módulo (NSString/FileManager somem).
+### 1. `@main struct X: App` (SwiftUI App) — INCOMPATIBLE
+build-pure-ui.sh renames the entry to `main.swift`; `@main` + a `main.swift`
+file = error ("main attribute cannot be used in a module that contains
+top-level code"). The `@main` App also degrades ObjC Foundation types in the
+same module (NSString/FileManager disappear).
 
-**Solução**: converter para AppDelegate + UIApplicationMain + UIHostingController
-(padrão do `assets/AppEntry.swift`). Exemplo real (TCAminesweeper):
+**Solution**: convert to AppDelegate + UIApplicationMain + UIHostingController
+(the `assets/AppEntry.swift` pattern). Real example (TCAminesweeper):
 ```swift
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
-    // ⚠️ applicationDidFinishLaunching(_:) — NÃO use
-    // application(_:didFinishLaunchingWithOptions:): a assinatura da Apple NÃO
-    // casa com o .swiftinterface patchado, o Swift só AVISA, o UIKit nunca
-    // chama o método e o app abre com TELA PRETA. Ver WARNINGS-FATAIS.md
+    // ⚠️ applicationDidFinishLaunching(_:) — do NOT use
+    // application(_:didFinishLaunchingWithOptions:): Apple's signature does NOT
+    // match the patched .swiftinterface, Swift only WARNS, UIKit never
+    // calls the method and the app opens with a BLACK SCREEN. See WARNINGS-FATAIS.md
     func applicationDidFinishLaunching(_ application: UIApplication) {
         let store = Store(initialState: MainAppState(), reducer: mainAppReducer,
                           environment: .live)
@@ -109,131 +109,130 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, nil,
                   NSStringFromClass(AppDelegate.self))
 ```
-(`store.scope(state:)` recebe **closure**, não KeyPath.)
-Se a View raiz estiver dentro de um Scene custom (WithViewStore + WindowGroup),
-extraia o conteúdo do WindowGroup manualmente (a Scene não vira View).
+(`store.scope(state:)` takes a **closure**, not a KeyPath.)
+If the root View is inside a custom Scene (WithViewStore + WindowGroup), extract
+the WindowGroup content manually (the Scene does not become a View).
 
-### 2. Conflitos de símbolos entre dependências
-Ex: TCA e CustomDump AMBOS definem `final class Box<Wrapped>`. No módulo único
-= redeclaração. Solução: excluir o arquivo não usado (`--exclude "Box.swift"`
-com cuidado — exclui todos com esse basename; mover o arquivo da dependência
-para fora do Sources é mais cirúrgico).
+### 2. Symbol conflicts between dependencies
+E.g. TCA and CustomDump BOTH define `final class Box<Wrapped>`. In the single
+module = redeclaration. Solution: exclude the unused file (`--exclude
+"Box.swift"` with care — it excludes every file with that basename; moving the
+dependency's file out of Sources is more surgical).
 
-### 3. Macros (`@TaskLocal`, `@Reducer`...) — sem plugin no toolchain
-Erro: "external macro implementation type 'SwiftMacros.TaskLocalMacro' could
-not be found". Solução: remover o atributo `@TaskLocal ` na linha; se o código
-usar a API gerada pela macro (`$x.withValue`), excluir o arquivo (ex: TestStore
-só serve para testes — o app não usa).
+### 3. Macros (`@TaskLocal`, `@Reducer`...) — no plugin in the toolchain
+Error: "external macro implementation type 'SwiftMacros.TaskLocalMacro' could
+not be found". Solution: remove the `@TaskLocal ` attribute on the line; if the
+code uses the API generated by the macro (`$x.withValue`), exclude the file
+(e.g. TestStore only serves tests — the app does not use it).
 
-### 4. `DispatchQueue` some (Foundation.DispatchQueue)
-Erros "SchedulerTimeType is not a member type of class 'Foundation.DispatchQueue'"
-ou "cannot find 'DispatchQueue'" = arquivo importa Foundation mas NÃO Dispatch
-(o DispatchQueue resolve para o reexport do Foundation, sem as extensions de
-Scheduler). Fix automático do loop: `import Dispatch` (posição canônica 6).
+### 4. `DispatchQueue` goes missing (Foundation.DispatchQueue)
+Errors "SchedulerTimeType is not a member type of class 'Foundation.DispatchQueue'"
+or "cannot find 'DispatchQueue'" = the file imports Foundation but NOT Dispatch
+(DispatchQueue resolves to the Foundation re-export, without the Scheduler
+extensions). Automatic loop fix: `import Dispatch` (canonical position 6).
 
-### 5. PureSwiftKit NÃO é sempre bem-vindo
-O kit importa UIKit e usa FileManager/NSString — em módulos grandes ele mesmo
-quebra (tipos Foundation somem). Use `--no-kit` quando o app não usa os helpers
-(`cgRect`, `cgWidth`, `FS`, `edgeInsets`, `cgDequeueCell`). O Minesweeper não
-usa nenhum → `--no-kit` resolveu a classe de erros do kit.
+### 5. PureSwiftKit is NOT always welcome
+The kit imports UIKit and uses FileManager/NSString — in large modules it breaks
+by itself (Foundation types disappear). Use `--no-kit` when the app does not use
+the helpers (`cgRect`, `cgWidth`, `FS`, `edgeInsets`, `cgDequeueCell`). The
+Minesweeper uses none of them → `--no-kit` solved the kit's error class.
 
-### 6. Erros "fantasma" (tipos somem com import presente)
-Sintoma: "cannot find 'DispatchQueue'/'FileManager'/'Bundle' in scope" em
-arquivos que JÁ importam o módulo. Causa: o swift-frontend (6.3.3 no iSH)
-carrega módulos de forma corrompida em compilações grandes — determinístico
-por execução, varia entre execuções. O port script detecta (import presente =
-fantasma) e faz retry do build (até 5×) sem aplicar fixes errados. O retry NÃO
-resolve se o estado ruim for determinístico para aquele conjunto — nesse caso
-reduza o tamanho (merge) ou o escopo.
+### 6. "Phantom" errors (types disappear while the import is present)
+Symptom: "cannot find 'DispatchQueue'/'FileManager'/'Bundle' in scope" in files
+that ALREADY import the module. Cause: swift-frontend (6.3.3 on iSH) loads
+modules in a corrupted way on large compilations — deterministic per run, varies
+between runs. The port script detects it (import present = phantom) and retries
+the build (up to 5×) without applying wrong fixes. The retry does NOT solve it
+if the bad state is deterministic for that set — in that case reduce the size
+(merge) or the scope.
 
-### 7. Limite de tamanho de compilação no iSH (medido)
-- ~45+ arquivos pequenos: módulos corrompem (fantasma) — 43 OK / 44 quebra.
-- Arquivos gigantes (merged de 8000+ linhas): OOM (processo morto sem mensagem).
-- 60 arquivos dummy + kit: OK → o número NÃO é o gatilho sozinho; o conteúdo
-  pesado (TCA: Combine/reflection) é o fator.
-- Equilíbrio empírico: ~10-25 arquivos de ~500-2000 linhas + `--no-kit`.
+### 7. Compilation size limit on iSH (measured)
+- ~45+ small files: modules get corrupted (phantom) — 43 OK / 44 breaks.
+- Giant files (merged from 8000+ lines): OOM (process killed with no message).
+- 60 dummy files + kit: OK → the number is NOT the trigger by itself; the heavy
+  content (TCA: Combine/reflection) is the factor.
+- Empirical balance: ~10-25 files of ~500-2000 lines + `--no-kit`.
 
-### 8. `-swift-module-file`: usar 1 arg (formato original)
-`-swift-module-file=X=path` é o formato correto para o swift-frontend.
+### 8. `-swift-module-file`: use 1 arg (original format)
+`-swift-module-file=X=path` is the correct format for swift-frontend.
 `-swift-module-file X=path` (2 args) = "unknown argument: '-swift-module-file'"
-(ao contrário do que testes superficiais sugeriram — a regex de parse não
-pegava `<unknown>:0: error:`).
+(contrary to what superficial tests suggested — the parse regex did not catch
+`<unknown>:0: error:`).
 
-### 9. main.swift PRIMEIRO na lista de arquivos
-A ordem dos arquivos na linha de comando afeta a resolução de tipos ObjC do
-Foundation em arquivos que importam UIKit (o main primeiro estabiliza). O
-build-pure-ui.sh já garante isso.
+### 9. main.swift FIRST in the file list
+The order of the files on the command line affects the resolution of Foundation
+ObjC types in files that import UIKit (main first stabilizes it).
+build-pure-ui.sh already guarantees this.
 
-### 10. `os.signpost` / imports exóticos
-`import os.signpost` (TCA ReducerInstrumentation) pode falhar se o módulo os
-não expor o submódulo — excluir o arquivo se não for crítico.
+### 10. `os.signpost` / exotic imports
+`import os.signpost` (TCA ReducerInstrumentation) may fail if the os module does
+not expose the submodule — exclude the file if it is not critical.
 
-## A morte súbita do compilador (OOM)
-O processo swift-frontend morre sem mensagem (rc negativo) em compilações
-grandes — o iOS aperta a memória e mata. O port script trata rc<0 como retry.
-Se morrer repetidamente: reduza o merge (`--merge-mode dep` para menos
-arquivos ou subdir para mais/menores), ou compile as deps como módulo separado
-(ver HANDOFF — multi-módulo ainda não implementado).
+## The compiler's sudden death (OOM)
+The swift-frontend process dies without a message (negative rc) on large
+compilations — iOS tightens memory and kills it. The port script treats rc<0 as
+a retry. If it dies repeatedly: reduce the merge (`--merge-mode dep` for fewer
+files, or subdir for more/smaller ones), or compile the deps as a separate module
+(see HANDOFF — multi-module is not implemented yet).
 
-## Checklist de triagem rápida
-1. O app usa `@main App`? → converter entry (caso 1)
-2. Tem deps SPM? → clonar árvore + --extra + --strip-imports
-3. Macros no código? → remover/excluir (caso 3)
-4. Basenames duplicados? → o script renomeia; conflitos de TIPOS → excluir (caso 2)
-5. Build grande? → --no-kit + --merge-mode + retry fantasma
-6. Erros reais restantes? → o loop reativo cobre: CGRect members, init CGRect,
-   UIEdgeInsetsMake, TimeInterval→Double, sync ambíguo (csSync), CasePaths (shim),
+## Quick triage checklist
+1. Does the app use `@main App`? → convert the entry (case 1)
+2. Does it have SPM deps? → clone the tree + --extra + --strip-imports
+3. Macros in the code? → remove/exclude (case 3)
+4. Duplicate basenames? → the script renames them; TYPE conflicts → exclude (case 2)
+5. Large build? → --no-kit + --merge-mode + phantom retry
+6. Real errors remaining? → the reactive loop covers: CGRect members, init CGRect,
+   UIEdgeInsetsMake, TimeInterval→Double, ambiguous sync (csSync), CasePaths (shim),
    imports CoreText/Dispatch/Foundation/UIKit/Combine, @TaskLocal, Color("asset").
 
-## Estado do TCAminesweeper — ✅ RODANDO NO DEVICE (2026-08-22)
+## TCAminesweeper status — ✅ RUNNING ON DEVICE (2026-08-22)
 
-`Minesweeper.ipa` (1,1 MB) **abre e joga no LiveContainer**. Primeiro app com
-árvore de dependências SPM (TCA 0.39.1 + 6 pacotes, 27k linhas) validado em
-runtime.
+`Minesweeper.ipa` (1.1 MB) **opens and plays in LiveContainer**. First app with an
+SPM dependency tree (TCA 0.39.1 + 6 packages, 27k lines) validated at runtime.
 
-### As DUAS causas que travaram este port (independentes)
+### The TWO causes that blocked this port (independent)
 
 The current builder uses `-primary-file` to isolate files within one module;
 reduce large expressions when type checking becomes slow.
 
-**2. Assinatura do AppDelegate** (build OK, app com tela preta)
-`application(_:didFinishLaunchingWithOptions:)` não casa com o
-`.swiftinterface` patchado → o Swift só **avisa** → o UIKit nunca chama o
-método → janela nunca criada → **tela preta com o app vivo**.
+**2. AppDelegate signature** (build OK, app with a black screen)
+`application(_:didFinishLaunchingWithOptions:)` does not match the patched
+`.swiftinterface` → Swift only **warns** → UIKit never calls the method → window
+never created → **black screen with the app alive**.
 Fix: `applicationDidFinishLaunching(_:)`.
-Detalhes: **`WARNINGS-FATAIS.md`** ← leia antes de escrever qualquer entry point.
+Details: **`WARNINGS-FATAIS.md`** ← read it before writing any entry point.
 
-### Receita validada
+### Validated recipe
 ```sh
-# módulo ÚNICO + -primary-file  (o caminho provado em runtime)
+# SINGLE module + -primary-file  (the path proven at runtime)
 python3 scripts/build-parallel.py --module <App> --src <dir> --out /tmp/obj --jobs 3
-# depois linkar com as flags do build-pure-ui.sh
+# then link with the build-pure-ui.sh flags
 ```
 
-- **Multi-arquivo:** mantenha um único módulo arm64e e use `-primary-file`.
-  O antigo experimento de módulos separados foi removido e não é suportado.
+- **Multi-file:** keep a single arm64e module and use `-primary-file`.
+  The old separate-modules experiment was removed and is not supported.
 
-Fontes do Minesweeper: `/var/minis/workspace/minesweeper-port/`
-(`single-src/` = o que roda; `dep-src/`+`app-src/` = experimento multi-módulo).
+Minesweeper sources: `/var/minis/workspace/minesweeper-port/`
+(`single-src/` = what runs; `dep-src/`+`app-src/` = multi-module experiment).
 
-A investigação de inferência foi arquivada; use `-primary-file`, reduza o caso
-e torne os tipos explícitos quando um build ficar lento.
+The inference investigation was archived; use `-primary-file`, reduce the case,
+and make the types explicit when a build gets slow.
 
-Receita:
+Recipe:
 
-## 12. Ordem de import: `Dispatch` DEPOIS de `UIKit`
+## 12. Import order: `Dispatch` AFTER `UIKit`
 
-Ordem canônica atualizada (medida, não suposta):
+Updated canonical order (measured, not assumed):
 ```
-Foundation → SwiftUI → UIKit → CoreText → Dispatch → Combine → <SeuModulo>
+Foundation → SwiftUI → UIKit → CoreText → Dispatch → Combine → <YourModule>
 ```
-Com `Dispatch` antes do `UIKit`, o overlay Swift do Dispatch não carrega e o
-`DispatchQueue` vira a classe ObjC crua — os erros aparecem longe da causa
-("does not conform to protocol 'Scheduler'", "has no member 'main'").
+With `Dispatch` before `UIKit`, Dispatch's Swift overlay does not load and
+`DispatchQueue` becomes the raw ObjC class — the errors show up far from the
+cause ("does not conform to protocol 'Scheduler'", "has no member 'main'").
 
-## 13. `#available` quebra o LINK (não a compilação)
+## 13. `#available` breaks the LINK (not the compilation)
 
 ```
 ld64.lld: error: undefined symbol: ___isPlatformVersionAtLeast
 ```
-O link final inclui `PlatformVersionShim.swift` quando o projeto usa `#available`.
+The final link includes `PlatformVersionShim.swift` when the project uses `#available`.

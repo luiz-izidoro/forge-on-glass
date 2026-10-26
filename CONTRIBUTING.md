@@ -3,6 +3,12 @@
 This project publishes build recipes, original scripts, documentation, and
 small sample sources — never third-party or generated SDK material.
 
+## Language
+
+Repository documentation, code comments, commit messages, issue/PR text and CLI output are
+**English**. Product UI strings may be bilingual; a localized string is a product feature, not
+documentation. Keep identifiers and commands unchanged when translating.
+
 ## Mandatory artifact rule
 
 Do not commit Apple SDK files, headers, `.swiftinterface`, `.tbd`,
@@ -15,6 +21,11 @@ python3 scripts/check-repo-clean.py
 
 before every commit. The same guard runs in CI. Generated patchsets contain
 verbatim SDK context and must be written outside the repository.
+
+## Code of conduct
+
+By participating, you agree to follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Use the pull
+request template and keep security reports private through GitHub Security Advisories.
 
 ## Testing
 

@@ -1,33 +1,33 @@
 #!/bin/sh
-# build-pure-ui.sh — compila e empacota um app iOS 100% Swift (UIKit/SwiftUI).
+# build-pure-ui.sh — compiles and packages a 100% Swift iOS app (UIKit/SwiftUI).
 # The only supported profile is arm64e/PAC; LiveContainer receives an unsigned
 # arm64e guest and its post-import host compatibility is not implied.
 SKILL=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 . "$SKILL/scripts/profile.sh"
 #
-# Uso: ./build-pure-ui.sh <AppName> <BundleID> <main.swift> [outro.swift ...]
+# Usage: ./build-pure-ui.sh <AppName> <BundleID> <main.swift> [other.swift ...]
 #                         [--debug] [--primary-file | --whole-module]
-# Saida: /var/minis/workspace/<AppName>.ipa
-# --debug: preserva get-task-allow, inclui DebugSupport.swift e overlay DBG
-# --extra-objc FILE.m: compila uma ponte Objective-C contra o SDK e a linka
-# --resources DIR: copia pesos/modelos para o bundle (use com CoreML/Vision)
+# Output: /var/minis/workspace/<AppName>.ipa
+# --debug: preserves get-task-allow, includes DebugSupport.swift and the DBG overlay
+# --extra-objc FILE.m: compiles an Objective-C bridge against the SDK and links it
+# --resources DIR: copies weights/models into the bundle (use with CoreML/Vision)
 #
-# MODO DE COMPILACAO (2026-08-23):
-#   --primary-file  (PADRAO com 2+ arquivos) compila arquivo-a-arquivo via
-#                   build-parallel.py e linka com link-ipa.sh.
-#   --whole-module  modo antigo (um unico swift-frontend com todos os fontes).
+# COMPILATION MODE (2026-08-23):
+#   --primary-file  (DEFAULT with 2+ files) compiles file-by-file via
+#                   build-parallel.py and links with link-ipa.sh.
+#   --whole-module  old mode (a single swift-frontend with all sources).
 #
-#   Por que o padrao mudou: em whole-module, um arquivo que usa CoreGraphics
-#   faz os tipos do Foundation (Bundle/NotificationCenter/OperationQueue)
-#   DESAPARECEREM de OUTROS arquivos do mesmo modulo:
+#   Why the default changed: in whole-module, a file that uses CoreGraphics
+#   makes Foundation types (Bundle/NotificationCenter/OperationQueue)
+#   DISAPPEAR from OTHER files in the same module:
 #       error: cannot find 'Bundle' in scope
-#   Determinstico e reproduzido com 2 arquivos. Com -primary-file o MESMO
-#   codigo compila em segundos, sem alteracao alguma.
-#   Ver references/WARNINGS-FATAIS.md -> "CoreGraphics degrada Foundation".
+#   Deterministic and reproduced with 2 files. With -primary-file the SAME
+#   code compiles in seconds, with no changes at all.
+#   See references/WARNINGS-FATAIS.md -> "CoreGraphics degrades Foundation".
 set -e
 ISB_WORKSPACE="${ISB_WORKSPACE:-/var/minis/workspace}"
-APP="${1:?uso: $0 <AppName> <BundleID> <main.swift> [outro.swift ...] [--debug]}"
-BUNDLE="${2:?falta o bundle id}"
+APP="${1:?usage: $0 <AppName> <BundleID> <main.swift> [other.swift ...] [--debug]}"
+BUNDLE="${2:?missing the bundle id}"
 shift 2
 DEBUG=0
 UNSIGNED="${ISB_UNSIGNED:-0}"
@@ -41,7 +41,7 @@ case "$OPT_MODE" in
   none) OPT_FLAGS=-Onone ;;
   O) OPT_FLAGS=-O ;;
   Osize) OPT_FLAGS=-Osize ;;
-  *) echo "ISB_OPT inválido: $OPT_MODE (use none, O ou Osize)" >&2; exit 2 ;;
+  *) echo "ISB_OPT invalid: $OPT_MODE (use none, O or Osize)" >&2; exit 2 ;;
 esac
 SWIFT_DEFINES="${ISB_SWIFT_DEFINES:-}"
 PLIST_EXTRA=""
@@ -69,18 +69,18 @@ fi
 export ISB_SWIFT_DEFINES="$SWIFT_DEFINES"
 ARCH="$ISB_ARCH"
 SRCS="$SRC_ARGS"
-[ -n "$SRCS" ] || { echo "falta pelo menos um .swift"; exit 1; }
+[ -n "$SRCS" ] || { echo "missing at least one .swift"; exit 1; }
 
-# O modo debug e' deliberadamente opt-in. Ele nao altera o fonte do usuario:
-# cria uma copia de trabalho, adiciona o runtime de logs/overlay e abre o
-# pedido oficial stikdebug://enable-jit com bundle-id + PID + universal.js.
+# Debug mode is deliberately opt-in. It does not change the user's source:
+# it creates a working copy, adds the logging/overlay runtime, and opens the
+# official stikdebug://enable-jit request with bundle-id + PID + universal.js.
 DEBUG_ASSET="$SKILL/assets/DebugSupport.swift"
 STIK_QUERY=""
 if [ "$DEBUG" -eq 1 ]; then
   STIK_QUERY='<key>LSApplicationQueriesSchemes</key><array><string>stikdebug</string></array>'
-  [ -f "$DEBUG_ASSET" ] || { echo "DebugSupport.swift ausente"; exit 1; }
+  [ -f "$DEBUG_ASSET" ] || { echo "DebugSupport.swift missing"; exit 1; }
   SRCS="$SRCS $DEBUG_ASSET"
-  echo "    (debug StikDebug: runtime + get-task-allow + overlay DBG)"
+  echo "    (debug StikDebug: runtime + get-task-allow + DBG overlay)"
 fi
 
 # The default is a signed ad-hoc IPA. LiveContainer/SideStore wrappers pass
@@ -95,7 +95,7 @@ SDK="$ISB_SDK"
 OUT="$ISB_FOUNDATION_BUILD"
 VFS="$ISB_VFS"
 [ -e "$SDK" ] || {
-  echo "SDK ausente: $SDK" >&2
+  echo "SDK missing: $SDK" >&2
   exit 2
 }
 WORK="${ISB_BUILD_WORK:-/tmp/build-$APP-$ISB_ARCH-$$}"
@@ -104,22 +104,22 @@ CACHE_DIR="$CACHE_ROOT/$APP-$ISB_ARCH-$OPT_MODE"
 mkdir -p "$CACHE_DIR"
 BIG="$CACHE_DIR/objc-cache"
 OUTPUT="${ISB_OUTPUT:-$ISB_WORKSPACE/$APP.ipa}"
-# Contagem por glob em vez de `find | grep`: nesta shell o grep dentro de um
-# pipe pode nao terminar (medido 2026-10-07), e isso travava o build inteiro.
+# Count by glob instead of `find | grep`: in this shell, grep inside a
+# pipe may not terminate (measured 2026-10-07), and that stalled the whole build.
 have_cache=0
 for f in "$OUT"/swift_*.swiftmodule; do
   [ -f "$f" ] && { have_cache=1; break; }
 done
 if [ ! -d "$OUT" ] || [ "$have_cache" -eq 0 ]; then
-  echo "PERFIL $ISB_ARCH sem cache Swift: $OUT" >&2
-  [ "$ISB_ARCH" = "arm64e" ] && echo "Rode build-arm64e-modules.sh no Linux/VM e copie o cache arm64e." >&2
+  echo "PROFILE $ISB_ARCH has no Swift cache: $OUT" >&2
+  [ "$ISB_ARCH" = "arm64e" ] && echo "Run build-arm64e-modules.sh on Linux/VM and copy the arm64e cache." >&2
   exit 1
 fi
 rm -rf "$WORK" && mkdir -p "$WORK"
 
-# REGRA DO SWIFT: com VARIOS arquivos, codigo top-level (UIApplicationMain) so e'
-# permitido num arquivo literalmente chamado `main.swift`. Copiamos os fontes
-# para o dir de trabalho e renomeamos o arquivo de entrada para main.swift.
+# SWIFT RULE: with MULTIPLE files, top-level code (UIApplicationMain) is only
+# allowed in a file literally named `main.swift`. We copy the sources
+# to the work dir and rename the entry file to main.swift.
 SRCLIST=""
 nfiles=$(echo $SRCS | wc -w)
 if [ "$nfiles" -gt 1 ]; then
@@ -140,9 +140,9 @@ if [ "$nfiles" -gt 1 ]; then
     fi
   done
   SRCLIST=$(ls "$WORK"/src/*.swift)
-  # main.swift PRIMEIRO na lista: a ordem dos arquivos afeta a resolucao de
-  # tipos ObjC do Foundation (FileManager/UUID/Locale somem se o primeiro
-  # arquivo que importa UIKit nao for o main — medido em 2026-08-19).
+  # main.swift FIRST in the list: file order affects resolution of
+  # Foundation ObjC types (FileManager/UUID/Locale disappear if the first
+  # file that imports UIKit is not main — measured 2026-08-19).
   others=""
   for f in $SRCLIST; do
     case "$f" in
@@ -152,7 +152,7 @@ if [ "$nfiles" -gt 1 ]; then
   done
   SRCLIST="$WORK/src/main.swift$others"
   echo "    (entry point: $(basename "$mainsrc") -> main.swift)"
-  # Garante que o runtime de debug seja inicializado antes do run loop.
+  # Ensures the debug runtime is initialized before the run loop.
   if [ "$DEBUG" -eq 1 ] && contains_file "$WORK/src/main.swift" 'UIApplicationMain('; then
     sed -i '/UIApplicationMain(/i ISBDebugRuntime.bootstrap()' "$WORK/src/main.swift"
   fi
@@ -160,11 +160,11 @@ else
   SRCLIST="$SRCS"
 fi
 
-# --- MODO PRIMARY-FILE --------------------------------------------------------
-# Padrao quando ha 2+ arquivos. Delega a compilacao ao build-parallel.py
-# (-primary-file, arquivo-a-arquivo) e o link ao link-ipa.sh. Isso evita a
-# degradacao cross-file do whole-module (Foundation some de outros arquivos
-# quando algum arquivo usa CoreGraphics).
+# --- PRIMARY-FILE MODE --------------------------------------------------------
+# Default when there are 2+ files. Delegates compilation to build-parallel.py
+# (-primary-file, file-by-file) and linking to link-ipa.sh. This avoids the
+# cross-file whole-module degradation (Foundation disappears from other files
+# when some file uses CoreGraphics).
 if [ -z "$MODE" ]; then
   if [ "$nfiles" -gt 1 ]; then MODE=primary; else MODE=whole; fi
 fi
@@ -172,16 +172,16 @@ fi
 if [ "$MODE" = "primary" ]; then
   BP="$SKILL/scripts/build-parallel.py"
   LI="$SKILL/scripts/link-ipa.sh"
-  [ -f "$BP" ] || { echo "build-parallel.py ausente"; exit 1; }
-  [ -f "$LI" ] || { echo "link-ipa.sh ausente"; exit 1; }
+  [ -f "$BP" ] || { echo "build-parallel.py missing"; exit 1; }
+  [ -f "$LI" ] || { echo "link-ipa.sh missing"; exit 1; }
 
-  # build-parallel.py compila um DIRETORIO. Com 1 arquivo so, monta o dir.
+  # build-parallel.py compiles a DIRECTORY. With only 1 file, create the dir.
   if [ "$nfiles" -le 1 ]; then
     mkdir -p "$WORK/src"
     cat $SRCS > "$WORK/src/main.swift"
   fi
 
-  echo "==> compilando (modo primary-file)"
+  echo "==> compiling (primary-file mode)"
   mkdir -p "$WORK/obj"
   CACHE_ARGS=""
   if [ "${ISB_INCREMENTAL:-0}" = "1" ]; then
@@ -192,18 +192,18 @@ if [ "$MODE" = "primary" ]; then
   mkdir -p "$CACHE_DIR/obj"
   python3 "$BP" --module "$APP" --src "$WORK/src" --out "$CACHE_DIR/obj" --jobs 3 $CACHE_ARGS || {
     echo ""
-    echo "BUILD ABORTADO na compilacao arquivo-a-arquivo."
+    echo "BUILD ABORTED during file-by-file compilation."
     exit 1
   }
 
-  # Bridges Objective-C são compiladas separadamente contra o SDK 26.5.
+  # Objective-C bridges are compiled separately against the SDK 26.5.
   EXTRA_OBJS=""
   for f in $OBJC_ARGS; do
-    [ -f "$f" ] || { echo "bridge ObjC ausente: $f"; exit 1; }
+    [ -f "$f" ] || { echo "ObjC bridge missing: $f"; exit 1; }
     base=$(basename "$f" .m)
     mkdir -p "$WORK/extra-obj"
     LD="$ISB_GLIBC_ROOT/ld-linux-aarch64.so.1"
-    [ -x "$LD" ] || { echo "glibc loader ausente: $LD"; exit 1; }
+    [ -x "$LD" ] || { echo "glibc loader missing: $LD"; exit 1; }
     CLANG_LIB="$SW/usr/bin/clang-21"
     CLANG_RES="$SW/usr/lib/clang/21"
     BRIDGE_OK=0
@@ -232,9 +232,9 @@ if [ "$MODE" = "primary" ]; then
   exit 0
 fi
 
-echo "    (modo whole-module)"
+echo "    (whole-module mode)"
 
-# Frameworks extras sao opt-in tambem neste caminho.
+# Extra frameworks are opt-in in this path too.
 EXTRA_FRAMEWORK_FLAGS=""
 for fw in $FRAMEWORK_ARGS; do
   EXTRA_FRAMEWORK_FLAGS="$EXTRA_FRAMEWORK_FLAGS -framework $fw"
@@ -249,24 +249,24 @@ done
 WEAK_FRAMEWORK_FLAGS=""
 for fw in $WEAK_FRAMEWORK_ARGS; do WEAK_FRAMEWORK_FLAGS="$WEAK_FRAMEWORK_FLAGS -weak_framework $fw"; done
 FM_LINK=""
-# Comparacao de palavra em shell puro: `echo | grep -w` pode travar nesta
-# shell e o build ficava parado sem processo filho visivel (2026-10-07).
+# Word comparison in pure shell: `echo | grep -w` may hang in this
+# shell and the build would stand still with no visible child process (2026-10-07).
 has_word(){ case " $1 " in *" $2 "*) return 0 ;; *) return 1 ;; esac; }
 contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
 show_errors(){ _n=${2:-20}; while IFS= read -r _l; do case "$_l" in *error:*) printf '%s\n' "$_l"; _n=$((_n-1)); [ "$_n" -le 0 ] && return 0 ;; esac; done < "$1"; }
 if has_word "$FRAMEWORK_ARGS" FoundationModels; then FM_LINK="-framework FoundationModels"; fi
 if has_word "$WEAK_FRAMEWORK_ARGS" FoundationModels; then FM_LINK="-weak_framework FoundationModels"; fi
 
-# --- monta as flags de modulos explicitos -------------------------------------
+# --- builds the explicit module flags -----------------------------------------
 MODS=""
 for f in "$OUT"/swift_*.swiftmodule; do
   [ -f "$f" ] || continue
   n=$(basename "$f" .swiftmodule); n=${n#swift_}
-  # o overlay Swift do XPC cria ciclo os<->XPC; não inclua esse módulo.
+  # XPC's Swift overlay creates an os<->XPC cycle; do not include this module.
   [ "$n" = "XPC" ] && continue
-  # NOTA (2026-08-19): usar DOIS args (-swift-module-file X=path). O formato
-  # de um arg so (-swift-module-file=X=path) faz os modulos carregarem de forma
-  # corrompida com muitos arquivos (tipos do Foundation/Dispatch somem).
+  # NOTE (2026-08-19): use TWO args (-swift-module-file X=path). The single-arg
+  # format (-swift-module-file=X=path) makes modules load corrupted
+  # with many files (Foundation/Dispatch types disappear).
   MODS="$MODS -swift-module-file=$n=$f"
 done
 for f in "$OUT"/clang_*.pcm; do
@@ -275,10 +275,10 @@ for f in "$OUT"/clang_*.pcm; do
   MODS="$MODS -Xcc -fmodule-file=$n=$f"
 done
 
-echo "==> compilando Swift (pode levar alguns minutos)"
+echo "==> compiling Swift (this may take a few minutes)"
 n=0
 until [ $n -ge 3 ]; do
-  # o iSH tem uma race de startup no swift-frontend (~15-25%): sempre retry
+  # iSH has a swift-frontend startup race (~15-25%): always retry
   if $SF -frontend -c -target "$ISB_TARGET" $ISB_CPU_ARGS -sdk "$SDK" \
       -enable-objc-interop -swift-version 5 $OPT_FLAGS \
       -disable-implicit-swift-modules -Xcc -fno-implicit-modules \
@@ -291,34 +291,34 @@ until [ $n -ge 3 ]; do
     break
   fi
   if contains_file "$WORK/swift.err" 'error:'; then
-    echo "ERRO de compilacao:"; show_errors "$WORK/swift.err" 20; exit 1
+    echo "COMPILATION ERROR:"; show_errors "$WORK/swift.err" 20; exit 1
   fi
-  n=$((n + 1)); echo "   (race de startup, tentativa $n)"
+  n=$((n + 1)); echo "   (startup race, attempt $n)"
 done
-[ -s "$WORK/app.o" ] || { echo "falhou"; cat "$WORK/swift.err" | head -20; exit 1; }
-echo "    objeto: $(stat -c %s "$WORK/app.o") bytes"
+[ -s "$WORK/app.o" ] || { echo "failed"; cat "$WORK/swift.err" | head -20; exit 1; }
+echo "    object: $(stat -c %s "$WORK/app.o") bytes"
 
-# GUARDA OBRIGATORIA: warnings que significam "o app abre e nao funciona".
-# O caso classico e' uma assinatura de delegate que nao casa com o
-# .swiftinterface patchado: o Swift so AVISA e o framework nunca chama o
-# metodo -> app vivo com TELA PRETA. Ver references/WARNINGS-FATAIS.md
+# MANDATORY GUARD: warnings that mean "the app opens and does not work".
+# The classic case is a delegate signature that does not match the
+# patched .swiftinterface: Swift only WARNS and the framework never calls the
+# method -> live app with a BLACK SCREEN. See references/WARNINGS-FATAIS.md
 CW="$SKILL/scripts/check-warnings.py"
 if [ -f "$CW" ]; then
   python3 "$CW" "$WORK/swift.err" || {
     echo ""
-    echo "BUILD ABORTADO: o binario compilaria, mas o app nao funcionaria."
+    echo "BUILD ABORTED: the binary would compile, but the app would not work."
     exit 1
   }
 fi
 
-# Bridges Objective-C também precisam entrar no modo whole-module.
+# Objective-C bridges also need to enter whole-module mode.
 WHOLE_EXTRA_OBJS=""
 for f in $OBJC_ARGS; do
-  [ -f "$f" ] || { echo "bridge ObjC ausente: $f"; exit 1; }
+  [ -f "$f" ] || { echo "ObjC bridge missing: $f"; exit 1; }
   base=$(basename "$f" .m)
   mkdir -p "$WORK/extra-obj"
   LD="$ISB_GLIBC_ROOT/ld-linux-aarch64.so.1"
-  [ -x "$LD" ] || { echo "glibc loader ausente: $LD"; exit 1; }
+  [ -x "$LD" ] || { echo "glibc loader missing: $LD"; exit 1; }
   CLANG_LIB="$SW/usr/bin/clang-21"
   CLANG_RES="$SW/usr/lib/clang/21"
   # The active toolchain root supplies the glibc loader and clang resources.
@@ -347,7 +347,7 @@ CLIENT_ARGS="-client_name UIKit"
   -lswiftCoreFoundation -lswiftQuartzCore -rpath /usr/lib/swift -e _main \
   "$WORK/app.o" $WHOLE_EXTRA_OBJS -o "$WORK/$APP"
 
-echo "==> empacotando"
+echo "==> packaging"
 PAY="$WORK/Payload/$APP.app"
 mkdir -p "$PAY"
 cp "$WORK/$APP" "$PAY/$APP"
@@ -373,10 +373,10 @@ cat > "$PAY/Info.plist" <<EOF
   $STIK_QUERY
 </dict></plist>
 EOF
-# get-task-allow e' necessario para o StikDebug anexar ao processo. A assinatura
-# normal permanece ad-hoc; o entitlement so e' preservado em --debug.
+# get-task-allow is required for StikDebug to attach to the process. Normal
+# signing remains ad-hoc; the entitlement is preserved only in --debug.
 if [ "$UNSIGNED" -eq 1 ]; then
-  echo "    (unsigned: LiveContainer/SideStore fara a assinatura)"
+  echo "    (unsigned: LiveContainer/SideStore will do the signing)"
 elif [ "$DEBUG" -eq 1 ]; then
   cat > "$WORK/debug-entitlements.plist" <<EOT
 <?xml version="1.0" encoding="UTF-8"?>
@@ -392,24 +392,24 @@ else
 fi
 mkdir -p "$ISB_WORKSPACE"
 
-# GUARDA FINAL: invariantes usadas pelo patcher LiveContainer.
+# FINAL GUARD: invariants used by the LiveContainer patcher.
 LCG="$SKILL/scripts/check-livecontainer.py"
 if [ -f "$LCG" ]; then
-  python3 "$LCG" "$PAY/$APP" || { echo "BUILD ABORTADO: Mach-O incompatível com LiveContainer"; exit 1; }
+  python3 "$LCG" "$PAY/$APP" || { echo "BUILD ABORTED: Mach-O incompatible with LiveContainer"; exit 1; }
 fi
 
-# GUARDA FINAL: o binario realmente inicia?
-# Isto NAO depende do warning do compilador, que e' inconstante — olha o que
-# ficou no binario. Ver references/WARNINGS-FATAIS.md
+# FINAL GUARD: does the binary actually start?
+# This does NOT depend on the compiler warning, which is inconsistent — it looks at what
+# ended up in the binary. See references/WARNINGS-FATAIS.md
 CE="$SKILL/scripts/check-entry.py"
 if [ -f "$CE" ]; then
   python3 "$CE" "$PAY/$APP" || {
     echo ""
-    echo "BUILD ABORTADO: o IPA seria gerado, mas o app nao iniciaria."
+    echo "BUILD ABORTED: the IPA would be generated, but the app would not start."
     exit 1
   }
 fi
 
 (cd "$WORK" && zip -qr "$OUTPUT" Payload)
-echo "==> pronto: $OUTPUT"
+echo "==> ready: $OUTPUT"
 ls -lh "$OUTPUT"

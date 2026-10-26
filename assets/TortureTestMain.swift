@@ -1,7 +1,7 @@
-// main.swift do TortureTest.
-// REGRA DO SWIFT: codigo top-level so e' permitido num arquivo chamado main.swift
-// (ou passado como tal). Ao compilar VARIOS .swift juntos, o entry point precisa
-// ficar isolado aqui.
+// TortureTest's main.swift.
+// SWIFT RULE: top-level code is only allowed in a file named main.swift
+// (or passed as such). When compiling SEVERAL .swift files together, the entry point must
+// stay isolated here.
 import Foundation
 import UIKit
 import CoreText

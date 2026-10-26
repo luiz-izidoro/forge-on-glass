@@ -1,27 +1,27 @@
-# Warnings FATAIS — quando "warning" significa "seu app não vai funcionar"
+# FATAL Warnings — when "warning" means "your app won't work"
 
-> **Política de prevenção:** [`BEST-PRACTICES.md`](BEST-PRACTICES.md) é a fonte
-> normativa para diagnóstico e níveis de evidência. Este documento detalha os
-> warnings e as guardas automáticas.
+> **Prevention policy:** [`BEST-PRACTICES.md`](BEST-PRACTICES.md) is the normative
+> source for diagnosis and evidence levels. This document details the
+> warnings and the automatic guards.
 
-> Este documento existe porque uma sessão inteira foi perdida em 2026-08-22
-> perseguindo uma tela preta cuja causa estava **impressa no log do build
-> desde o primeiro minuto**, classificada como *warning*.
+> This document exists because an entire session was lost on 2026-08-22
+> chasing a black screen whose cause was **printed in the build log
+> from the very first minute**, classified as a *warning*.
 
-## A regra geral
+## The general rule
 
-Este projeto compila contra `.swiftinterface` **patchados**. Os patches
-preservam as assinaturas na esmagadora maioria dos casos, mas alguns tipos
-degradaram (tipicamente coleções Swift viraram tipos ObjC crus):
+This project compiles against **patched** `.swiftinterface` files. In the
+overwhelming majority of cases the patches preserve the signatures, but some
+types degraded (typically Swift collections became raw ObjC types):
 
-| Apple | Nosso SDK |
+| Apple | Our SDK |
 |---|---|
 | `[UIApplication.LaunchOptionsKey: Any]?` | `NSDictionary<NSString, AnyObject>?` |
-| `[String: Any]` (em vários delegates) | `NSDictionary` |
+| `[String: Any]` (in several delegates) | `NSDictionary` |
 
-Quando o membro de protocolo é **opcional** — o que vale para quase todo
-delegate herdado do ObjC (`optional func`) — uma assinatura que não casa
-**não é erro**. O Swift apenas avisa:
+When the protocol member is **optional** — which holds for almost every
+delegate inherited from ObjC (`optional func`) — a signature that does not
+match **is not an error**. Swift merely warns:
 
 ```
 warning: instance method 'X' nearly matches optional requirement 'X'
@@ -29,156 +29,157 @@ warning: instance method 'X' nearly matches optional requirement 'X'
 note: candidate has non-matching type '...'
 ```
 
-E então trata o seu método como **um método comum da classe**. O framework
-nunca o chama.
+And then treats your method as **an ordinary method of the class**. The
+framework never calls it.
 
-**Consequência: código que compila 100% limpo (0 erros) e não funciona.**
+**Consequence: code that compiles 100% cleanly (0 errors) and does not work.**
 
-## O caso que custou a sessão
+## The case that cost the session
 
 ```swift
-// ❌ compila com warning; o UIKit NUNCA chama isto
+// ❌ compiles with a warning; UIKit NEVER calls this
 func application(_ a: UIApplication,
                  didFinishLaunchingWithOptions o: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    window = UIWindow(frame: UIScreen.main.bounds)   // nunca executa
+    window = UIWindow(frame: UIScreen.main.bounds)   // never executes
     ...
     return true
 }
 
-// ✅ casa exatamente com o protocolo do SDK
+// ✅ matches the SDK protocol exactly
 func applicationDidFinishLaunching(_ application: UIApplication) {
     window = UIWindow(frame: UIScreen.main.bounds)
     ...
 }
 ```
 
-### Por que o sintoma engana tanto
+### Why the symptom is so misleading
 
-O app **abre**. O processo fica **vivo**. Não há crash, não há log, não há
-crash report. Só uma tela preta — porque nenhuma janela foi criada.
+The app **opens**. The process stays **alive**. There is no crash, no log, no
+crash report. Just a black screen — because no window was ever created.
 
-Isso levou a hipóteses erradas em cascata (todas descartadas com testes):
+This led to a cascade of wrong hypotheses (all discarded through tests):
 
-| Hipótese | Teste que a refutou |
+| Hypothesis | Test that refuted it |
 |---|---|
-| Effects do TCA não emitem | `MinLink` (não usa TCA) também ficou preto |
-| Reatividade do `ViewStore` morta | idem |
-| SwiftUI não renderiza | idem |
-| Shim `__isPlatformVersionAtLeast` | `AvailTest` com o shim abriu (azul) |
-| Símbolo faltando p/ o dyld | `check-undefined.py`: 0 faltando nos dois |
-| Build multi-módulo corrompe metadata | módulo único também ficou preto |
-| `libswift_Concurrency` não carrega | `T1Conc` (que a linka) abriu normalmente |
+| TCA effects don't emit | `MinLink` (doesn't use TCA) also went black |
+| `ViewStore` reactivity is dead | same |
+| SwiftUI doesn't render | same |
+| `__isPlatformVersionAtLeast` shim | `AvailTest` with the shim launched (blue) |
+| Missing symbol for the dyld | `check-undefined.py`: 0 missing in both |
+| Multi-module build corrupts metadata | single module also went black |
+| `libswift_Concurrency` doesn't load | `T1Conc` (which links it) launched normally |
 
-Todos esses testes foram úteis — cada um eliminou um andar inteiro do prédio.
-Mas nenhum era necessário: bastava ler o warning.
+All these tests were useful — each one eliminated an entire floor of the building.
+But none was necessary: reading the warning would have been enough.
 
-## A defesa automática (já integrada)
+## The automatic defense (already integrated)
 
-São **duas** camadas, porque uma só não basta.
+There are **two** layers, because one alone is not enough.
 
-### ⚠️ Por que duas: o warning é INCONSTANTE
-Medido em 2026-08-22: o **mesmo** código com a assinatura errada emite o
-warning em um contexto de compilação e **não emite** em outro (apps pequenos
-com poucos imports compilaram sem avisar — e nesses casos o thunk ObjC até é
-gerado, então o app funciona). Ou seja: **ausência de warning não prova nada**.
-Por isso a segunda camada olha o binário.
+### ⚠️ Why two: the warning is INCONSISTENT
+Measured on 2026-08-22: the **same** code with the wrong signature emits the
+warning in one compilation context and **does not emit it** in another (small
+apps with few imports compiled without warning — and in those cases the ObjC
+thunk is even generated, so the app works). In other words: **absence of a
+warning proves nothing**.
+That is why the second layer looks at the binary.
 
-### Camada 1 — `scripts/check-warnings.py` (fonte/log)
-Roda sozinho no `build-pure-ui.sh` e no `build-parallel.py`; **aborta o build**
-e explica a causa.
+### Layer 1 — `scripts/check-warnings.py` (source/log)
+Runs on its own in `build-pure-ui.sh` and in `build-parallel.py`; **aborts the build**
+and explains the cause.
 ```sh
-python3 scripts/check-warnings.py <arquivo.err>
-python3 scripts/check-warnings.py --dir <dir com *.err>
+python3 scripts/check-warnings.py <file.err>
+python3 scripts/check-warnings.py --dir <dir with *.err>
 ```
 
-### Camada 2 — `scripts/check-entry.py` (binário linkado) ⭐ a que não falha
-Não depende de warning: verifica o que ficou no binário.
+### Layer 2 — `scripts/check-entry.py` (linked binary) ⭐ the one that doesn't fail
+It doesn't depend on a warning: it checks what ended up in the binary.
 
-**O sinal decisivo é o thunk ObjC.** Quando a assinatura casa com o protocolo,
-o compilador emite DOIS símbolos:
+**The decisive signal is the ObjC thunk.** When the signature matches the protocol,
+the compiler emits TWO symbols:
 ```
-_$s<App>11AppDelegateC11application_29didFinishLaunching...F     <- função Swift
-_$s<App>11AppDelegateC11application_29didFinishLaunching...FTo   <- THUNK ObjC ✅
+_$s<App>11AppDelegateC11application_29didFinishLaunching...F     <- Swift function
+_$s<App>11AppDelegateC11application_29didFinishLaunching...FTo   <- ObjC THUNK ✅
 ```
-O sufixo **`To`** ("to ObjC") é o que registra o método no runtime ObjC — é por
-ele que o UIKit chama seu delegate. Sem thunk, o método existe em Swift e o
-ObjC **nunca o vê**.
+The **`To`** suffix ("to ObjC") is what registers the method with the ObjC runtime — it is
+through it that UIKit calls your delegate. Without a thunk, the method exists in Swift and
+ObjC **never sees it**.
 
-> Não adianta procurar o nome do seletor em `__objc_methname`: a string aparece
-> em qualquer binário (vem do próprio UIKit). O que discrimina é o **thunk na
-> sua classe**.
+> There is no point in looking for the selector name in `__objc_methname`: the string appears
+> in any binary (it comes from UIKit itself). What discriminates is the **thunk in
+> your class**.
 
 ```sh
-python3 scripts/check-entry.py <App.ipa | binário>
+python3 scripts/check-entry.py <App.ipa | binary>
 ```
-Verifica: (1) `_main` chama `UIApplicationMain`; (2) o delegate herda de
-`UIResponder`; (3) o método de launch tem thunk ObjC.
+Checks: (1) `_main` calls `UIApplicationMain`; (2) the delegate inherits from
+`UIResponder`; (3) the launch method has an ObjC thunk.
 
-**Validado nos 6 IPAs desta investigação** — separou exatamente os que rodam
-dos que dão tela preta:
+**Validated on the 6 IPAs of this investigation** — it separated exactly those that run
+from those that show a black screen:
 
 | IPA | check-entry | device |
 |---|---|---|
-| Minesweeper (corrigido) | 3/3 ✅ | roda |
-| AvailTest | 3/3 ✅ | roda |
-| Bad3App | 3/3 ✅ | (thunk presente) |
-| MinLink | 2/3 ❌ | tela preta |
-| MineDiag | 2/3 ❌ | tela preta |
-| MinesweeperSM | 2/3 ❌ | tela preta |
+| Minesweeper (fixed) | 3/3 ✅ | runs |
+| AvailTest | 3/3 ✅ | runs |
+| Bad3App | 3/3 ✅ | (thunk present) |
+| MinLink | 2/3 ❌ | black screen |
+| MineDiag | 2/3 ❌ | black screen |
+| MinesweeperSM | 2/3 ❌ | black screen |
 
-### Camada 3 — `scripts/check-protocol-sig.py` — consulte, não adivinhe
-Mostra a assinatura **real** de qualquer protocolo/membro no SDK deste
-toolchain:
+### Layer 3 — `scripts/check-protocol-sig.py` — consult, don't guess
+Shows the **real** signature of any protocol/member in this toolchain's
+SDK:
 ```sh
 python3 scripts/check-protocol-sig.py UIApplicationDelegate didFinishLaunching
 python3 scripts/check-protocol-sig.py --grep "func application"
 ```
-**Antes de implementar qualquer delegate do sistema, consulte aqui.** Copiar da
-documentação da Apple ou escrever de memória é o caminho direto para este bug.
+**Before implementing any system delegate, consult here.** Copying from Apple's
+documentation or writing from memory is the direct path to this bug.
 
-### `assets/AppEntry.swift` — template do entry point
-Já vem com a assinatura correta e a explicação. Copie dele.
+### `assets/AppEntry.swift` — entry point template
+It already ships with the correct signature and the explanation. Copy from it.
 
-### `port-third-party.py` — corrige sozinho
-`fix_delegate_signature()` reescreve `application(_:didFinishLaunchingWithOptions:)`
-→ `applicationDidFinishLaunching(_:)` (todo app de terceiros usa a da Apple).
+### `port-third-party.py` — fixes it automatically
+`fix_delegate_signature()` rewrites `application(_:didFinishLaunchingWithOptions:)`
+→ `applicationDidFinishLaunching(_:)` (every third-party app uses Apple's).
 
-## Como investigar um "compila mas não funciona" (receita)
+## How to investigate a "compiles but doesn't work" (recipe)
 
-1. **Leia os warnings do build.** `grep -c "nearly matches" *.err`. Não pule.
-2. **Rode `check-warnings.py`** sobre os logs.
-3. Se limpo, aí sim bissecte por camadas — e use apps MÍNIMOS (15 KB, segundos
-   de build), nunca o app inteiro (10 min por 1 bit de informação):
-   - o entry point é chamado? (pinte a tela de uma cor no `viewDidLoad`)
-   - a janela existe? o `rootViewController` foi setado?
-   - só então investigue a lógica do app
-4. **Cor de fundo distinta em cada teste** (azul/verde/roxo) — "preto" é
-   ambíguo entre "não rodou" e "rodou e não desenhou".
-5. **Log síncrono**, nunca via `DispatchQueue.main.async`: se a main thread
-   travar ou a view nunca aparecer, o bloco assíncrono nunca roda e você fica
-   sem informação nenhuma.
+1. **Read the build warnings.** `grep -c "nearly matches" *.err`. Don't skip it.
+2. **Run `check-warnings.py`** over the logs.
+3. If clean, then bisect by layers — and use MINIMAL apps (15 KB, seconds
+   to build), never the whole app (10 min per 1 bit of information):
+   - is the entry point called? (paint the screen a solid color in `viewDidLoad`)
+   - does the window exist? was `rootViewController` set?
+   - only then investigate the app's logic
+4. **A distinct background color in each test** (blue/green/purple) — "black" is
+   ambiguous between "it didn't run" and "it ran and didn't draw".
+5. **Synchronous logging**, never via `DispatchQueue.main.async`: if the main thread
+   hangs or the view never appears, the async block never runs and you are left
+   with no information at all.
 
-## Outros warnings que valem atenção
+## Other warnings worth paying attention to
 
-| Warning | Risco |
+| Warning | Risk |
 |---|---|
-| `nearly matches optional requirement` | 🔴 **fatal** — método nunca chamado |
-| `result of call to '...' is unused` em entry | 🟡 pode indicar `UIApplicationMain` mal formado |
-| `was deprecated in iOS` | 🟢 ruído (ignorado pelo checker) |
-| `'retroactive' attribute does not apply` | 🟢 ruído |
-| `auto-linked framework not found: UIUtilities` | 🟢 ruído conhecido do lld |
+| `nearly matches optional requirement` | 🔴 **fatal** — method never called |
+| `result of call to '...' is unused` in the entry point | 🟡 may indicate a malformed `UIApplicationMain` |
+| `was deprecated in iOS` | 🟢 noise (ignored by the checker) |
+| `'retroactive' attribute does not apply` | 🟢 noise |
+| `auto-linked framework not found: UIUtilities` | 🟢 known lld noise |
 
 ---
 
-# Erros FANTASMA — quando o erro mente sobre a causa
+# PHANTOM Errors — when the error lies about the cause
 
-Nem todo problema aparece como warning. Há uma classe de **erros** cuja
-mensagem aponta para o lugar errado. O caso abaixo custou o recurso `--debug`
-inteiro (ficou quebrado e documentado como "validado").
+Not every problem shows up as a warning. There is a class of **errors** whose
+message points to the wrong place. The case below cost the entire `--debug`
+feature (it stayed broken and documented as "validated").
 
-## 🔴 CoreGraphics degrada Foundation (whole-module) — 2026-08-23
+## 🔴 CoreGraphics degrades Foundation (whole-module) — 2026-08-23
 
-### Sintoma
+### Symptom
 
 ```
 error: cannot find 'Bundle' in scope
@@ -187,23 +188,23 @@ error: cannot find 'OperationQueue' in scope
 error: 'nil' requires a contextual type
 ```
 
-O arquivo **importa `Foundation`** e o import está na ordem canônica. O tipo
-existe. Compilado sozinho, o mesmo arquivo passa.
+The file **imports `Foundation`** and the import is in the canonical order. The type
+exists. Compiled on its own, the same file passes.
 
-### Causa
+### Cause
 
-No modo **whole-module**, se algum arquivo do módulo usa **CoreGraphics**
-(`CGRect(origin:size:)`, `CGPoint`, `CGSize`), os tipos ObjC do Foundation
-podem **desaparecer de OUTROS arquivos** do mesmo módulo.
+In **whole-module** mode, if any file in the module uses **CoreGraphics**
+(`CGRect(origin:size:)`, `CGPoint`, `CGSize`), Foundation's ObjC types
+can **disappear from OTHER files** in the same module.
 
-A degradação é **cross-file**: o arquivo que reporta o erro pode não ter uma
-linha de CoreGraphics. No caso real, `main.swift` (com 9 usos de CGRect) fez
-`Bundle` sumir de um `Helper.swift` de 3 linhas.
+The degradation is **cross-file**: the file that reports the error may not have a
+single line of CoreGraphics. In the real case, `main.swift` (with 9 uses of CGRect) made
+`Bundle` vanish from a 3-line `Helper.swift`.
 
-Reproduzido de forma **determinística** (3/3) com dois arquivos:
+Reproduced **deterministically** (3/3) with two files:
 
 ```swift
-// main.swift  — usa CGRect
+// main.swift  — uses CGRect
 // Helper.swift:
 import Foundation
 import UIKit
@@ -213,52 +214,52 @@ public enum Helper {
 // -> error: cannot find 'Bundle' in scope
 ```
 
-Também ocorre **dentro de um único arquivo**, quando a declaração que usa
-CoreGraphics vem **antes** da que usa Foundation:
+It also occurs **within a single file**, when the declaration that uses
+CoreGraphics comes **before** the one that uses Foundation:
 
 ```swift
-// ❌ FALHA
+// ❌ FAILS
 enum H {
   static func r() -> CGRect { CGRect(origin: CGPoint(x:1,y:2), size: CGSize(width:3,height:4)) }
   static func b() -> String { Bundle.main.bundleIdentifier ?? "?" }
 }
-// ✅ OK — mesmo código, ordem invertida
+// ✅ OK — same code, reversed order
 enum H {
   static func b() -> String { Bundle.main.bundleIdentifier ?? "?" }
   static func r() -> CGRect { CGRect(origin: CGPoint(x:1,y:2), size: CGSize(width:3,height:4)) }
 }
 ```
 
-**Descartados por teste** (não são a causa): `public`, `import Darwin`, ordem
-alfabética dos arquivos, string literal multilinha grande, tamanho do arquivo,
-ordem dos imports.
+**Ruled out by testing** (they are not the cause): `public`, `import Darwin`, alphabetical
+ordering of the files, a large multi-line string literal, file size,
+import order.
 
-### ✅ Solução: `-primary-file`
+### ✅ Solution: `-primary-file`
 
-O mesmo código, **sem nenhuma alteração**, compila em segundos no modo
-arquivo-a-arquivo:
+The same code, **with no changes at all**, compiles in seconds in
+file-by-file mode:
 
-| Modo | Resultado |
+| Mode | Result |
 |---|---|
 | whole-module | ❌ `cannot find 'Bundle' in scope` |
 | `-primary-file` (`build-parallel.py`) | ✅ 6 s |
 
-Por isso `build-pure-ui.sh` usa **`--primary-file` como padrão** desde
-2026-08-23 (com 2+ arquivos). Para forçar o modo antigo: `--whole-module`.
+That is why `build-pure-ui.sh` uses **`--primary-file` as the default** since
+2026-08-23 (with 2+ files). To force the old mode: `--whole-module`.
 
-> ⚠️ `-primary-file` não é só "para app grande com TCA/genéricos pesados",
-> como a documentação anterior sugeria. Ele corrige uma **classe inteira de
-> degradação de resolução de nomes** que atinge apps pequenos também.
+> ⚠️ `-primary-file` is not just "for a large app with TCA/heavy generics",
+> as the previous documentation suggested. It fixes an **entire class of
+> name-resolution degradation** that affects small apps too.
 
-### Se você precisa mesmo de whole-module
+### If you really need whole-module
 
-Ordene as declarações: tudo que usa Foundation **antes** de tudo que usa
-CoreGraphics. Ver `assets/DebugSupport.swift` (funções `isbBarFrame()` /
-`isbTitleFrame()` isoladas no fim do arquivo). Isso mitiga o caso intra-file,
-mas **não resolve o cross-file** — para esse, só `-primary-file`.
+Order the declarations: everything that uses Foundation **before** everything that uses
+CoreGraphics. See `assets/DebugSupport.swift` (functions `isbBarFrame()` /
+`isbTitleFrame()` isolated at the end of the file). This mitigates the intra-file case,
+but **does not fix the cross-file** one — for that one, only `-primary-file`.
 
-### Guarda
+### Guard
 
-`scripts/regression-suite.sh` inclui o caso `cgfoundation`, que reproduz
-exatamente essa combinação nos dois modos. Rode-a após mexer nos scripts de
-build.
+`scripts/regression-suite.sh` includes the `cgfoundation` case, which reproduces
+exactly this combination in both modes. Run it after changing the build
+scripts.

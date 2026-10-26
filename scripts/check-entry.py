@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""check-entry.py — verifica, NO BINARIO JA LINKADO, que o app vai realmente
-iniciar. Analise estatica de runtime, nao de fonte.
+"""check-entry.py — verifies, IN THE ALREADY LINKED BINARY, that the app will
+really start. Static runtime analysis, not source analysis.
 
-POR QUE (2026-08-22): duas falhas distintas produzem um app que compila 100%
-limpo e nao funciona:
+WHY (2026-08-22): two distinct failures produce an app that compiles 100%
+clean and does not work:
 
-  1. `_main` VAZIO  -> falta a chamada `UIApplicationMain(...)` no fim do
-     entry point. Sintoma: "App returned from its main function with code 0".
+  1. EMPTY `_main`  -> missing the `UIApplicationMain(...)` call at the end of
+     the entry point. Symptom: "App returned from its main function with code 0".
 
-  2. DELEGATE NUNCA CHAMADO -> o metodo `application(_:didFinishLaunching...)`
-     nao casa com o `.swiftinterface` patchado (launchOptions e' NSDictionary
-     aqui). O requisito e' OPCIONAL, entao o Swift so AVISA — e as vezes NEM
-     ISSO, dependendo do contexto de compilacao. O UIKit nunca chama o metodo,
-     a janela nunca e' criada. Sintoma: app ABRE, fica VIVO, TELA PRETA.
+  2. DELEGATE NEVER CALLED -> the method `application(_:didFinishLaunching...)`
+     does not match the patched `.swiftinterface` (launchOptions is NSDictionary
+     here). The requirement is OPTIONAL, so Swift only WARNS — and sometimes NOT
+     EVEN THAT, depending on the compilation context. UIKit never calls the method,
+     the window is never created. Symptom: app OPENS, stays ALIVE, BLACK SCREEN.
 
-Este script NAO depende do warning (que e' inconstante): ele olha o que ficou
-no binario — o metodo do delegate esta registrado no runtime ObjC com o
-seletor certo?
+This script does NOT depend on the warning (which is inconsistent): it looks at
+what ended up in the binary — is the delegate method registered in the ObjC
+runtime with the right selector?
 
-Uso: python3 check-entry.py <binario | app.ipa>
-rc=0 tudo certo; rc=1 problema que impede o app de iniciar.
+Usage: python3 check-entry.py <binary | app.ipa>
+rc=0 all good; rc=1 a problem that prevents the app from starting.
 """
 import os
 import re
@@ -29,8 +29,8 @@ import sys
 import tempfile
 import zipfile
 
-# Seletores que o UIKit chama para dar boot no app. Pelo menos UM precisa estar
-# implementado pela classe do delegate.
+# Selectors that UIKit calls to boot the app. At least ONE must be
+# implemented by the delegate class.
 LAUNCH_SELECTORS = [
     "applicationDidFinishLaunching:",
     "application:didFinishLaunchingWithOptions:",
@@ -42,11 +42,11 @@ def run(cmd):
 
 
 def has_swift_entry_section(binary):
-    """Detecta Swift puro por metadado que sobrevive a llvm-strip -x.
+    """Detects pure Swift by metadata that survives llvm-strip -x.
 
-    `__swift5_typeref` também aparece em um híbrido Swift+ObjC, portanto não
-    basta para selecionar o caminho estrito. O entry section é emitido pelo
-    entry point Swift de UIApplicationMain e permanece no Mach-O strippado.
+    `__swift5_typeref` also appears in a Swift+ObjC hybrid, so it is not
+    enough to select the strict path. The entry section is emitted by Swift's
+    UIApplicationMain entry point and remains in the stripped Mach-O.
     """
     try:
         out = subprocess.run(
@@ -58,12 +58,12 @@ def has_swift_entry_section(binary):
 
 
 def objc_launch_methods(binary):
-    """Retorna seletores presentes nas tabelas ObjC das classes do binário.
+    """Returns selectors present in the ObjC tables of the binary's classes.
 
-    Strings em `__objc_methname` não bastam: UIKit também traz os mesmos
-    nomes. A tabela `class_ro_t -> baseMethods -> method_t` só contém métodos
-    que realmente receberam exposição ObjC (inclusive thunks Swift), e
-    sobrevive ao `llvm-strip -x`.
+    Strings in `__objc_methname` are not enough: UIKit brings the same names
+    too. The `class_ro_t -> baseMethods -> method_t` table only contains methods
+    that actually received ObjC exposure (including Swift thunks), and
+    survives `llvm-strip -x`.
     """
     try:
         data = open(binary, "rb").read()
@@ -153,9 +153,9 @@ def objc_launch_methods(binary):
 
 
 def raw(binary):
-    """Bytes do binario. Necessario porque simbolos de classe ObjC
-    (_OBJC_CLASS_$_X) e seletores vivem em secoes de dados que o `llvm-nm`
-    nem sempre lista — sobretudo em binarios 100% ObjC (build hibrido)."""
+    """Binary bytes. Needed because ObjC class symbols
+    (_OBJC_CLASS_$_X) and selectors live in data sections that `llvm-nm`
+    does not always list — especially in 100% ObjC binaries (hybrid build)."""
     try:
         with open(binary, "rb") as f:
             return f.read()
@@ -164,11 +164,11 @@ def raw(binary):
 
 
 def is_objc_app(binary):
-    """Detecta o build HIBRIDO (UI em Objective-C, logica em Swift).
+    """Detects the HYBRID build (UI in Objective-C, logic in Swift).
 
-    Nesses binarios o AppDelegate e' uma classe ObjC de verdade: nao existe
-    simbolo Swift mangled nem thunk `To` — o metodo ja E' ObjC nativo. Aplicar
-    as regras do caminho Swift puro aqui gera FALSO POSITIVO.
+    In these binaries the AppDelegate is a real ObjC class: there is no
+    mangled Swift symbol or `To` thunk — the method IS native ObjC. Applying
+    the pure-Swift path rules here produces a FALSE POSITIVE.
     """
     d = raw(binary)
     tem_selector = (b"applicationDidFinishLaunching:" in d or
@@ -181,7 +181,7 @@ def is_objc_app(binary):
 
 
 def extract(path):
-    """Aceita .ipa ou binario. Retorna (caminho_binario, tempdir_ou_None)."""
+    """Accepts .ipa or binary. Returns (binary_path, tempdir_or_None)."""
     if not path.endswith(".ipa"):
         return path, None
     td = tempfile.mkdtemp(prefix="checkentry")
@@ -200,45 +200,45 @@ def extract(path):
 
 
 def check_main(binary):
-    """_main precisa chamar UIApplicationMain."""
+    """_main must call UIApplicationMain."""
     nm = run(["llvm-nm", binary])
     if re.search(r"^\s*U\s+_UIApplicationMain\s*$", nm, re.M) or \
        " U _UIApplicationMain" in nm:
-        return True, "_main referencia UIApplicationMain"
-    return False, ("_main NAO chama UIApplicationMain -> o app sai imediatamente "
-                   "('returned from main with code 0'). Falta a linha "
+        return True, "_main references UIApplicationMain"
+    return False, ("_main does NOT call UIApplicationMain -> the app exits immediately "
+                   "('returned from main with code 0'). Missing the line "
                    "`UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, "
-                   "nil, NSStringFromClass(AppDelegate.self))` NO FIM do entry point.")
+                   "nil, NSStringFromClass(AppDelegate.self))` AT THE END of the entry point.")
 
 
 def check_delegate(binary):
-    """O metodo do delegate precisa ter THUNK ObjC (@objc thunk).
+    """The delegate method must have an ObjC THUNK (@objc thunk).
 
-    ESTE E' O TESTE DECISIVO (descoberto em 2026-08-22 comparando um app que
-    roda com um que da tela preta):
+    THIS IS THE DECISIVE TEST (discovered 2026-08-22 comparing an app that
+    runs with one that shows a black screen):
 
-    Quando a assinatura CASA com o requisito do protocolo, o compilador emite
-    DOIS simbolos para o metodo:
-        ..._$s<App>11AppDelegateC11application_29didFinish...F     <- funcao Swift
-        ..._$s<App>11AppDelegateC11application_29didFinish...FTo   <- THUNK ObjC  ✅
-    O sufixo `To` ("to ObjC") e' o thunk que registra o metodo no runtime ObjC.
-    E' por ele que o UIKit chama o seu delegate.
+    When the signature MATCHES the protocol requirement, the compiler emits
+    TWO symbols for the method:
+        ..._$s<App>11AppDelegateC11application_29didFinish...F     <- Swift function
+        ..._$s<App>11AppDelegateC11application_29didFinish...FTo   <- ObjC THUNK  ✅
+    The `To` suffix ("to ObjC") is the thunk that registers the method in the ObjC runtime.
+    It is through it that UIKit calls your delegate.
 
-    Quando a assinatura NAO casa (launchOptions com tipo diferente do
-    .swiftinterface patchado), o compilador emite APENAS a funcao Swift, SEM o
-    thunk `To`. O metodo existe no binario, mas o ObjC nunca o ve
-    -> UIKit nunca chama -> janela nunca criada -> TELA PRETA.
+    When the signature DOES NOT match (launchOptions with a different type from
+    the patched .swiftinterface), the compiler emits ONLY the Swift function, WITHOUT the
+    `To` thunk. The method exists in the binary, but ObjC never sees it
+    -> UIKit never calls it -> window never created -> BLACK SCREEN.
 
-    Nota: procurar o NOME DO SELETOR em __objc_methname NAO funciona — a string
-    aparece de qualquer jeito (vem do proprio UIKit). O que discrimina e' o
-    thunk na SUA classe.
+    Note: searching for the SELECTOR NAME in __objc_methname does NOT work — the string
+    appears either way (it comes from UIKit itself). What discriminates is the
+    thunk in YOUR class.
     """
     nm = run(["llvm-nm", binary])
 
-    # Simbolos Swift do metodo de launch, na classe do PROPRIO app.
-    # ATENCAO ao name mangling: o nome da classe pode aparecer comprimido
-    # (ex.: `_$s7TodoApp0B8DelegateC29applicationDidFinishLaunching...`), entao
-    # NAO procure a substring "AppDelegate" — procure o NOME DO METODO.
+    # Swift symbols of the launch method, in the APP's OWN class.
+    # ATTENTION to name mangling: the class name may appear compressed
+    # (e.g. `_$s7TodoApp0B8DelegateC29applicationDidFinishLaunching...`), so
+    # do NOT look for the substring "AppDelegate" — look for the METHOD NAME.
     swift_fns = re.findall(
         r"^\S+\s+[tTsSdD]\s+(_\$s\S*(?:applicationDidFinishLaunching|"
         r"didFinishLaunchingWithOptions)\S*)$", nm, re.M)
@@ -246,78 +246,78 @@ def check_delegate(binary):
     swift_binary = has_swift_entry_section(binary)
     objc_methods = objc_launch_methods(binary)
 
-    # Um Swift puro pode perder os símbolos `_$s...To` após `llvm-strip -x`,
-    # mas a tabela de métodos ObjC continua registrando o thunk e o seletor.
-    # Nesse caso, a seção __swift5_entry mantém a identificação positiva de
-    # Swift e a tabela é a prova de exposição ao UIKit.
+    # A pure Swift binary may lose the `_$s...To` symbols after `llvm-strip -x`,
+    # but the ObjC method table still registers the thunk and the selector.
+    # In that case, the __swift5_entry section keeps the positive Swift
+    # identification and the table is the proof of exposure to UIKit.
     if swift_binary:
         launch_methods = set(LAUNCH_SELECTORS) & objc_methods
         if not swift_fns and launch_methods:
-            return True, ("app SWIFT puro strippado: seletor de launch permanece "
-                          "na tabela ObjC -> o UIKit consegue chamar o delegate")
+            return True, ("stripped pure SWIFT app: launch selector remains "
+                          "in the ObjC table -> UIKit can call the delegate")
         if not swift_fns and not launch_methods:
-            return False, ("app SWIFT puro identificado por __swift5_entry, mas "
-                           "nenhum método de launch está na tabela ObjC. "
-                           "O delegate não será chamado.")
+            return False, ("pure SWIFT app identified by __swift5_entry, but "
+                           "no launch method is in the ObjC table. "
+                           "The delegate will not be called.")
 
-    # --- caminho HIBRIDO (UI em ObjC): o delegate e' uma classe ObjC nativa.
+    # --- HYBRID path (UI in ObjC): the delegate is a native ObjC class.
     if not swift_binary and is_objc_app(binary):
         d = raw(binary)
         if b"applicationDidFinishLaunching:" in d or \
            b"application:didFinishLaunchingWithOptions:" in d:
-            return True, ("app HIBRIDO (ObjC): metodo de launch presente como "
-                          "seletor ObjC nativo -> o UIKit consegue chamar o delegate")
-        return False, ("nenhum metodo de launch encontrado no shell ObjC. "
-                       "Implemente `-(void)applicationDidFinishLaunching:` "
-                       "no AppDelegate do AppShell.m")
+            return True, ("HYBRID app (ObjC): launch method present as a "
+                          "native ObjC selector -> UIKit can call the delegate")
+        return False, ("no launch method found in the ObjC shell. "
+                       "Implement `-(void)applicationDidFinishLaunching:` "
+                       "in AppShell.m's AppDelegate")
 
-    # Simbolos Swift do metodo de launch, na classe do PROPRIO app.
-    # ATENCAO ao name mangling: o nome da classe pode aparecer comprimido
-    # (ex.: `_$s7TodoApp0B8DelegateC29applicationDidFinishLaunching...`), entao
-    # NAO procure a substring "AppDelegate" — procure o NOME DO METODO, que o
-    # mangling preserva literalmente (precedido do seu tamanho).
+    # Swift symbols of the launch method, in the APP's OWN class.
+    # ATTENTION to name mangling: the class name may appear compressed
+    # (e.g. `_$s7TodoApp0B8DelegateC29applicationDidFinishLaunching...`), so
+    # do NOT look for the substring "AppDelegate" — look for the METHOD NAME, which
+    # mangling preserves literally (preceded by its length).
     swift_fns = re.findall(
         r"^\S+\s+[tTsSdD]\s+(_\$s\S*(?:applicationDidFinishLaunching|"
         r"didFinishLaunchingWithOptions)\S*)$", nm, re.M)
     if not swift_fns:
-        return False, ("nenhum metodo de launch implementado no app. "
-                       "Implemente `applicationDidFinishLaunching(_ application: "
-                       "UIApplication)` no AppDelegate.")
+        return False, ("no launch method implemented in the app. "
+                       "Implement `applicationDidFinishLaunching(_ application: "
+                       "UIApplication)` in AppDelegate.")
 
-    # o thunk ObjC termina em `To`. (`Tq` = method descriptor, nao serve.)
+    # the ObjC thunk ends in `To`. (`Tq` = method descriptor, not usable.)
     thunks = [s for s in swift_fns if s.endswith("To")]
     if thunks:
-        return True, ("metodo de launch exposto ao ObjC (thunk `To` presente) "
-                      "-> o UIKit consegue chamar o delegate")
+        return True, ("launch method exposed to ObjC (`To` thunk present) "
+                      "-> UIKit can call the delegate")
 
     base = swift_fns[0]
     hint = ""
     if "didFinishLaunchingWithOptions" in base:
-        hint = ("\n           A assinatura `application(_:didFinishLaunchingWithOptions:)` "
-                "NAO casa com o\n           .swiftinterface patchado (launchOptions "
-                "e' NSDictionary aqui).\n           TROQUE por: "
+        hint = ("\n           The signature `application(_:didFinishLaunchingWithOptions:)` "
+                "does NOT match the\n           patched .swiftinterface (launchOptions "
+                "is NSDictionary here).\n           REPLACE it with: "
                 "`func applicationDidFinishLaunching(_ application: UIApplication)`"
-                "\n           Ver assets/AppEntry.swift e references/WARNINGS-FATAIS.md")
-    return False, ("o metodo de launch existe em Swift mas NAO tem thunk ObjC "
-                   "(`...To`).\n           O UIKit NUNCA vai chama-lo -> a janela "
-                   "nunca e' criada -> APP ABRE COM TELA PRETA." + hint)
+                "\n           See assets/AppEntry.swift and references/WARNINGS-FATAIS.md")
+    return False, ("the launch method exists in Swift but has NO ObjC thunk "
+                   "(`...To`).\n           UIKit will NEVER call it -> the window "
+                   "is never created -> APP OPENS WITH A BLACK SCREEN." + hint)
 
 
 def check_delegate_class(binary):
-    """A classe do delegate precisa existir e herdar de UIResponder."""
+    """The delegate class must exist and inherit from UIResponder."""
     nm = run(["llvm-nm", binary])
     d = raw(binary)
-    # O simbolo pode estar so na secao de dados (nao listado pelo llvm-nm),
-    # que e' o caso tipico do binario 100% ObjC do build hibrido.
+    # The symbol may be only in the data section (not listed by llvm-nm),
+    # which is the typical case for the 100% ObjC binary from the hybrid build.
     has_resp = ("_OBJC_METACLASS_$_UIResponder" in nm
                 or "_OBJC_CLASS_$_UIResponder" in nm
                 or b"_OBJC_CLASS_$_UIResponder" in d
                 or b"_OBJC_METACLASS_$_UIResponder" in d)
     if not has_resp:
-        return False, ("o binario nao referencia UIResponder — o AppDelegate "
-                       "provavelmente nao herda de UIResponder (obrigatorio "
-                       "para UIApplicationMain encontra-lo).")
-    return True, "AppDelegate herda de UIResponder"
+        return False, ("the binary does not reference UIResponder — AppDelegate "
+                       "probably does not inherit from UIResponder (required "
+                       "for UIApplicationMain to find it).")
+    return True, "AppDelegate inherits from UIResponder"
 
 
 def main():
@@ -326,24 +326,24 @@ def main():
         return 2
     binary, td = extract(sys.argv[1])
     if not binary:
-        print("nao achei o binario em %s" % sys.argv[1])
+        print("could not find the binary in %s" % sys.argv[1])
         return 2
 
-    print("binario: %s" % binary)
+    print("binary: %s" % binary)
     ok = True
     for fn in (check_main, check_delegate_class, check_delegate):
         good, msg = fn(binary)
-        print(("  [OK]   " if good else "  [FALHA] ") + msg)
+        print(("  [OK]   " if good else "  [FAIL] ") + msg)
         ok = ok and good
 
     if td:
         shutil.rmtree(td, ignore_errors=True)
 
     if ok:
-        print("\ncheck-entry: o app tem entry point e delegate validos.")
+        print("\ncheck-entry: the app has a valid entry point and delegate.")
         return 0
-    print("\ncheck-entry: ESTE APP NAO VAI INICIAR CORRETAMENTE.")
-    print("Ver references/WARNINGS-FATAIS.md e assets/AppEntry.swift")
+    print("\ncheck-entry: THIS APP WILL NOT START CORRECTLY.")
+    print("See references/WARNINGS-FATAIS.md and assets/AppEntry.swift")
     return 1
 
 

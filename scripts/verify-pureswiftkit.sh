@@ -12,7 +12,7 @@ import UIKit
 import CoreText
 import Dispatch
 
-// BUG 5 + CGRect: geometria completa via helpers
+// BUG 5 + CGRect: complete geometry via helpers
 func geo() -> [CGFloat] {
     let r = cgRect(10, 20, 100, 50)
     return [r.cgMinX, r.cgMidX, r.cgMaxX, r.cgMinY, r.cgMidY, r.cgMaxY,
@@ -55,7 +55,7 @@ final class Desenho: UIView {
     }
 }
 
-// BUG 3: Seconds no lugar de TimeInterval
+// BUG 3: Seconds instead of TimeInterval
 func anima(_ v: UIView, duracao: Seconds = 0.3, atraso: Seconds = 0) -> Seconds {
     return duracao + atraso
 }
@@ -63,8 +63,8 @@ func anima(_ v: UIView, duracao: Seconds = 0.3, atraso: Seconds = 0) -> Seconds 
 // BUG 6: edge insets
 func insets() -> UIEdgeInsets { edgeInsets(1, 2, 3, 4) }
 
-// BUG 4: FileManager por path
-func arquivos() -> [String] {
+// BUG 4: FileManager by path
+func files() -> [String] {
     let d = FS.documentsPath
     FS.makeDirectory(d + "/x")
     _ = FS.exists(d); _ = FS.isDirectory(d)
@@ -74,7 +74,7 @@ func arquivos() -> [String] {
     return FS.listRecursive(d, suffix: ".json")
 }
 
-// BUG 7: dequeue nas duas coleções
+// BUG 7: dequeue in both collections
 final class Listas: NSObject {
     func collection() -> UICollectionViewDiffableDataSource<Int, Int> {
         let l = UICollectionViewFlowLayout()
@@ -103,7 +103,7 @@ import Dispatch
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     func applicationDidFinishLaunching(_ a: UIApplication) {
-        _ = geo(); _ = geoBools(); _ = insets(); _ = arquivos()
+        _ = geo(); _ = geoBools(); _ = insets(); _ = files()
         _ = Listas().collection(); _ = Listas().tabela()
         _ = anima(UIView())
     }
@@ -112,10 +112,10 @@ UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, nil,
                   NSStringFromClass(AppDelegate.self))
 EOF
 
-echo "==> compilando app que exercita TODOS os workarounds..."
+echo "==> compiling an app that exercises ALL workarounds..."
 /var/minis/skills/forge-on-glass/scripts/build-pure-ui.sh \
   VerifyPSKit ro.izido.verify "$W/uses.swift $A/PureSwiftKit.swift $W/main.swift"
 
 echo ""
-echo "✅ PureSwiftKit cobre todas as degradacoes catalogadas."
+echo "✅ PureSwiftKit covers all catalogued degradations."
 rm -f /var/minis/workspace/VerifyPSKit.ipa

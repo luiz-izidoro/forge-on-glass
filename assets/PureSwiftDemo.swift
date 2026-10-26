@@ -1,15 +1,15 @@
-// PureSwiftDemo — app iOS 100% Swift (nenhuma linha de Objective-C).
-// Prova que `import UIKit` + `import Foundation` funcionam em Swift puro
-// compilado inteiramente dentro do iSH (iPhone), sem Mac no build.
+// PureSwiftDemo — 100% Swift iOS app (not a single line of Objective-C).
+// Proves that `import UIKit` + `import Foundation` work in pure Swift
+// compiled entirely inside iSH (iPhone), with no Mac in the build.
 //
-// Consulte references/HANDOFF.md antes de editar.
-//   1. CGRect(x:y:width:height:) e' @_transparent e NAO resolve -> use rect()
-//   2. A ORDEM DOS IMPORTS IMPORTA: `import Foundation` ANTES de `import UIKit`.
-//      Invertido, as APIs String do UIKit passam a exigir NSString.
+// See references/HANDOFF.md before editing.
+//   1. CGRect(x:y:width:height:) is @_transparent and does NOT resolve -> use rect()
+//   2. IMPORT ORDER MATTERS: `import Foundation` BEFORE `import UIKit`.
+//      Reversed, UIKit's String APIs start requiring NSString.
 import Foundation
 import UIKit
 
-/// CGRect por campos (o init @_transparent do CoreGraphics nao resolve).
+/// CGRect built field by field (the CoreGraphics @_transparent init does not resolve).
 func rect(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> CGRect {
     var r = CGRect()
     r.origin.x = CGFloat(x)
@@ -32,10 +32,10 @@ final class ViewController: UIViewController {
         let title = UILabel(frame: rect(20, 20, 280, 40))
         title.textColor = UIColor.white
         title.font = UIFont.boldSystemFont(ofSize: 22)
-        title.text = "Swift puro no iPhone"
+        title.text = "Pure Swift on iPhone"
         card.addSubview(title)
 
-        // logica Swift real: generics, closures, map/filter/reduce
+        // real Swift logic: generics, closures, map/filter/reduce
         let nums = Array(1...10)
         let evens = nums.filter { $0 % 2 == 0 }
         let total = evens.reduce(0, +)
@@ -44,18 +44,18 @@ final class ViewController: UIViewController {
         let body = UILabel(frame: rect(20, 76, 280, 70))
         body.numberOfLines = 3
         body.textColor = UIColor.lightGray
-        body.text = "pares: \(joined)\nsoma: \(total)"
+        body.text = "evens: \(joined)\nsum: \(total)"
         card.addSubview(body)
 
         let stamp = UILabel(frame: rect(20, 160, 280, 24))
         stamp.textColor = UIColor.systemGreen
         stamp.font = UIFont.systemFont(ofSize: 13)
-        stamp.text = "compilado no iSH · \(Int(Date().timeIntervalSince1970))"
+        stamp.text = "compiled on iSH · \(Int(Date().timeIntervalSince1970))"
         card.addSubview(stamp)
 
         let btn = UIButton(type: .system)
         btn.frame = rect(20, 190, 280, 34)
-        btn.setTitle("Toque aqui", for: .normal)
+        btn.setTitle("Tap here", for: .normal)
         card.addSubview(btn)
     }
 }

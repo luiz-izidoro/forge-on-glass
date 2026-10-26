@@ -26,7 +26,7 @@ for commit in $(git rev-list --all); do
     echo "RELEASE: private key in history"; exit 1
   fi
 done
-# Sem `grep`: nesta shell o GNU grep pode nao terminar (ver verify-docs.sh).
+# No `grep`: in this shell GNU grep may not terminate (see verify-docs.sh).
 contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
 contains_file scripts/profile.sh arm64e
 contains_file scripts/acceptance-suite.sh acceptance-suite-arm64e.sh

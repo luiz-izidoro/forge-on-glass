@@ -14,7 +14,7 @@ set -e
 
 # arm64e/PAC is the only supported profile.
 ARCH="${ISB_ARCH:-arm64e}"
-[ "$ARCH" = arm64e ] || { echo "ISB_ARCH descontinuado: somente arm64e.v1/PAC e suportado" >&2; exit 2; }
+[ "$ARCH" = arm64e ] || { echo "ISB_ARCH unsupported: only arm64e.v1/PAC is supported" >&2; exit 2; }
 CLANG=/usr/bin/clang
 . "$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)/scripts/profile.sh"
 SW="$ISB_SW"
@@ -52,11 +52,11 @@ for arg in "$@"; do
  done
 if [ "$DEBUG" -eq 1 ] && [ -z "${ISB_UNSIGNED+x}" ] && [ "$UNSIGNED" = 0 ]; then UNSIGNED=0; fi
 if [ "$DEBUG" -eq 1 ] && [ "$PURE" -eq 1 ]; then
-  echo "--debug requer build-pure-ui.sh para o fluxo recomendado de UIKit/SwiftUI" >&2
+  echo "--debug requires build-pure-ui.sh for the recommended UIKit/SwiftUI workflow" >&2
   exit 2
 fi
 DEBUG_ASSET="$(CDPATH= cd -- "$(dirname "$0")/../assets" && pwd)/DebugSupport.swift"
-if [ "$DEBUG" -eq 1 ] && [ ! -f "$DEBUG_ASSET" ]; then echo "DebugSupport.swift ausente"; exit 1; fi
+if [ "$DEBUG" -eq 1 ] && [ ! -f "$DEBUG_ASSET" ]; then echo "DebugSupport.swift missing"; exit 1; fi
 
 WORK=/tmp/ipabuild_$$
 rm -rf "$WORK"; mkdir -p "$WORK/Payload/$APP.app"
@@ -95,8 +95,8 @@ if [ $PURE -eq 1 ]; then
     $SWIFT_INPUT
   SWIFT_OBJ="$WORK/app.o"
 else
-  # O builder hibrido compila a logica Swift separadamente do shell ObjC.
-  # Nao injeta o runtime UIKit aqui: use build-pure-ui.sh para o overlay DBG.
+  # The hybrid builder compiles the Swift logic separately from the ObjC shell.
+  # Do not inject the UIKit runtime here: use build-pure-ui.sh for the DBG overlay.
   LOGIC_INPUT="$LOGIC_SRC"
   swiftc_retry "$WORK/logic.o" -c -target "$TARGET" -sdk "$SDK" \
     -resource-dir "$SW/usr/lib/swift" -I "$MODS" -parse-as-library -O \
@@ -186,7 +186,7 @@ cat > "$WORK/ent.plist" <<EOF
 </dict></plist>
 EOF
 if [ "$UNSIGNED" -eq 1 ]; then
-  echo "    (unsigned: LiveContainer/SideStore fara a assinatura)"
+  echo "    (unsigned: LiveContainer/SideStore will do the signing)"
 elif [ "$DEBUG" -eq 1 ]; then
   ldid -S"$WORK/ent.plist" "$APPDIR/$APP"
 else

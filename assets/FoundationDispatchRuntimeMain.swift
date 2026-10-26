@@ -16,7 +16,7 @@ final class FoundationDispatchRuntimeViewController: UIViewController {
         labelFrame.origin.x = 20; labelFrame.origin.y = 70
         labelFrame.size.width = 360; labelFrame.size.height = 360
         label.frame = labelFrame
-        label.text = "Foundation + Dispatch\nToque para testar"
+        label.text = "Foundation + Dispatch\nTap to test"
         view.addSubview(label)
 
         let button = UIButton(type: .system)
@@ -24,13 +24,13 @@ final class FoundationDispatchRuntimeViewController: UIViewController {
         buttonFrame.origin.x = 20; buttonFrame.origin.y = 450
         buttonFrame.size.width = 300; buttonFrame.size.height = 55
         button.frame = buttonFrame
-        button.setTitle("Executar smoke test", for: .normal)
+        button.setTitle("Run smoke test", for: .normal)
         button.addTarget(self, action: #selector(runSmoke), for: .touchUpInside)
         view.addSubview(button)
     }
 
     @objc func runSmoke() {
-        label.text = "Foundation + Dispatch\nExecutando..."
+        label.text = "Foundation + Dispatch\nRunning..."
         let start = Date()
         let path = NSTemporaryDirectory() + "/forge-foundation-dispatch"
         let group = DispatchGroup()
