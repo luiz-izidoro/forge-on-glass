@@ -1,5 +1,5 @@
 #!/bin/sh
-# regression-suite.sh — bateria de regressao da skill ios-swift-builder.
+# regression-suite.sh — bateria de regressao da skill forge-on-glass.
 #
 # Compila os assets de referencia nos DOIS modos (primary-file e whole-module)
 # e reporta uma tabela. Serve para (a) detectar regressao ao mexer nos scripts,

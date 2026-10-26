@@ -1,4 +1,4 @@
-// DebugSupport.swift — instrumentacao opcional do ios-swift-builder.
+// DebugSupport.swift — instrumentacao opcional do forge-on-glass.
 // Incluido apenas pelos builders quando recebem --debug.
 // StikDebug permanece externo: este arquivo so fornece logs, overlay e o
 // pedido URL para habilitar JIT no processo atual.
@@ -24,7 +24,7 @@ public enum ISBDebugRuntime {
     public static var processID: Int32 { getpid() }
 
     public static func log(_ message: String) {
-        let tag = "[ios-swift-builder][pid=\(processID)]"
+        let tag = "[forge-on-glass][pid=\(processID)]"
         NSLog("%@ %@", tag, message)
         print("\(tag) \(message)")
     }
@@ -112,7 +112,7 @@ public enum ISBDebugRuntime {
         const pid = get_pid();
         let attached = false;
         let stops = 0;
-        log('ios-swift-builder persistent low-level attach');
+        log('forge-on-glass persistent low-level attach');
         log('pid = ' + pid);
         try {
             const attach = send_command('vAttach;' + pid.toString(16));
@@ -142,7 +142,7 @@ public enum ISBDebugRuntime {
             log('debug session interrupted: ' + (error && error.message ? error.message : error));
         }
         if (attached) show('detach', send_command('D'));
-        log('ios-swift-builder persistent low-level session complete');
+        log('forge-on-glass persistent low-level session complete');
         """
         if let data = lowLevelScript.data(using: .utf8) {
             let encoded = data.base64EncodedString()
@@ -150,7 +150,7 @@ public enum ISBDebugRuntime {
                 .replacingOccurrences(of: "/", with: "_")
                 .replacingOccurrences(of: "=", with: "")
             items.append(URLQueryItem(name: "script-data", value: encoded))
-            items.append(URLQueryItem(name: "script-name", value: "ios-swift-builder-lowlevel.js"))
+            items.append(URLQueryItem(name: "script-name", value: "forge-on-glass-lowlevel.js"))
         }
         components.queryItems = items
         guard let url = components.url else {

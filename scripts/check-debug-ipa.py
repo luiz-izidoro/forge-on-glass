@@ -24,7 +24,7 @@ try:
     checks = [
         ("get-task-allow", bool(re.search(r"get-task-allow.*true", ent, re.I | re.S)), ent),
         ("LSApplicationQueriesSchemes/stikdebug", "stikdebug" in pl.get("LSApplicationQueriesSchemes", []), str(pl)),
-        ("DebugSupport", b"ios-swift-builder" in data and (b"stikdebug" in data or b"debug overlay" in data), "binary strings"),
+        ("DebugSupport", b"forge-on-glass" in data and (b"stikdebug" in data or b"debug overlay" in data), "binary strings"),
     ]
     ok = True
     for name, good, detail in checks:

@@ -1,4 +1,4 @@
-# Melhores práticas normativas — ios-swift-builder
+# Melhores práticas normativas — forge-on-glass
 
 > **Fonte normativa.** Este documento consolida as decisões que devem orientar
 > novos projetos e novas sessões. Um documento histórico pode explicar como uma
