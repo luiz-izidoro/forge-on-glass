@@ -1,5 +1,7 @@
 # Third-party notices
 
+## License scope
+
 Forge on Glass is distributed under the MIT License (see [`LICENSE`](LICENSE)). It depends on
 third-party software and platform components that remain under their own licenses and terms.
 
@@ -67,6 +69,8 @@ The use of these names is descriptive and does not imply affiliation, endorsemen
 partnership. This project is independent and is **not affiliated with, endorsed by, sponsored by,
 or maintained by** Apple Inc., the iSH project, Alpine Linux, LiveContainer, SideStore, StikDebug,
 OpenMinis, LLVM, the Python Software Foundation, Docker, Canonical or GitHub.
+
+## Legal notice
 
 This notice is informational, not legal advice. Verify the current upstream license before
 redistributing any third-party component.
