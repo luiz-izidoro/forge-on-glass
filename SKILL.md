@@ -5,7 +5,8 @@ description: >-
   Build native iOS IPA apps with Swift inside iSH using arm64e.v1/PAC. Use for
   UIKit, SwiftUI, Foundation, Dispatch, CoreML, Vision, Accelerate,
   NaturalLanguage, FoundationModels, LiveContainer, StikDebug, IPA validation,
-  third-party Swift ports and toolchain troubleshooting.
+  third-party Swift ports, toolchain troubleshooting, and as a skill for
+  OpenMinis or other compatible on-device harnesses.
 ---
 
 # iOS Swift Builder
@@ -17,6 +18,23 @@ IPAs are user-provided and must remain outside Git.
 
 > Unofficial; not affiliated with Apple. Respect Apple/Xcode, Swift, glibc and
 > third-party licenses.
+
+## On-device and harness use
+
+This skill is designed for a device that builds for itself:
+
+- compile inside **iSH** on iPhone/iPad, then open the IPA in
+  [LiveContainer](https://github.com/LiveContainer/LiveContainer) (or a similar host) to run it on
+  the same device;
+- for a guest that the host will transform and re-sign, build unsigned (`--unsigned`) and record
+  S3/S4 runtime evidence separately from structural S2 validation;
+- `SKILL.md` is the harness entry point. The skill was tested and validated with
+  [OpenMinis](https://github.com/OpenMinis/OpenMinis) and can be consumed by other harnesses that
+  support skill folders, shell execution and workspace file access.
+
+**No affiliation:** LiveContainer and OpenMinis are independent third-party projects. This
+repository is not affiliated with, endorsed by, or sponsored by them; their names and trademarks
+belong to their owners.
 
 ## Before any task
 

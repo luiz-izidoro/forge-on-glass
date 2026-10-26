@@ -1,12 +1,12 @@
 <p align="center">
-  <strong>Build native iOS <code>.ipa</code> files inside iSH — no Mac in the loop.</strong>
+  <strong>Build native iOS <code>.ipa</code> files on the device itself — then run them there with LiveContainer.</strong>
 </p>
 
 <h1 align="center">iOS Swift Builder</h1>
 
 <p align="center">
   A reproducible, script-driven toolkit for compiling, linking, signing and validating
-  arm64e/PAC iOS apps on iSH or Linux, using inputs you are licensed to use.
+  arm64e/PAC iOS apps on iOS/iSH or Linux, using inputs you are licensed to use.
 </p>
 
 <p align="center">
@@ -16,6 +16,7 @@
   <img alt="Swift 6.3.3" src="https://img.shields.io/badge/swift-6.3.3-F05138">
   <img alt="Profile: arm64e.v1/PAC" src="https://img.shields.io/badge/profile-arm64e.v1%2FPAC-6b7280">
   <img alt="Status: experimental" src="https://img.shields.io/badge/status-experimental-yellow">
+  <img alt="Validated with OpenMinis" src="https://img.shields.io/badge/validated%20with-OpenMinis-6b46c1">
 </p>
 
 > [!WARNING]
@@ -24,13 +25,23 @@
 > signing certificates or provisioning profiles. You must obtain and license those inputs yourself.
 
 > Unofficial project. Not affiliated with, endorsed by, or sponsored by Apple Inc. Apple, Xcode,
-> iOS and Swift are trademarks of their respective owners.
+> iOS and Swift are trademarks of their respective owners. The same applies to LiveContainer and
+> OpenMinis — see [Related projects](#related-projects).
+
+This is an **on-device build path**: compile inside iSH on iPhone/iPad, then launch the resulting
+IPA on the same device with [LiveContainer](https://github.com/LiveContainer/LiveContainer) (or a
+similar host). A Linux VM is used only for the one-time arm64e module-cache build.
+
+It is also packaged as a **harness skill** (`SKILL.md`): it was tested and validated with
+[OpenMinis](https://github.com/OpenMinis/OpenMinis) as a skill for that harness, and the same layout
+can be used by other harnesses that support skill folders, shell execution and workspace file access.
 
 ---
 
 ## Table of contents
 
 - [What this is](#what-this-is)
+- [On-device and harnesses](#on-device-and-harnesses)
 - [What works / what does not](#what-works--what-does-not)
 - [Build pipeline](#build-pipeline)
 - [Quick start](#quick-start)
@@ -40,6 +51,7 @@
 - [Validation ladder](#validation-ladder)
 - [Repository map](#repository-map)
 - [Troubleshooting](#troubleshooting)
+- [Related projects](#related-projects)
 - [Licensing and publication boundary](#licensing-and-publication-boundary)
 - [Documentation map](#documentation-map)
 - [Contributing](#contributing)
@@ -52,12 +64,28 @@ A small, auditable build system for producing an iOS app bundle and IPA without 
 - **Compile** Swift and Objective-C sources against a user-supplied iOS 26.5 SDK.
 - **Link** a thin `arm64e` Mach-O with the canonical `arm64e.v1/PAC` subtype.
 - **Sign** ad-hoc for debug/StikDebug, or leave unsigned for a LiveContainer/SideStore handoff.
+- **Run on the same device** by opening the IPA in LiveContainer, which re-signs the guest.
 - **Validate** the IPA structure, `LC_MAIN`, chained fixups, signature and bundle layout.
 - **Port** an existing third-party project into the workflow with `scripts/port-third-party.py`.
+- **Serve as a harness skill**: `SKILL.md` was validated with OpenMinis and is reusable by
+  compatible harnesses.
 - **Stay legal**: fetch or derive Apple/toolchain material on your own licensed machine; never
   commit it here.
 
 It is intentionally **not** a replacement for Xcode, a signing service, or an App Store pipeline.
+
+## On-device and harnesses
+
+- **Build where you run it:** iSH on iPhone/iPad compiles the IPA; LiveContainer launches it on
+  the same device without a Mac or a developer account.
+- **LiveContainer:** use an unsigned guest (`--unsigned`) when the host will re-sign it. Structural
+  validation is S2; opening and using the app in LiveContainer is S3/S4 and must be recorded
+  separately.
+- **OpenMinis:** this repository is packaged as a skill (`SKILL.md`) and was tested and validated
+  with the OpenMinis harness. The same skill folder can be consumed by other harnesses that support
+  skill files, shell execution and workspace access.
+- **No affiliation:** LiveContainer and OpenMinis are independent third-party projects. This
+  repository does not speak for them or claim endorsement. See [Related projects](#related-projects).
 
 ## What works / what does not
 
@@ -67,7 +95,8 @@ It is intentionally **not** a replacement for Xcode, a signing service, or an Ap
 | Foundation/Dispatch-only apps | Build the discontinued arm64 (non-PAC) profile |
 | Objective-C/UIKit shells bridged into Swift | Provide signing certificates, provisioning profiles or App Store upload |
 | Weak-linked frameworks such as FoundationModels (`--weak-framework`) | Guarantee device runtime behavior from static validation alone |
-| Ad-hoc signing and unsigned LiveContainer handoffs | Replace Xcode or macOS for general iOS development |
+| On-device build in iSH + launch via LiveContainer | Run on a Mac or replace Xcode |
+| OpenMinis skill and other compatible harnesses | Guarantee compatibility with every harness |
 | One-time arm64e module-cache generation on a real Linux VM | Build a full UIKit/SwiftUI cache on iSH without a prepared cache |
 
 ## Build pipeline
@@ -107,7 +136,7 @@ These inputs are not distributed here. The exact staging steps are in
 
 ```sh
 git clone https://github.com/luiz-izidoro/forge-on-glass.git
-cd ios-swift-builder
+cd forge-on-glass
 sh bootstrap.sh --check
 ```
 
@@ -148,6 +177,15 @@ sh scripts/validate-ipa.sh /var/minis/workspace/MyApp.ipa
 
 Use `ISB_OUTPUT` to choose a different output path. Multiple Swift files are compiled as one module
 with `-primary-file`; the entry file must be `main.swift` or end in `Main.swift`.
+
+### 5. Run it on the same device
+
+Open the generated IPA in **LiveContainer** (or a similar host) on the same iPhone/iPad. For a guest
+that the host will transform and re-sign, build with `--unsigned` (or `ISB_UNSIGNED=1`). LiveContainer
+does not prove the app works by itself: record opening (S3) and a real flow (S4) separately.
+
+See [LiveContainer](https://github.com/LiveContainer/LiveContainer) for its install and import flow;
+this repository is independent and does not bundle it.
 
 ## Supported workflows
 
@@ -251,6 +289,18 @@ Dockerfile               reproducibility aid for the Linux VM/build environment
 | App installs but crashes | Entitlements, weak framework, OS mismatch or signing | Reproduce on device (S3/S4); static validation cannot prove runtime behavior. |
 | Build runs out of disk/memory | SDK/cache size or parallel objects | Free space, use `ISB_INCREMENTAL=1`, and build one app at a time. |
 
+## Related projects
+
+| Project | Role | Repository |
+|---|---|---|
+| **LiveContainer** | Runs iOS apps without installing them; used to launch the unsigned/ad-hoc IPA on the same device. | <https://github.com/LiveContainer/LiveContainer> |
+| **OpenMinis** | On-device AI agent harness; this repository is packaged as a skill and was tested/validated with it. | <https://github.com/OpenMinis/OpenMinis> |
+
+> [!NOTE]
+> This project is **independent**. It is not affiliated with, endorsed by, sponsored by, or
+> maintained by LiveContainer or OpenMinis. Their names, logos and trademarks belong to their
+> respective owners. Their licenses and installation/security guidance apply to their own software.
+
 ## Licensing and publication boundary
 
 - **Safe to publish:** original scripts, documentation, sample sources and diagrams.
@@ -292,3 +342,7 @@ sh scripts/verify-release.sh
 
 MIT. See [`LICENSE`](LICENSE). Third-party material is not licensed by this repository; see
 [`NOTICE.md`](NOTICE.md).
+
+LiveContainer and OpenMinis are independent third-party projects. This repository has no
+affiliation with, endorsement from, or sponsorship by either project; their names and trademarks
+remain with their owners.

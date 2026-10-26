@@ -13,3 +13,16 @@ The patch generator exists to create local, user-owned build inputs. Generated
 patches contain verbatim SDK context and must remain outside this repository;
 committing them is prohibited. This project is unofficial and is not affiliated
 with or endorsed by Apple Inc.
+
+## LiveContainer and OpenMinis
+
+[LiveContainer](https://github.com/LiveContainer/LiveContainer) runs iOS apps without installing
+them. [OpenMinis](https://github.com/OpenMinis/OpenMinis) is an on-device AI agent harness that can
+consume this repository as a skill. Both are independent third-party projects.
+
+This repository is not affiliated with, endorsed by, sponsored by, or maintained by LiveContainer or
+OpenMinis. Their names, logos, code and trademarks belong to their respective owners, and their
+licenses and security guidance apply to their own software.
+
+This repository was tested and validated with OpenMinis as a harness skill; that statement describes
+interoperability, not endorsement, partnership or support.

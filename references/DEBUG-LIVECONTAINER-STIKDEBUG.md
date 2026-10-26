@@ -9,6 +9,11 @@ Guia operacional do debug de apps Swift/UIKit no device usando LiveContainer e
 StikDebug. O StikDebug fica instalado externamente; o builder apenas instrumenta
 o IPA. O fluxo foi validado durante o desenvolvimento do Chip8Emu.
 
+> LiveContainer oficial: <https://github.com/LiveContainer/LiveContainer>.
+> Este repositório é independente e não é afiliado, endossado ou patrocinado pelo
+> LiveContainer; a licença e a orientação de segurança do projeto dele se aplicam
+> ao software dele.
+
 ## Princípio: debug em camadas
 
 Use a camada mais barata que responde à pergunta:
