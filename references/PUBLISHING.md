@@ -1,9 +1,9 @@
 # Publishing to GitHub — copyright & licensing analysis
 
-> **Checklist atual:** antes de publicar ou criar um release, leia
-> [`BEST-PRACTICES.md`](BEST-PRACTICES.md) e confirme que a árvore contém
-> somente código/documentação permitidos. Esta análise trata propriedade
-> intelectual; ela não substitui a auditoria técnica da IPA.
+> **Current checklist:** before publishing or creating a release, read
+> [`BEST-PRACTICES.md`](BEST-PRACTICES.md) and confirm that the tree contains
+> only permitted code/documentation. This analysis covers intellectual
+> property; it does not replace the technical audit of the IPA.
 
 Question: can this skill (and the toolchain method) be published on GitHub
 without copyright problems? Short answer: **the skill's own files — yes**;

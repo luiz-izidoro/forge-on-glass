@@ -1,3 +1,12 @@
+# Changelog
+
+## Unreleased
+
+- Standardized repository documentation and code comments in English.
+- Added CODE_OF_CONDUCT, pull-request template, Dependabot and CodeQL.
+- Added reference and script indexes; linked previously orphaned guides.
+- Removed dated/duplicated reports and the redundant check-repo-clean shell wrapper.
+
 ## 0.2.0 — 2026-09-02
 
 - arm64e.v1/PAC is the only operational and release profile.
@@ -13,7 +22,7 @@
 - User-confirmed S3/S4 evidence applies to iPhone17,1 / iOS 26.6 / LiveContainer;
   other devices, iOS versions and LiveContainer versions remain untested.
 
-## Unreleased — 2026-09-03 audit
+## 2026-09-03 — audit
 
 - Discontinued the arm64 compatibility profile in all builders, guards and
   consumer wrappers; arm64e.v1/PAC is now the sole operational target.

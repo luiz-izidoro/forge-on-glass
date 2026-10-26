@@ -20,27 +20,27 @@ final class EmbeddingsRuntimeViewController: UIViewController {
         label.textColor = UIColor.white; label.numberOfLines = 0
         var r = CGRect(); r.origin.x = 20; r.origin.y = 70
         r.size.width = 370; r.size.height = 260; label.frame = r
-        label.text = "NLEmbedding bridge\nFase 0: app aberto"
+        label.text = "NLEmbedding bridge\nPhase 0: app open"
         view.addSubview(label)
-        checkButton = button("1. Verificar modelo", 370, #selector(checkModel))
-        dimensionButton = button("2. Obter dimensão", 440, #selector(checkDimension))
-        vectorButton = button("3. Gerar vetor", 510, #selector(runVector))
+        checkButton = button("1. Check model", 370, #selector(checkModel))
+        dimensionButton = button("2. Get dimension", 440, #selector(checkDimension))
+        vectorButton = button("3. Generate vector", 510, #selector(runVector))
     }
     @objc func checkModel() {
-        label.text = "NLEmbedding bridge\nFase 1: disponibilidade..."
+        label.text = "NLEmbedding bridge\nPhase 1: availability..."
         let available = NativeEmbeddings.isAvailable
-        label.text = "NLEmbedding bridge\navailability=\(available)\nerror=\(NativeEmbeddings.lastError ?? "none")\nFase 1=PASS"
+        label.text = "NLEmbedding bridge\navailability=\(available)\nerror=\(NativeEmbeddings.lastError ?? "none")\nPhase 1=PASS"
     }
     @objc func checkDimension() {
-        label.text = "NLEmbedding bridge\nFase 2: dimensão..."
+        label.text = "NLEmbedding bridge\nPhase 2: dimension..."
         let dimension = NativeEmbeddings.dimension
-        label.text = "NLEmbedding bridge\ndimension=\(dimension)\nerror=\(NativeEmbeddings.lastError ?? "none")\nFase 2=PASS"
+        label.text = "NLEmbedding bridge\ndimension=\(dimension)\nerror=\(NativeEmbeddings.lastError ?? "none")\nPhase 2=PASS"
     }
     @objc func runVector() {
-        label.text = "NLEmbedding bridge\nFase 3: getVector..."
-        let vector = NativeEmbeddings.vector(for: "teste de embedding")
-        label.text = vector.map { "NLEmbedding bridge\nvector_count=\($0.count)\nfirst=\($0.first ?? 0)\nFase 3=PASS" }
-            ?? "NLEmbedding bridge\nvector=nil\nerror=\(NativeEmbeddings.lastError ?? "unknown")\nFase 3=FAIL"
+        label.text = "NLEmbedding bridge\nPhase 3: getVector..."
+        let vector = NativeEmbeddings.vector(for: "embedding test")
+        label.text = vector.map { "NLEmbedding bridge\nvector_count=\($0.count)\nfirst=\($0.first ?? 0)\nPhase 3=PASS" }
+            ?? "NLEmbedding bridge\nvector=nil\nerror=\(NativeEmbeddings.lastError ?? "unknown")\nPhase 3=FAIL"
     }
     required init?(coder: NSCoder) { super.init(coder: coder) }
     init() { super.init(nibName: nil, bundle: nil) }

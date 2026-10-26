@@ -15,15 +15,15 @@ SF="$SW/usr/bin/swift-frontend"
 VFS="${ISB_VM_VFS:-$ROOT/vfs/overlay.yaml}"
 ORCH="${ISB_ORCHESTRATOR:-$REPO_ROOT/references/linux-vm/orchestrator_vm633.py}"
 
-[ -x "$SF" ] || { echo "swift-frontend ausente: $SF" >&2; exit 1; }
-[ -d "$SDK" ] || { echo "SDK ausente: $SDK" >&2; exit 1; }
+[ -x "$SF" ] || { echo "swift-frontend missing: $SF" >&2; exit 1; }
+[ -d "$SDK" ] || { echo "SDK missing: $SDK" >&2; exit 1; }
 [ -f "$SDK/System/Library/Frameworks/FoundationModels.framework/Modules/FoundationModels.swiftmodule/arm64e-apple-ios.swiftinterface" ] || {
-  echo "FoundationModels arm64e interface ausente no SDK 26.5" >&2; exit 1;
+  echo "FoundationModels arm64e interface missing from SDK 26.5" >&2; exit 1;
 }
 mkdir -p "$SCAN_CACHE" "$OUT"
-[ -f "$ORCH" ] || { echo "orchestrator ausente: $ORCH" >&2; exit 1; }
+[ -f "$ORCH" ] || { echo "orchestrator missing: $ORCH" >&2; exit 1; }
 [ "$TARGET" = "arm64e-apple-ios26.5" ] || { echo "target must be arm64e-apple-ios26.5" >&2; exit 1; }
-[ -f "$VFS" ] || { echo "VFS ausente: $VFS" >&2; exit 1; }
+[ -f "$VFS" ] || { echo "VFS missing: $VFS" >&2; exit 1; }
 # Include both native language embeddings and the on-device Foundation Models
 # API in the dependency graph. The scanner then discovers Foundation,
 # Observation, _Concurrency, and _StringProcessing transitively.
@@ -48,7 +48,7 @@ for attempt in 1 2 3 4 5 6; do
   echo "scan-dependencies retry $attempt/6" >&2
 done
 [ "$scan_ok" -eq 1 ] || {
-  echo "scan-dependencies falhou após 6 tentativas; log: $SCAN_CACHE/scan.err" >&2
+  echo "scan-dependencies failed after 6 attempts; log: $SCAN_CACHE/scan.err" >&2
   exit 1
 }
 
@@ -59,9 +59,9 @@ ISB_VM_SW="$SW" ISB_VM_SDK="$SDK" ISB_VM_OUT="$OUT" ISB_VM_VFS="${ISB_VM_VFS:-$R
 
 # Hard fail if the IA modules were silently skipped.
 for m in Swift Foundation NaturalLanguage FoundationModels SwiftUICore UIKit SwiftUI; do
-  [ -s "$OUT/swift_${m}.swiftmodule" ] || { echo "modulo ausente: $m" >&2; exit 1; }
+  [ -s "$OUT/swift_${m}.swiftmodule" ] || { echo "module missing: $m" >&2; exit 1; }
 done
 for fw in Foundation NaturalLanguage FoundationModels; do
-  [ -s "$SDK/System/Library/Frameworks/$fw.framework/$fw.tbd" ] || { echo "framework ausente: $fw" >&2; exit 1; }
+  [ -s "$SDK/System/Library/Frameworks/$fw.framework/$fw.tbd" ] || { echo "framework missing: $fw" >&2; exit 1; }
 done
 echo "arm64e module profile READY: $OUT"

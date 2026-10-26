@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""check-protocol-sig.py — mostra a assinatura REAL de um membro de protocolo
-(ou de qualquer declaracao) no SDK que ESTE toolchain usa.
+"""check-protocol-sig.py — shows the REAL signature of a protocol member
+(or any declaration) in the SDK that THIS toolchain uses.
 
-POR QUE EXISTE:
-Os `.swiftinterface` do SDK foram patchados para compilar com o toolchain
-swift.org. Alguns tipos degradaram (ex.: `[LaunchOptionsKey: Any]?` ->
-`NSDictionary<NSString, AnyObject>?`). Escrever a assinatura "do jeito da
-Apple", de cabeca ou copiando da internet, gera codigo que COMPILA e NAO
-FUNCIONA (ver references/WARNINGS-FATAIS.md).
+WHY IT EXISTS:
+The SDK's `.swiftinterface` files were patched to compile with the swift.org
+toolchain. Some types degraded (e.g. `[LaunchOptionsKey: Any]?` ->
+`NSDictionary<NSString, AnyObject>?`). Writing the signature "the Apple way",
+from memory or copied from the internet, produces code that COMPILES and DOES
+NOT WORK (see references/WARNINGS-FATAIS.md).
 
-Regra: antes de implementar QUALQUER metodo de delegate/protocolo do sistema,
-consulte a assinatura aqui. Nao adivinhe.
+Rule: before implementing ANY system delegate/protocol method, check the
+signature here. Do not guess.
 
-Uso:
+Usage:
   python3 check-protocol-sig.py UIApplicationDelegate
   python3 check-protocol-sig.py UIApplicationDelegate didFinishLaunching
   python3 check-protocol-sig.py --grep "func application"
@@ -37,13 +37,13 @@ def interface_files():
     for p in pats:
         files += glob.glob(p)
     if not files:
-        # O SDK é resolvido pelo perfil configurado; não há fallback pessoal.
+        # The SDK is resolved by the configured profile; there is no personal fallback.
         for alt in (os.path.join(TOOLCHAIN, "iPhoneOS26.5.sdk"),):
             for p in pats:
                 files += glob.glob(p.replace(SDK, alt))
-    # NOTA: os interfaces do SDK sao arm64e (nao arm64). Nao filtre por "arm64"
-    # exato — `arm64` e' substring de `arm64e`, mas se um dia houver os dois,
-    # preferir arm64e (e' o que existe hoje).
+    # NOTE: the SDK interfaces are arm64e (not arm64). Do not filter by exact
+    # "arm64" — `arm64` is a substring of `arm64e`, but if both ever exist,
+    # prefer arm64e (it is what exists today).
     pref = [f for f in files if "arm64" in os.path.basename(f)]
     return sorted(set(pref or files))
 
@@ -56,10 +56,10 @@ def find_protocol(name, member=None):
 
 
 def find_in_objc_headers(name, member=None):
-    """Protocolos ObjC (UITableViewDataSource, UICollectionViewDelegate, ...)
-    nao existem no .swiftinterface: sao importados dos HEADERS via clang.
-    A assinatura que o Swift enxerga vem da declaracao ObjC + as anotacoes de
-    nullability/generics do header.
+    """ObjC protocols (UITableViewDataSource, UICollectionViewDelegate, ...)
+    do not exist in .swiftinterface: they are imported from HEADERS via clang.
+    The signature Swift sees comes from the ObjC declaration + the header's
+    nullability/generics annotations.
     """
     hdrs = []
     for base in (SDK, os.path.join(TOOLCHAIN, "iPhoneOS26.5.sdk")):
@@ -72,8 +72,8 @@ def find_in_objc_headers(name, member=None):
             txt = open(f, errors="replace").read()
         except OSError:
             continue
-        # definicao REAL do protocolo (nao forward-declaration
-        # `@protocol A, B;`): tem `<Super>` e/ou corpo ate @end
+        # REAL protocol definition (not forward-declaration
+        # `@protocol A, B;`): has `<Super>` and/or body until @end
         m = re.search(r"@protocol\s+" + re.escape(name) +
                       r"\s*(?:<[^>]*>)?\s*\n", txt)
         if not m or re.search(r"@protocol\s+" + re.escape(name) +
@@ -95,19 +95,19 @@ def find_in_objc_headers(name, member=None):
             sel = lines
         found = True
         print("=" * 72)
-        print("PROTOCOLO ObjC em: %s" % os.path.basename(f))
-        print("(vem dos HEADERS, nao do .swiftinterface)")
+        print("ObjC PROTOCOL in: %s" % os.path.basename(f))
+        print("(comes from HEADERS, not from .swiftinterface)")
         print("-" * 72)
         for l in sel[:60]:
             if l.strip():
                 print(l)
         print("-" * 72)
-        print("⚠️  Em Swift, tipos ObjC podem aparecer DEGRADADOS neste toolchain:")
-        print("    NSIndexPath  (nao IndexPath)")
-        print("    NSDictionary (nao [Key: Value])")
-        print("    NSArray      (nao [Element])")
-        print("    Se o compilador reclamar de conversao, use o tipo ObjC na")
-        print("    ASSINATURA e converta dentro do corpo.")
+        print("⚠️  In Swift, ObjC types may appear DEGRADED in this toolchain:")
+        print("    NSIndexPath  (not IndexPath)")
+        print("    NSDictionary (not [Key: Value])")
+        print("    NSArray      (not [Element])")
+        print("    If the compiler complains about conversion, use the ObjC type in")
+        print("    the SIGNATURE and convert inside the body.")
     return found
 
 
@@ -118,11 +118,11 @@ def find_in_swift_interfaces(name, member=None):
             txt = open(f, errors="replace").read()
         except OSError:
             continue
-        # bloco do protocolo/extension
+        # protocol/extension block
         for m in re.finditer(r"^(public )?(protocol|extension|class|struct)\s+" +
                              re.escape(name) + r"\b", txt, re.M):
             start = m.start()
-            # acha o bloco balanceado por chaves
+            # find the brace-balanced block
             i = txt.find("{", start)
             if i < 0:
                 continue
@@ -146,12 +146,12 @@ def find_in_swift_interfaces(name, member=None):
                 sel = lines
             found = True
             print("=" * 72)
-            print("ARQUIVO: %s" % f.replace(SDK, "$SDK"))
+            print("FILE: %s" % f.replace(SDK, "$SDK"))
             print("-" * 72)
             for l in sel[:60]:
                 print(l)
             if not member and len(sel) > 60:
-                print("... (%d linhas no total; passe um <membro> para filtrar)" % len(sel))
+                print("... (%d lines total; pass a <member> to filter)" % len(sel))
     return found
 
 
@@ -168,7 +168,7 @@ def grep_all(pattern):
                 print("%s:%d: %s" % (os.path.basename(f), i + 1, line.strip()))
                 n += 1
                 if n > 200:
-                    print("... (truncado)")
+                    print("... (truncated)")
                     return True
     return n > 0
 
@@ -184,8 +184,8 @@ def main():
         member = sys.argv[2] if len(sys.argv) > 2 else None
         ok = find_protocol(name, member)
         if not ok:
-            print("nao encontrado: %s%s" % (name, (" / " + member) if member else ""))
-            print("dica: tente --grep '<trecho>'")
+            print("not found: %s%s" % (name, (" / " + member) if member else ""))
+            print("tip: try --grep '<snippet>'")
     return 0 if ok else 1
 
 

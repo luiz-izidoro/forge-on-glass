@@ -3,15 +3,15 @@
 # Uses the same configurable neutral profile as build-pure-ui.sh.
 # Usage: build-pure-foundation.sh <AppName> <main.swift>
 set -eu
-APP="${1:?uso: $0 <AppName> <main.swift>}"
-SRC="${2:?falta main.swift}"
+APP="${1:?usage: $0 <AppName> <main.swift>}"
+SRC="${2:?missing main.swift}"
 . "$(CDPATH= cd -- "$(dirname "$0")" && pwd)/profile.sh"
-[ -f "$SRC" ] || { echo "fonte ausente: $SRC" >&2; exit 1; }
-[ -d "$OUT" ] || { echo "cache ausente: $OUT" >&2; exit 1; }
+[ -f "$SRC" ] || { echo "source missing: $SRC" >&2; exit 1; }
+[ -d "$OUT" ] || { echo "cache missing: $OUT" >&2; exit 1; }
 OBJ="/tmp/${APP}-foundation-$$.o"
 
-# Sem `grep`: nesta shell (iSH) o GNU grep pode nao terminar, e isso travaria
-# o relatorio de erro (ou o proprio laco de retry). `case` nao cria processo.
+# No `grep`: in this shell (iSH) GNU grep may not terminate, and that would hang
+# the error report (or the retry loop itself). `case` creates no process.
 contains_file(){ while IFS= read -r _l; do case "$_l" in *"$2"*) return 0 ;; esac; done < "$1"; return 1; }
 show_errors(){ _n=${2:-10}; while IFS= read -r _l; do case "$_l" in *error:*) printf '%s\n' "$_l"; _n=$((_n-1)); [ "$_n" -le 0 ] && return 0 ;; esac; done < "$1"; }
 ERRF="/tmp/${APP}-foundation-$$.err"

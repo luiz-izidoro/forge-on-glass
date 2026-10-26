@@ -1,67 +1,67 @@
 #!/usr/bin/env python3
-"""check-warnings.py — promove a ERRO os warnings do compilador que, neste
-toolchain, significam "seu codigo NAO vai rodar".
+"""check-warnings.py — promotes to ERROR the compiler warnings that, in this
+toolchain, mean "your code will NOT run".
 
-MOTIVACAO (custou uma sessao inteira em 2026-08-22):
-O SDK usado aqui tem `.swiftinterface` PATCHADOS. Isso muda assinaturas de
-alguns membros de protocolo (ex.: `launchOptions` virou
-`NSDictionary<NSString, AnyObject>?` em vez de `[LaunchOptionsKey: Any]?`).
+RATIONALE (it cost an entire session on 2026-08-22):
+The SDK used here has PATCHED `.swiftinterface` files. That changes signatures of
+some protocol members (e.g.: `launchOptions` became
+`NSDictionary<NSString, AnyObject>?` instead of `[LaunchOptionsKey: Any]?`).
 
-Quando o requisito do protocolo e' OPCIONAL (`optional func`, comum em
-delegates ObjC), uma assinatura que nao casa **nao e' erro**: o Swift emite
-apenas
+When the protocol requirement is OPTIONAL (`optional func`, common in
+ObjC delegates), a signature that does not match is **not an error**: Swift emits
+only
     warning: instance method 'X' nearly matches optional requirement 'X'
-e trata seu metodo como um metodo comum da classe. O UIKit NUNCA o chama.
+and treats your method as an ordinary method of the class. UIKit NEVER calls it.
 
-Resultado no device: o app ABRE, o processo fica VIVO, e a tela fica PRETA
-para sempre — sem crash, sem log, sem sintoma que aponte para a causa.
+Result on device: the app OPENS, the process stays ALIVE, and the screen stays BLACK
+forever — no crash, no log, no symptom pointing to the cause.
 
-Este script le o stderr do swift-frontend e falha o build nesses casos.
+This script reads swift-frontend's stderr and fails the build in those cases.
 
-Uso:
-  python3 check-warnings.py <arquivo.err> [mais.err ...]
-  python3 check-warnings.py --dir <dir com *.err>
+Usage:
+  python3 check-warnings.py <file.err> [more.err ...]
+  python3 check-warnings.py --dir <dir with *.err>
 
-Saida: rc=0 se limpo; rc=1 e relatorio se houver warning fatal.
+Output: rc=0 if clean; rc=1 and a report if there is a fatal warning.
 """
 import glob
 import os
 import re
 import sys
 
-# (regex do warning, explicacao, como corrigir)
+# (warning regex, explanation, how to fix)
 FATAL_WARNINGS = [
     (
         r"nearly matches optional requirement '([^']+)' of protocol '([^']+)'",
-        "O metodo NAO satisfaz o requisito do protocolo (assinatura diferente da "
-        "declarada no .swiftinterface patchado). Como o requisito e' OPCIONAL, o "
-        "compilador so avisa — e o framework NUNCA chama o seu metodo. "
-        "Sintoma no device: app abre e fica com TELA PRETA.",
-        "Use a assinatura EXATA do interface do SDK. Para UIApplicationDelegate, "
-        "prefira `applicationDidFinishLaunching(_ application: UIApplication)` "
-        "(casa exatamente) em vez de "
+        "The method does NOT satisfy the protocol requirement (signature different from the "
+        "one declared in the patched .swiftinterface). Since the requirement is OPTIONAL, the "
+        "compiler only warns — and the framework NEVER calls your method. "
+        "Device symptom: the app opens and shows a BLACK SCREEN.",
+        "Use the EXACT signature from the SDK interface. For UIApplicationDelegate, "
+        "prefer `applicationDidFinishLaunching(_ application: UIApplication)` "
+        "(matches exactly) instead of "
         "`application(_:didFinishLaunchingWithOptions:)`. "
-        "Confira com: python3 scripts/check-protocol-sig.py <Protocolo> <membro>",
+        "Check with: python3 scripts/check-protocol-sig.py <Protocol> <member>",
     ),
     (
         r"instance method '([^']+)' nearly matches (?:optional )?requirement",
-        "Idem: assinatura divergente de um requisito de protocolo.",
-        "Ajuste a assinatura para a declarada no SDK.",
+        "Same: signature diverging from a protocol requirement.",
+        "Adjust the signature to the one declared in the SDK.",
     ),
     (
         r"non-void function should return a value",
-        "Fluxo sem retorno — pode indicar corpo degradado.",
-        "Revise o corpo da funcao.",
+        "Flow without a return — may indicate a degraded body.",
+        "Review the function body.",
     ),
     (
         r"result of call to '([^']+)' is unused",
-        "Chamada cujo resultado foi descartado; em entry points "
-        "(ex.: UIApplicationMain) isso pode indicar entry mal formado.",
-        "Confirme que o valor nao era necessario.",
+        "Call whose result was discarded; in entry points "
+        "(e.g. UIApplicationMain) this may indicate a malformed entry.",
+        "Confirm that the value was not needed.",
     ),
 ]
 
-# warnings que sao RUIDO conhecido e nao devem falhar o build
+# warnings that are known NOISE and must not fail the build
 IGNORE = [
     r"was deprecated in iOS",
     r"'retroactive' attribute does not apply",
@@ -76,7 +76,7 @@ IGNORE = [
 
 
 def scan(path):
-    """Retorna lista de (linha_do_warning, contexto, explicacao, fix)."""
+    """Returns a list of (warning_line, context, explanation, fix)."""
     try:
         txt = open(path, errors="replace").read()
     except OSError:
@@ -87,7 +87,7 @@ def scan(path):
     for i, line in enumerate(lines):
         if "warning:" not in line:
             continue
-        # o compilador repete o warning nas linhas de "caret" (| `- warning:)
+        # the compiler repeats the warning on the "caret" lines (| `- warning:)
         if re.match(r"^\s*[\d\s]*\|", line):
             continue
         if any(re.search(p, line) for p in IGNORE):
@@ -95,7 +95,7 @@ def scan(path):
         for pat, why, fix in FATAL_WARNINGS:
             m = re.search(pat, line)
             if m:
-                # deduplica por (arquivo:linha, mensagem)
+                # deduplicate by (file:line, message)
                 key = re.sub(r"^.*?([^/\s]+\.swift:\d+)", r"\1", line)[:160]
                 if key in seen:
                     break
@@ -123,22 +123,22 @@ def main():
             continue
         total += len(hits)
         print("=" * 72)
-        print("ARQUIVO DE LOG: %s" % f)
+        print("LOG FILE: %s" % f)
         for line, ctx, why, fix in hits:
             print("-" * 72)
             print("WARNING FATAL: %s" % line)
-            print("\nPOR QUE E' FATAL:\n  %s" % why)
-            print("\nCOMO CORRIGIR:\n  %s" % fix)
-            print("\nCONTEXTO:")
+            print("\nWHY IT IS FATAL:\n  %s" % why)
+            print("\nHOW TO FIX:\n  %s" % fix)
+            print("\nCONTEXT:")
             for l in ctx.split("\n"):
                 print("  " + l)
 
     if total:
         print("=" * 72)
-        print("%d warning(s) FATAL(is). O build produziria um app que NAO funciona." % total)
-        print("Leia references/WARNINGS-FATAIS.md")
+        print("%d FATAL warning(s). The build would produce an app that does NOT work." % total)
+        print("Read references/WARNINGS-FATAIS.md")
         return 1
-    print("check-warnings: nenhum warning fatal (%d log(s) analisado(s))" % len(files))
+    print("check-warnings: no fatal warning (%d log(s) analyzed)" % len(files))
     return 0
 
 

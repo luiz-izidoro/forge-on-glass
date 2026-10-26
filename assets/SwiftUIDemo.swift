@@ -1,12 +1,12 @@
-// SwiftUIDemo — app iOS 100% Swift usando SwiftUI, compilado no iSH.
+// SwiftUIDemo — 100% Swift iOS app using SwiftUI, compiled on iSH.
 //
-// Consulte references/HANDOFF.md antes de editar.
-//   1. ORDEM DOS IMPORTS: `Foundation` ANTES de `SwiftUI`/`UIKit`.
-//   2. CGRect(x:y:width:height:) nao resolve -> construa por campos.
+// See references/HANDOFF.md before editing.
+//   1. IMPORT ORDER: `Foundation` BEFORE `SwiftUI`/`UIKit`.
+//   2. CGRect(x:y:width:height:) does not resolve -> build it field by field.
 //
-// NOTA: o ciclo de vida usa UIKit (UIApplicationMain + UIHostingController)
-// porque o `@main struct App: App` do SwiftUI depende de macros/atributos que
-// nao sobrevivem ao interface-compile. A UI em si e' 100% SwiftUI.
+// NOTE: the lifecycle uses UIKit (UIApplicationMain + UIHostingController)
+// because SwiftUI's `@main struct App: App` depends on macros/attributes that
+// do not survive interface-compile. The UI itself is 100% SwiftUI.
 import Foundation
 import SwiftUI
 import UIKit
@@ -16,11 +16,11 @@ struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Swift puro no iPhone")
+            Text("Pure Swift on iPhone")
                 .font(.title)
                 .foregroundColor(.white)
 
-            Text("SwiftUI compilado dentro do iSH, sem Mac no build.")
+            Text("SwiftUI compiled inside iSH, no Mac in the build.")
                 .font(.subheadline)
                 .foregroundColor(.gray)
 

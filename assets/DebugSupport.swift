@@ -1,7 +1,7 @@
-// DebugSupport.swift — instrumentacao opcional do forge-on-glass.
-// Incluido apenas pelos builders quando recebem --debug.
-// StikDebug permanece externo: este arquivo so fornece logs, overlay e o
-// pedido URL para habilitar JIT no processo atual.
+// DebugSupport.swift — optional forge-on-glass instrumentation.
+// Included only by the builders when they receive --debug.
+// StikDebug stays external: this file only provides logs, overlay and the
+// URL request to enable JIT in the current process.
 
 import Foundation
 import UIKit
@@ -11,9 +11,9 @@ public enum ISBDebugRuntime {
     private static var installed = false
     private static var overlay: UIView?
     public static var scriptName: String? = nil
-    // Dentro do LiveContainer, o StikDebug deve reabrir o container host,
-    // nao o bundle ID do app convidado. O builder pode substituir este valor
-    // no build com --stikdebug-bundle-id.
+    // Inside LiveContainer, StikDebug must reopen the host container,
+    // not the guest app's bundle ID. The builder can override this value
+    // at build time with --stikdebug-bundle-id.
     public static var returnBundleID: String? = nil
     public static var debugSessionRequested = false
 
@@ -29,11 +29,11 @@ public enum ISBDebugRuntime {
         print("\(tag) \(message)")
     }
 
-    /// Registra o observador antes do primeiro didBecomeActive. Isso torna a
-    /// instrumentacao independente do formato do AppDelegate (SwiftUI,
-    /// UIKit, SceneDelegate ou shell ObjC).
+    /// Registers the observer before the first didBecomeActive. This makes the
+    /// instrumentation independent of the AppDelegate shape (SwiftUI,
+    /// UIKit, SceneDelegate or ObjC shell).
     public static func bootstrap() {
-        log("debug runtime carregado")
+        log("debug runtime loaded")
         NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
@@ -43,10 +43,10 @@ public enum ISBDebugRuntime {
         }
     }
 
-    /// Chamada pelo builder no didFinishLaunching. O log e sincronico; a
-    /// instalacao visual espera a UIWindow existir.
-    /// Instala diretamente na janela criada pelo SceneDelegate. Evita a
-    /// corrida em que UIApplication.shared.windows ainda esta vazio.
+    /// Called by the builder in didFinishLaunching. The log is synchronous; the
+    /// visual installation waits for the UIWindow to exist.
+    /// Installs directly into the window created by the SceneDelegate. Avoids
+    /// the race where UIApplication.shared.windows is still empty.
     public static func install(on window: UIWindow) {
         installOnWindow(window)
     }
@@ -59,31 +59,31 @@ public enum ISBDebugRuntime {
         window.addSubview(bar)
         window.bringSubviewToFront(bar)
         overlay = bar
-        log("debug overlay instalado; toque DBG para abrir StikDebug")
+        log("debug overlay installed; tap DBG to open StikDebug")
     }
 
-    /// Mantem a busca global para apps sem SceneDelegate.
+    /// Keeps the global lookup for apps without a SceneDelegate.
     public static func installOnKeyWindow() {
         if installed { return }
         let windows = UIApplication.shared.windows
         let window = windows.first(where: { $0.isKeyWindow }) ?? windows.first
         guard let window = window else {
-            log("debug overlay: nenhuma UIWindow encontrada")
+            log("debug overlay: no UIWindow found")
             return
         }
         installOnWindow(window)
     }
 
-    /// Compatibilidade com o nome usado pelo builder.
+    /// Compatibility with the name used by the builder.
     public static func installAfterLaunch() { installOnKeyWindow() }
 
 
-    /// Abre o pedido oficial do StikDebug para o PID deste processo.
-    /// A abertura da URL nao e considerada sucesso: o app continua exibindo
-    /// o PID e o usuario confirma o readiness no console/overlay.
+    /// Opens the official StikDebug request for this process's PID.
+    /// Opening the URL is not considered success: the app keeps showing
+    /// the PID and the user confirms readiness in the console/overlay.
     public static func openStikDebug() {
         guard let bundleID = Bundle.main.bundleIdentifier else {
-            log("ERRO: bundle identifier ausente; nao foi possivel montar URL")
+            log("ERROR: missing bundle identifier; could not build URL")
             return
         }
         let targetBundleID = ISBDebugRuntime.returnBundleID ?? bundleID
@@ -94,10 +94,10 @@ public enum ISBDebugRuntime {
             URLQueryItem(name: "bundle-id", value: targetBundleID),
             URLQueryItem(name: "pid", value: String(processID))
         ]
-        // Script persistente de baixo nivel. Mantem a sessao aberta como o
-        // universal.js, mas nao tenta interpretar comandos JIT: apenas deixa
-        // o debugserver continuar, registra cada parada/sinal e inspeciona
-        // thread/registradores. O usuario encerra pelo StikDebug.
+        // Persistent low-level script. Keeps the session open like
+        // universal.js, but does not try to interpret JIT commands: it just lets
+        // the debugserver continue, logs each stop/signal and inspects
+        // thread/registers. The user ends it from StikDebug.
         let lowLevelScript = """
         function show(label, value) {
             let text = value === null || value === undefined ? '<nil>' : String(value);
@@ -154,17 +154,17 @@ public enum ISBDebugRuntime {
         }
         components.queryItems = items
         guard let url = components.url else {
-            log("ERRO: URL do StikDebug invalida")
+            log("ERROR: invalid StikDebug URL")
             return
         }
         debugSessionRequested = true
-        log("solicitando StikDebug: \(url.absoluteString)")
+        log("requesting StikDebug: \(url.absoluteString)")
         UIApplication.shared.open(url)
     }
 }
 
-/// Barra pequena e independente para nao interferir na UI do app.
-/// Ela e criada somente em builds --debug.
+/// Small, independent bar so it does not interfere with the app's UI.
+/// It is created only in --debug builds.
 private final class ISBDebugBar: UIView {
     var onTap: (() -> Void)?
     private let title = UILabel(frame: isbTitleFrame())
@@ -173,7 +173,7 @@ private final class ISBDebugBar: UIView {
         super.init(frame: frame)
         backgroundColor = UIColor(red: 0.08, green: 0.35, blue: 0.78, alpha: 0.94)
         layer.cornerRadius = 9
-        title.text = "DBG • toque: StikDebug"
+        title.text = "DBG • tap: StikDebug"
         title.textColor = UIColor.white
         title.font = UIFont.systemFont(ofSize: 12)
         addSubview(title)
@@ -187,22 +187,22 @@ private final class ISBDebugBar: UIView {
     @objc private func pressed() { onTap?() }
 }
 
-// O bootstrap e' chamado explicitamente pelo builder antes de
-// UIApplicationMain. Isso evita depender da ordem de inicializacao global.
+// The bootstrap is called explicitly by the builder before
+// UIApplicationMain. This avoids depending on global initialization order.
 
 // ---------------------------------------------------------------------------
-// FRAMES ISOLADOS NO FIM DO ARQUIVO — NAO MOVER PARA CIMA.
+// FRAMES ISOLATED AT THE END OF THE FILE — DO NOT MOVE THEM UP.
 //
-// Neste toolchain, se uma declaracao que usa CoreGraphics
-// (CGRect(origin:size:) / CGPoint / CGSize) aparece ANTES de uma declaracao
-// que usa Foundation (Bundle, NotificationCenter, OperationQueue) no MESMO
-// arquivo, o Foundation degrada e some do escopo do arquivo inteiro:
+// In this toolchain, if a declaration that uses CoreGraphics
+// (CGRect(origin:size:) / CGPoint / CGSize) appears BEFORE a declaration
+// that uses Foundation (Bundle, NotificationCenter, OperationQueue) in the SAME
+// file, Foundation degrades and disappears from the scope of the entire file:
 //
 //   error: cannot find 'Bundle' in scope
 //   error: cannot find 'NotificationCenter' in scope
 //
-// Determinstico (3/3) em modo whole-module; nao ocorre com -primary-file.
-// Ver references/WARNINGS-FATAIS.md -> "CoreGraphics antes de Foundation".
+// Deterministic (3/3) in whole-module mode; it does not occur with -primary-file.
+// See references/WARNINGS-FATAIS.md -> "CoreGraphics before Foundation".
 // ---------------------------------------------------------------------------
 
 private func isbBarFrame() -> CGRect {

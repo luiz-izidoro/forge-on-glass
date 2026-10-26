@@ -1,9 +1,10 @@
 # Native intelligence / local AI
 
-> **Status normativo:** este documento descreve capacidade de build e limites de
-> runtime. Para decidir o caminho de um projeto, leia
-> [`BEST-PRACTICES.md`](BEST-PRACTICES.md). Linkagem estrutural, disponibilidade
-> do modelo e geração exercitada no aparelho são evidências diferentes.
+> **Normative status:** this document describes build capability and runtime
+> limits. To decide a project's path, read
+> [`BEST-PRACTICES.md`](BEST-PRACTICES.md). Structural linking, model
+> availability and generation exercised on the device are different kinds of
+> evidence.
 
 This profile supports iOS 26.5 system AI without bundling model weights:
 
@@ -14,47 +15,46 @@ This profile supports iOS 26.5 system AI without bundling model weights:
   the iOS 26.5 `FoundationModels.framework` arm64e interface. It requires an
   arm64e module cache built from that interface; use the macro-free example in
   `assets/FoundationModelsProbe.swift`.
-- `Foundation`, `Observation`, `Dispatch` e módulos relacionados pertencem ao
-  mesmo grafo explícito arm64e/PAC.
+- `Foundation`, `Observation`, `Dispatch` and related modules belong to the
+  same explicit arm64e/PAC graph.
 
 **Canonical arm64e matrix:** fresh IPAs cover SwiftUI/UIKit, Foundation/Dispatch,
 Diffable UIKit, Swift+ObjC hybrid, CoreML/Vision/Accelerate, FoundationModels,
 NaturalLanguage, embeddings, debug/StikDebug and PureSwiftKit. Each IPA is
 validated as arm64e.v1/PAC before device testing.
 
-## Evidência por camada
+## Evidence by layer
 
-`FoundationModels` é capability-gated: a presença do framework no SDK ou no
-link não significa que o aparelho tenha Apple Intelligence pronto.
+`FoundationModels` is capability-gated: the presence of the framework in the SDK
+or in the link does not mean the device has Apple Intelligence ready.
 
-| Evidência | O que prova | Nível |
+| Evidence | What it proves | Level |
 |---|---|---|
-| `FoundationModels` aparece como `LC_LOAD_WEAK_DYLIB` | o binário linka o framework sem exigir sua presença no launch | **S2** |
-| `availability == .available` | este device/runtime tem Apple Intelligence disponível | **S3 do device** |
-| `LanguageModelSession.respond(to:)` retorna texto | o caminho completo de geração funcionou neste cenário | **S4** |
+| `FoundationModels` appears as `LC_LOAD_WEAK_DYLIB` | the binary links the framework without requiring its presence at launch | **S2** |
+| `availability == .available` | this device/runtime has Apple Intelligence available | **S3 of the device** |
+| `LanguageModelSession.respond(to:)` returns text | the complete generation path worked in this scenario | **S4** |
 
-A guarda `scripts/check-weak-link.py` é executada pela aceitação arm64e e também
-tem um teste negativo: uma variante forte (`--extra-framework`) precisa ser
-rejeitada. Um device sem Apple Intelligence deve reportar `unavailable`; isso é
-uma condição do aparelho (região, idioma, modelo baixado), não uma falha da
-skill.
+The `scripts/check-weak-link.py` guard is run by arm64e acceptance and also has
+a negative test: a strong variant (`--extra-framework`) must be rejected. A
+device without Apple Intelligence must report `unavailable`; this is a condition
+of the device (region, language, downloaded model), not a failure of the skill.
 
-## Rotas de NaturalLanguage / NLEmbedding
+## NaturalLanguage / NLEmbedding routes
 
-A rota **recomendada** é o bridge Objective-C em `assets/NativeNLBridge.m`,
-usado com `NativeEmbeddings.swift` e `--extra-objc`. Ele não depende do
-`swift_NaturalLanguage.swiftmodule` arm64e e, portanto, é a opção mais portátil
-entre os perfis e durante a reconstrução do cache.
+The **recommended** route is the Objective-C bridge in `assets/NativeNLBridge.m`,
+used with `NativeEmbeddings.swift` and `--extra-objc`. It does not depend on the
+arm64e `swift_NaturalLanguage.swiftmodule` and is therefore the most portable
+option across profiles and during cache rebuilds.
 
-A rota Swift (`assets/NaturalLanguageProbe.swift`) é uma alternativa quando o
-cache arm64e completo já está disponível e o projeto prefere a API Swift. Ela é
-útil para validar o módulo, mas não deve ser escolhida apenas por conveniência
-se o bridge atende ao caso.
+The Swift route (`assets/NaturalLanguageProbe.swift`) is an alternative when the
+complete arm64e cache is already available and the project prefers the Swift
+API. It is useful for validating the module, but it should not be chosen merely
+for convenience if the bridge serves the case.
 
-## Evidência manual confirmada — 2026-09-02
+## Confirmed manual evidence — 2026-09-02
 
-O usuário abriu e exercitou a IPA `EmbeddingsArm64eThreePhase.ipa` no
-LiveContainer em iPhone17,1 / iOS 26.6. As três fases passaram:
+The user opened and exercised the `EmbeddingsArm64eThreePhase.ipa` in
+LiveContainer on iPhone17,1 / iOS 26.6. All three phases passed:
 
 ```text
 availability=true
@@ -70,11 +70,11 @@ first=1.4632570128014777e-05
 Fase 3=PASS
 ```
 
-Isto confirma **S4** para o bridge ObjC `NLEmbedding` nesse cenário: o modelo
-foi encontrado, a dimensão foi obtida e o vetor de 640 componentes foi gerado
-sem crash. A captura também valida a cópia do buffer nativo Objective-C para
-Swift. O resultado não deve ser extrapolado para devices, regiões, idiomas ou
-versões de iOS diferentes.
+This confirms **S4** for the ObjC `NLEmbedding` bridge in that scenario: the
+model was found, the dimension was obtained and the 640-component vector was
+generated without a crash. The capture also validates the copy of the native
+Objective-C buffer to Swift. The result must not be extrapolated to different
+devices, regions, languages or iOS versions.
 
 
 ## Evidence confirmed — 2026-09-02
@@ -86,7 +86,7 @@ This closes the last functional flow of the canonical arm64e matrix at S4 for
 the tested scenario.
 
 
-- **arm64e.v1/PAC**: único perfil operacional e de release.
+- **arm64e.v1/PAC**: the only operational and release profile.
 
 
 ```sh
@@ -118,10 +118,10 @@ command is:
 sh scripts/acceptance-suite.sh
 ```
 
-A suíte `scripts/acceptance-suite.sh` comprova o caminho offline com
-Foundation, FoundationModels, NaturalLanguage e o bridge de embeddings.
+The `scripts/acceptance-suite.sh` suite proves the offline path with Foundation,
+FoundationModels, NaturalLanguage and the embeddings bridge.
 
-IPA arm64e validada de ponta a ponta:
+arm64e IPA validated end to end:
 
 ```text
 Mach-O 64-bit arm64e (caps: PAC00)
@@ -131,18 +131,18 @@ LC_DYLD_CHAINED_FIXUPS
 check-entry: OK
 ```
 
-Uso:
+Usage:
 
 ```sh
 ISB_ARCH=arm64e sh scripts/build-pure-ui.sh App com.example.app \
   main.swift assets/FoundationModelsProbe.swift --weak-framework FoundationModels
 ```
 
-O caminho `scripts/build-pure-ui.sh` usa arm64e.v1/PAC por padrão. Para
-LiveContainer, `scripts/build-livecontainer.sh` também gera arm64e. Não
-habilite `Spoof SDK Version` no host testado; se necessário, use
+The `scripts/build-pure-ui.sh` path uses arm64e.v1/PAC by default. For
+LiveContainer, `scripts/build-livecontainer.sh` also produces arm64e. Do not
+enable `Spoof SDK Version` on the tested host; if necessary, use
 `dontInjectTweakLoader`.
-Para `FoundationModels`/PAC arm64e nativo, a rota avançada continua:
+For native `FoundationModels`/arm64e PAC, the advanced route remains:
 
 ```sh
 ISB_ARCH=arm64e sh scripts/build-pure-ui.sh MeuApp com.exemplo.meuapp \
